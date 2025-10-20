@@ -47,7 +47,7 @@ signInComponent.addEventListener('submit', (e) => {
 })
 
 async function handleOAuthCallback() {
-  const params = new URLSearchParams(window.location.search)
+  const params = new URLSearchParams(window.location.hash.substring(1))
 
   // Check if this is an OAuth callback
   if (params.has('code') || params.has('error')) {
