@@ -21,7 +21,7 @@ initOAuth()
 async function initOAuth() {
   try {
     // Get the client_id from the current origin
-    const clientId = `${window.location.origin}/client-metadata.json`
+    const clientId = new URL('client-metadata.json', window.location.href).href
     await bskyOAuth.init(clientId)
     console.log('OAuth initialized with client_id:', clientId)
 
