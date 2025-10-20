@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>R4Bsky - Radio4000 for Bluesky</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <h1>R4Bsky</h1>
+  <p class="tagline">Share music tracks on Bluesky</p>
+
+  <div id="status"></div>
+
+  <!-- Login Form -->
+  <div id="loginSection" class="card">
+    <h2>Login to Bluesky</h2>
+    <bsky-oauth-sign-in></bsky-oauth-sign-in>
+  </div>
+
+  <!-- Post Track Form -->
+  <div id="postSection" class="card hidden">
+    <div class="user-info">
+      Logged in as <strong id="userHandle"></strong>
+    </div>
+    <h2>Post a Track</h2>
+    <bsky-track-post></bsky-track-post>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
