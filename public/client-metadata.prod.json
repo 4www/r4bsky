@@ -1,0 +1,17 @@
+{
+  "client_id": "https://4www.github.io/r4bsky/client-metadata.json",
+  "client_name": "R4Bsky - Radio4000 for Bluesky",
+  "client_uri": "https://4www.github.io/r4bsky",
+  "logo_uri": "https://4www.github.io/r4bsky/logo.png",
+  "tos_uri": "https://4www.github.io/r4bsky/tos",
+  "policy_uri": "https://4www.github.io/r4bsky/privacy",
+  "redirect_uris": [
+    "https://4www.github.io/r4bsky"
+  ],
+  "scope": "atproto transition:generic",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "application_type": "web",
+  "token_endpoint_auth_method": "none",
+  "dpop_bound_access_tokens": true
+}
