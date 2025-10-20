@@ -18,7 +18,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",
     "@vitest/ui": "^1.0.0",
-    "happy-dom": "^12.10.3",
+    "happy-dom": "^20.0.7",
     "vite": "^5.0.0",
     "vitest": "^1.0.0"
   }
