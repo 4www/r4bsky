@@ -1,23 +1,30 @@
 <script>
   import { onMount } from 'svelte'
   import { player, toggle, next, prev } from '../player/store.js'
-  import { parseTrackUrl } from '../../libs/url-patterns.js'
+  import { parseTrackUrl, buildEmbedUrl } from '../../libs/url-patterns.js'
   let state = { playlist: [], index: -1, playing: false }
   let current = null
   let audio
+  let iframeSrc = ''
 
   const unsub = player.subscribe((s) => {
     state = s
     current = s.playlist?.[s.index] || null
-    if (audio && current) {
+    if (current) {
       const meta = parseTrackUrl(current.url)
       if (meta?.provider === 'file') {
-        audio.src = meta.url
-        if (s.playing) audio.play().catch(() => {})
-        else audio.pause()
+        if (audio) {
+          audio.src = meta.url
+          if (s.playing) audio.play().catch(() => {})
+          else audio.pause()
+        }
+        iframeSrc = ''
       } else {
-        audio.pause()
-        audio.removeAttribute('src')
+        if (audio) {
+          audio.pause()
+          audio.removeAttribute('src')
+        }
+        iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || ''
       }
     }
   })
@@ -47,10 +54,19 @@
       <button on:click={prev}>Prev</button>
       <button on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</button>
       <button on:click={next}>Next</button>
-      {#if parseTrackUrl(current.url)?.provider !== 'file'}
-        <a href={parseTrackUrl(current.url).url} target="_blank">Open</a>
-      {/if}
+      <a href={parseTrackUrl(current.url).url} target="_blank">Open</a>
     </div>
-    <audio bind:this={audio} on:ended={next} on:play={opened}></audio>
+    {#if parseTrackUrl(current.url)?.provider === 'file'}
+      <audio bind:this={audio} on:ended={next} on:play={opened} controls></audio>
+    {:else if iframeSrc}
+      <iframe
+        src={iframeSrc}
+        title="Embedded player"
+        allow="autoplay; encrypted-media"
+        allowfullscreen
+        width="560"
+        height="315"
+      ></iframe>
+    {/if}
   </section>
 {/if}

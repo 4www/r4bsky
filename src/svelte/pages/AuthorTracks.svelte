@@ -31,6 +31,10 @@
 
   // Prefill from URL hash query (#/author?handle=...)
   import { onMount } from 'svelte'
+  import { setPlaylist } from '../player/store.js'
+  function playAll(fromIdx) {
+    setPlaylist(items, fromIdx)
+  }
   onMount(() => {
     const hash = location.hash
     const i = hash.indexOf('?')
@@ -50,9 +54,12 @@
 {#if status}<div>{status}</div>{/if}
 {#if items.length}
   <ul>
-    {#each items as t}
+    {#each items as t, i}
       {#if parseTrackUrl(t.url)}
-        <li><a href={parseTrackUrl(t.url).url} target="_blank">{t.title || parseTrackUrl(t.url).url}</a></li>
+        <li>
+          <a href={parseTrackUrl(t.url).url} target="_blank">{t.title || parseTrackUrl(t.url).url}</a>
+          <button on:click={() => playAll(i)}>Play</button>
+        </li>
       {/if}
     {/each}
   </ul>

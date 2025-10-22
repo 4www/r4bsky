@@ -94,3 +94,20 @@ export function extractFirstTrackUrl(text) {
   if (!m) return null
   return parseTrackUrl(m[0])
 }
+
+// Build provider embed URL with autoplay control
+export function buildEmbedUrl(meta, {autoplay = true} = {}) {
+  if (!meta) return null
+  const ap = autoplay ? 1 : 0
+  if (meta.provider === 'youtube' && meta.id) {
+    return `https://www.youtube.com/embed/${meta.id}?autoplay=${ap}`
+  }
+  if (meta.provider === 'vimeo' && meta.id) {
+    return `https://player.vimeo.com/video/${meta.id}?autoplay=${ap}`
+  }
+  if (meta.provider === 'soundcloud') {
+    const url = encodeURIComponent(meta.url)
+    return `https://w.soundcloud.com/player/?url=${url}&auto_play=${autoplay ? 'true' : 'false'}`
+  }
+  return null
+}
