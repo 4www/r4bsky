@@ -45,7 +45,7 @@ export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
     cursor,
     reverse: true,
   })
-  const items = (res.data?.records || []).map((r) => ({uri: r.uri, cid: r.cid, ...r.value}))
+  const items = (res.data?.records || []).map((r) => ({uri: r.uri, cid: r.cid, rkey: r.uri?.split('/').pop(), ...r.value}))
   // Only keep items that have a parsable URL
   const tracks = items.filter((it) => parseTrackUrl(it.url))
   return {tracks, cursor: res.data?.cursor}
@@ -128,5 +128,27 @@ export async function deleteTrackByUri(uri) {
     repo: agent.accountDid,
     collection: R4_COLLECTION,
     rkey,
+  })
+}
+
+export async function updateTrackByUri(uri, changes) {
+  const agent = assertAgent()
+  const u = new URL(uri)
+  const rkey = u.pathname.split('/').pop()
+  const existing = await agent.com.atproto.repo.getRecord({
+    repo: agent.accountDid,
+    collection: R4_COLLECTION,
+    rkey,
+  })
+  const record = existing.data?.value || {}
+  const updated = {
+    ...record,
+    ...changes,
+  }
+  return agent.com.atproto.repo.putRecord({
+    repo: agent.accountDid,
+    collection: R4_COLLECTION,
+    rkey,
+    record: updated,
   })
 }

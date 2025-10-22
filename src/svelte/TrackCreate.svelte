@@ -1,5 +1,6 @@
 <script>
   import { createTrack } from '../libs/r4-service.js'
+  import { fetchOEmbed } from '../libs/oembed.js'
   let url = ''
   let title = ''
   let description = ''
@@ -18,6 +19,15 @@
       status = 'Error: ' + (err?.message || err)
     }
   }
+
+  $: (async () => {
+    if (url && !title) {
+      try {
+        const data = await fetchOEmbed(url)
+        if (data?.title && !title) title = data.title
+      } catch (_) {}
+    }
+  })()
 </script>
 
 <form on:submit={submit}>
@@ -37,4 +47,3 @@
   {#if status}<div>{status}</div>{/if}
   
 </form>
-

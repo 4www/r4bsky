@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { getMyDid, listTracksByDid } from '../libs/r4-service.js'
   import { parseTrackUrl } from '../libs/url-patterns.js'
+  import TrackList from './components/TrackList.svelte'
   let items = []
   let cursor = undefined
   let error = ''
@@ -31,17 +32,8 @@
 {#if error}
   <div>Failed to load tracks: {error}</div>
 {:else}
-  <ul>
-    {#each items as t}
-      {#if parseTrackUrl(t.url)}
-        <li>
-          <a href={parseTrackUrl(t.url).url} target="_blank">{t.title || parseTrackUrl(t.url).url}</a>
-        </li>
-      {/if}
-    {/each}
-  </ul>
+  <svelte:component this={TrackList} {items} editable={true} />
   {#if cursor}
     <button on:click={more}>Load more</button>
   {/if}
 {/if}
-
