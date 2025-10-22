@@ -1,20 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// Mock the bsky service
-vi.mock('../libs/bsky.js', () => ({
-	bsky: {
-		login: vi.fn(),
-		logout: vi.fn(),
-		resumeSession: vi.fn(),
+// Mock the OAuth service used by the component
+vi.mock('../libs/bsky-oauth.js', () => ({
+	bskyOAuth: {
 		post: vi.fn(),
-		getStoredSession: vi.fn(),
-		isAuthenticated: vi.fn()
+		initialized: true,
 	}
 }))
 
 // Import after mocking
 const { default: BskyTrackPost } = await import('./bsky-track-post.js')
-const { bsky } = await import('../libs/bsky.js')
+const { bskyOAuth } = await import('../libs/bsky-oauth.js')
 
 describe('BskyTrackPost Component', () => {
 	let component
@@ -70,7 +66,7 @@ describe('BskyTrackPost Component', () => {
 	})
 
 	it('should call bsky.post on form submit with formatted text', async () => {
-		bsky.post.mockResolvedValue({
+	bskyOAuth.post.mockResolvedValue({
 			data: { uri: 'at://test/post/123' },
 			error: null
 		})
@@ -93,13 +89,13 @@ describe('BskyTrackPost Component', () => {
 
 		await new Promise(resolve => setTimeout(resolve, 0))
 
-		expect(bsky.post).toHaveBeenCalledWith(
+	expect(bskyOAuth.post).toHaveBeenCalledWith(
 			'Artist - Song Name\n\nGreat track!\n\nhttps://youtube.com/watch?v=123'
 		)
 	})
 
 	it('should format post without description if not provided', async () => {
-		bsky.post.mockResolvedValue({
+	bskyOAuth.post.mockResolvedValue({
 			data: { uri: 'at://test/post/123' },
 			error: null
 		})
@@ -118,14 +114,14 @@ describe('BskyTrackPost Component', () => {
 
 		await new Promise(resolve => setTimeout(resolve, 0))
 
-		expect(bsky.post).toHaveBeenCalledWith(
+	expect(bskyOAuth.post).toHaveBeenCalledWith(
 			'Artist - Song Name\n\nhttps://youtube.com/watch?v=123'
 		)
 	})
 
 	it('should emit submit event on successful post', async () => {
 		const mockPostData = { uri: 'at://test/post/123', cid: 'cid123' }
-		bsky.post.mockResolvedValue({
+	bskyOAuth.post.mockResolvedValue({
 			data: mockPostData,
 			error: null
 		})
@@ -155,7 +151,7 @@ describe('BskyTrackPost Component', () => {
 	})
 
 	it('should display error on failed post', async () => {
-		bsky.post.mockResolvedValue({
+	bskyOAuth.post.mockResolvedValue({
 			data: null,
 			error: { code: 'post-failed', message: 'Failed to post' }
 		})
@@ -179,7 +175,7 @@ describe('BskyTrackPost Component', () => {
 	})
 
 	it('should reset form after successful post', async () => {
-		bsky.post.mockResolvedValue({
+	bskyOAuth.post.mockResolvedValue({
 			data: { uri: 'at://test/post/123' },
 			error: null
 		})
@@ -208,7 +204,7 @@ describe('BskyTrackPost Component', () => {
 	})
 
 	it('should disable form during submission', async () => {
-		bsky.post.mockImplementation(() => {
+	bskyOAuth.post.mockImplementation(() => {
 			return new Promise(resolve => {
 				setTimeout(() => {
 					resolve({
@@ -241,11 +237,11 @@ describe('BskyTrackPost Component', () => {
 		expect(component.hasAttribute('loading')).toBe(false)
 	})
 
-	it('should handle various music platform URLs', async () => {
-		bsky.post.mockResolvedValue({
-			data: { uri: 'at://test/post/123' },
-			error: null
-		})
+  it('should handle various music platform URLs', async () => {
+    bskyOAuth.post.mockResolvedValue({
+      data: { uri: 'at://test/post/123' },
+      error: null
+    })
 
 		const musicPlatforms = [
 			'https://youtube.com/watch?v=123',
@@ -272,8 +268,8 @@ describe('BskyTrackPost Component', () => {
 
 			await new Promise(resolve => setTimeout(resolve, 0))
 
-			expect(bsky.post).toHaveBeenCalled()
-			const calledWith = bsky.post.mock.calls[0][0]
+   expect(bskyOAuth.post).toHaveBeenCalled()
+   const calledWith = bskyOAuth.post.mock.calls[0][0]
 			expect(calledWith).toContain(url)
 		}
 	})

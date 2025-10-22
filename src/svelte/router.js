@@ -1,4 +1,19 @@
-import { writable } from 'svelte/store'
+// Minimal store implementation compatible with Svelte subscriptions
+function writable(initial) {
+  let value = initial
+  const subs = new Set()
+  return {
+    subscribe(fn) {
+      subs.add(fn)
+      fn(value)
+      return () => subs.delete(fn)
+    },
+    set(v) {
+      value = v
+      subs.forEach((fn) => fn(value))
+    },
+  }
+}
 
 function getPath() {
   const hash = location.hash.replace(/^#/, '')
@@ -16,4 +31,3 @@ export function navigate(path) {
 export function initRouter() {
   window.addEventListener('hashchange', () => route.set(getPath()))
 }
-

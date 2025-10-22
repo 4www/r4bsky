@@ -19,7 +19,9 @@ describe('BskyOAuthSignIn', () => {
 		vi.clearAllMocks()
 
 		// Create fresh element
-		customElements.define('bsky-oauth-sign-in-test', BskyOAuthSignIn)
+		if (!customElements.get('bsky-oauth-sign-in-test')) {
+			customElements.define('bsky-oauth-sign-in-test', BskyOAuthSignIn)
+		}
 		element = document.createElement('bsky-oauth-sign-in-test')
 		document.body.appendChild(element)
 	})
