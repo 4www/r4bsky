@@ -10,19 +10,39 @@ class BskyOAuthService {
 	}
 
 	async init(clientId) {
-		if (this.initialized) return
+		if (this.initialized) return;
 
 		try {
-			this.client = await BrowserOAuthClient.load({
-				clientId: clientId,
-				handleResolver: 'https://bsky.social', // Using default Bluesky resolver
-			})
+			let clientConfig;
+			const url = new URL(clientId);
 
-			this.initialized = true
-			console.log('OAuth client initialized')
+			// The ATProto library has a special check for loopback addresses (localhost, 127.0.0.1)
+			// that does not allow a path component in the client_id. To work around this for local
+			// development, we can fetch the client metadata ourselves and pass it in as an object.
+			if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+				const response = await fetch(clientId);
+				if (!response.ok) {
+					throw new Error(`Failed to fetch client metadata: ${response.statusText}`);
+				}
+				const metadata = await response.json();
+				clientConfig = {
+					client: metadata,
+					handleResolver: 'https://bsky.social',
+				};
+			} else {
+				clientConfig = {
+					clientId: clientId,
+					handleResolver: 'https://bsky.social',
+				};
+			}
+
+			this.client = await BrowserOAuthClient.load(clientConfig);
+
+			this.initialized = true;
+			console.log('OAuth client initialized');
 		} catch (error) {
-			console.error('Failed to initialize OAuth client:', error)
-			throw error
+			console.error('Failed to initialize OAuth client:', error);
+			throw error;
 		}
 	}
 
