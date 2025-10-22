@@ -20,6 +20,12 @@
     // Lazy resolve human handle (avoid eager network on hydration)
     if (bskyOAuth.isAuthenticated()) {
       bskyOAuth.resolveHandle().then((h) => { if (h) userHandle = h })
+      // Ensure we land on a known route after login
+      const allowed = new Set(['/', '/my', '/author', '/timeline', '/search', '/followers', '/following', '/permissions'])
+      const hashPath = (location.hash || '').replace(/^#/, '') || '/'
+      if (!allowed.has(hashPath)) {
+        location.hash = '#/'
+      }
     }
     ready = true
   }

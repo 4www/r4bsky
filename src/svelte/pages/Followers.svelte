@@ -46,7 +46,11 @@
 {:else}
   <ul>
     {#each items as a}
-      <li>{a.handle || a.displayName || a.did}</li>
+      <li>
+        <button on:click={() => (location.hash = `#/@${encodeURIComponent(a.handle || a.did)}`)}>
+          {a.handle || a.displayName || a.did}
+        </button>
+      </li>
     {/each}
     {#if !items?.length}
       <li>None</li>
