@@ -1,4 +1,5 @@
 import {bskyOAuth} from './src/libs/bsky-oauth.js'
+import { buildLoopbackClientId } from '@atproto/oauth-client-browser'
 import BskyOAuthSignIn from './src/components/bsky-oauth-sign-in.js'
 import BskyTrackPost from './src/components/bsky-track-post.js'
 
@@ -20,8 +21,12 @@ initOAuth()
 
 async function initOAuth() {
   try {
-    // Get the client_id from the current origin
-    const clientId = new URL('client-metadata.json', window.location.href).href
+    // Compute client_id depending on environment
+    // - HTTPS: use hosted client metadata URL
+    // - HTTP (localhost/loopback): use loopback client id (no path allowed)
+    const clientId = window.location.protocol === 'https:'
+      ? new URL('client-metadata.json', window.location.href).href
+      : buildLoopbackClientId(window.location)
     await bskyOAuth.init(clientId)
     console.log('OAuth initialized with client_id:', clientId)
 

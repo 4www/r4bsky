@@ -1,4 +1,4 @@
-import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
+import { BrowserOAuthClient, OAuthCallbackError } from '@atproto/oauth-client-browser'
 import { Agent } from '@atproto/api'
 
 class BskyOAuthService {
@@ -17,6 +17,33 @@ class BskyOAuthService {
 				clientId: clientId,
 				handleResolver: 'https://bsky.social', // Using default Bluesky resolver
 			})
+
+			// Process OAuth callback or restore existing session automatically
+			// If there is an OAuth response in the URL, this will handle it and
+			// return a session. Otherwise it will attempt to restore.
+			try {
+				const initResult = await this.client.init()
+				if (initResult?.session) {
+					await this.#hydrateFromOAuthSession(initResult.session)
+				}
+			} catch (err) {
+				// If the user refreshed or navigated back to a callback URL,
+				// the auth code may have already been consumed. In that case,
+				// clean up the URL and allow a fresh sign-in.
+				if (err instanceof OAuthCallbackError) {
+					const params = this.client.readCallbackParams()
+					if (params) {
+						if (this.client.responseMode === 'fragment') {
+							history.replaceState(null, '', location.pathname + location.search)
+						} else {
+							history.replaceState(null, '', location.pathname)
+						}
+					}
+					console.warn('OAuth callback ignored (probably reused code). URL cleaned; please retry sign-in.')
+				} else {
+					throw err
+				}
+			}
 
 			this.initialized = true
 			console.log('OAuth client initialized')
@@ -40,6 +67,15 @@ class BskyOAuthService {
 			await this.client.signIn(handle, {
 				state: window.location.pathname, // Store current path to return to
 				signal: new AbortController().signal,
+				prompt: 'consent',
+				// Request fine-grained permission to create feed posts
+				authorization_details: [
+					{
+						type: 'atproto_repo',
+						actions: ['create'],
+						identifier: 'app.bsky.feed.post',
+					},
+				],
 			})
 
 			return {
@@ -67,26 +103,15 @@ class BskyOAuthService {
 				throw new Error('OAuth client not initialized')
 			}
 
-                // The BrowserOAuthClient automatically handles the callback when it initializes if the URL contains OAuth parameters.
-                // We simply need to check if a session was established or restored.
-                const oauthSession = this.client.currentSession
-                if (oauthSession) {
-                    localStorage.setItem("bsky-oauth-did", oauthSession.did)
-                    return await this.restoreSession(oauthSession.did)
-                } else {
-                    // If there are OAuth parameters but no session was established, it means there was an error or user denied access.
-                    const params = new URLSearchParams(window.location.search)
-                    if (params.has("error")) {
-                        throw new Error(params.get("error_description") || "OAuth callback error")
-                    }
-                    return {
-                        session: null,
-                        error: {
-                            code: "no-session",
-                            message: "No session found after callback or user denied access."
-                        }
-                    }
-                }
+			// Only attempt callback handling if URL has OAuth params
+			const params = this.client.readCallbackParams()
+			if (!params) {
+				return { session: null, error: null }
+			}
+
+			const { session } = await this.client.initCallback(params)
+			await this.#hydrateFromOAuthSession(session)
+			return { session: this.session, error: null }
 		} catch (error) {
 			console.error('OAuth callback error:', error)
 			return {
@@ -109,20 +134,11 @@ class BskyOAuthService {
 			}
 
 			const oauthSession = await this.client.restore(did)
-
 			if (!oauthSession) {
 				throw new Error('Session not found')
 			}
 
-			// Create an Agent instance with the OAuth session
-			this.agent = new Agent(oauthSession)
-			this.session = {
-				did: oauthSession.did,
-				handle: oauthSession.info?.handle || did,
-			}
-
-			// Store the DID for future restoration
-			localStorage.setItem('bsky-oauth-did', did)
+			await this.#hydrateFromOAuthSession(oauthSession)
 
 			return {
 				session: this.session,
@@ -151,14 +167,11 @@ class BskyOAuthService {
 			}
 
 			const result = await this.agent.post({
-				text: text,
-				createdAt: new Date().toISOString()
+				text,
+				createdAt: new Date().toISOString(),
 			})
 
-			return {
-				data: result,
-				error: null
-			}
+			return { data: result, error: null }
 		} catch (error) {
 			console.error('Post error:', error)
 			return {
@@ -200,6 +213,29 @@ class BskyOAuthService {
 	 */
 	isAuthenticated() {
 		return !!this.agent && !!this.session
+	}
+
+	/**
+	 * Internal: hydrate agent + session from an OAuthSession
+	 */
+	async #hydrateFromOAuthSession(oauthSession) {
+		// Provide a SessionManager-like object so Agent knows the DID
+		this.agent = new Agent({
+			fetchHandler: (url, init) => oauthSession.fetchHandler(url, init),
+			did: oauthSession.did,
+		})
+
+		// Best-effort: try to fetch the profile to get the handle; fall back to did
+		let handle = oauthSession.did
+		try {
+			const profile = await this.agent.getProfile({ actor: oauthSession.did })
+			handle = profile.data?.handle || handle
+		} catch (_) {
+			// ignore, fallback to DID
+		}
+
+		this.session = { did: oauthSession.did, handle }
+		localStorage.setItem('bsky-oauth-did', oauthSession.did)
 	}
 }
 
