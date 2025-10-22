@@ -75,6 +75,11 @@ class BskyOAuthService {
 						actions: ['create'],
 						identifier: 'app.bsky.feed.post',
 					},
+					{
+						type: 'atproto_repo',
+						actions: ['create'],
+						identifier: 'com.radio4000.track',
+					},
 				],
 			})
 

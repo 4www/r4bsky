@@ -2,10 +2,12 @@ import {bskyOAuth} from './src/libs/bsky-oauth.js'
 import { buildLoopbackClientId } from '@atproto/oauth-client-browser'
 import BskyOAuthSignIn from './src/components/bsky-oauth-sign-in.js'
 import BskyTrackPost from './src/components/bsky-track-post.js'
+import R4BUserTracks from './src/components/r4b-user-tracks.js'
 
 // Register custom elements
 customElements.define('bsky-oauth-sign-in', BskyOAuthSignIn)
 customElements.define('bsky-track-post', BskyTrackPost)
+customElements.define('r4b-user-tracks', R4BUserTracks)
 
 // DOM elements
 const loginSection = document.getElementById('loginSection')
