@@ -1,4 +1,3 @@
-import MyTracks from './pages/MyTracks.svelte'
 import TimelineTracks from './pages/TimelineTracks.svelte'
 import AuthorTracks from './pages/AuthorTracks.svelte'
 import SearchActors from './pages/SearchActors.svelte'
@@ -10,7 +9,6 @@ import { compile } from './routing/match.js'
 
 export const routes = [
   { pattern: '/', component: TimelineTracks },
-  { pattern: '/my', component: MyTracks },
   { pattern: '/search', component: SearchActors },
   { pattern: '/followers', component: Followers },
   { pattern: '/following', component: Followers },
@@ -19,4 +17,3 @@ export const routes = [
   { pattern: '/t/:repo/:rkey', component: TrackView },
   { pattern: '/t/:repo/:rkey/edit', component: TrackEdit },
 ].map((r) => ({ ...r, match: compile(r.pattern) }))
-

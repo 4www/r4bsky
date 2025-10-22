@@ -2,7 +2,7 @@
   import { resolveHandle, listTracksByDid } from '../../libs/r4-service.js'
   import { parseTrackUrl } from '../../libs/url-patterns.js'
   import FollowButton from '../components/FollowButton.svelte'
-  let handle = ''
+  export let handle = ''
   let did = ''
   let items = []
   let cursor = undefined
@@ -29,13 +29,17 @@
     cursor = c
   }
 
-  // Prefill from URL hash query (#/author?handle=...)
+  // Prefill from route param or URL hash query
   import { onMount } from 'svelte'
   import { setPlaylist } from '../player/store.js'
   function playAll(fromIdx) {
     setPlaylist(items, fromIdx)
   }
   onMount(() => {
+    if (handle) {
+      loadAuthor()
+      return
+    }
     const hash = location.hash
     const i = hash.indexOf('?')
     if (i !== -1) {
