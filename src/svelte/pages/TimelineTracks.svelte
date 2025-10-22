@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { timelineTracks } from '../../libs/r4-service.js'
+  import { timelineTracks, isScopeMissing } from '../../libs/r4-service.js'
   import { parseTrackUrl } from '../../libs/url-patterns.js'
   import { setPlaylist } from '../player/store.js'
   let items = []
@@ -10,6 +10,7 @@
       items = await timelineTracks({limitPerActor: 5})
     } catch (e) {
       error = e?.message || String(e)
+      if (isScopeMissing(e)) error = 'Missing permission to read followings. Visit Permissions to grant access.'
     }
   })
   function playAll(fromIdx) { setPlaylist(items, fromIdx) }
@@ -17,7 +18,7 @@
 
 <h2>Timeline</h2>
 {#if error}
-  <div>Failed to load: {error}</div>
+  <div>Failed to load: {error} <button on:click={() => (location.hash = '#/permissions')}>Permissions</button></div>
 {:else}
   <ul>
     {#each items as t, i}

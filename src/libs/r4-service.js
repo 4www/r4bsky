@@ -61,14 +61,22 @@ export async function searchActors(query, {limit = 25} = {}) {
 
 export async function getFollowers(did, {limit = 50, cursor} = {}) {
   const agent = assertAgent()
-  const res = await agent.getFollowers({ actor: did, limit, cursor })
-  return { followers: res.data?.followers || [], cursor: res.data?.cursor }
+  try {
+    const res = await agent.getFollowers({ actor: did, limit, cursor })
+    return { followers: res.data?.followers || [], cursor: res.data?.cursor }
+  } catch (e) {
+    throw scopeError(e)
+  }
 }
 
 export async function getFollows(did, {limit = 50, cursor} = {}) {
   const agent = assertAgent()
-  const res = await agent.getFollows({ actor: did, limit, cursor })
-  return { follows: res.data?.follows || [], cursor: res.data?.cursor }
+  try {
+    const res = await agent.getFollows({ actor: did, limit, cursor })
+    return { follows: res.data?.follows || [], cursor: res.data?.cursor }
+  } catch (e) {
+    throw scopeError(e)
+  }
 }
 
 export async function followActor(subjectDid) {
@@ -119,6 +127,20 @@ export async function timelineTracks({limitPerActor = 10} = {}) {
     return bd - ad
   })
   return merged
+}
+
+function scopeError(e) {
+  const msg = String(e?.message || e)
+  if (msg.includes('ScopeMissingError') || msg.includes('Missing required scope')) {
+    const err = new Error(msg)
+    err.code = 'scope-missing'
+    return err
+  }
+  return e
+}
+
+export function isScopeMissing(err) {
+  return err?.code === 'scope-missing'
 }
 
 export async function deleteTrackByUri(uri) {

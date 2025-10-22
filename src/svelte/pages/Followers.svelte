@@ -23,7 +23,14 @@
     }
   }
 
-  onMount(load)
+  onMount(() => {
+    load().catch((e) => {
+      const msg = String(e?.message || e)
+      if (msg.includes('Missing required scope')) {
+        error = 'Missing permission to read social graph. Visit Permissions to grant access.'
+      }
+    })
+  })
 
   async function more() {
     if (!cursor) return
@@ -58,5 +65,8 @@
   </ul>
   {#if cursor}
     <button on:click={more}>Load more</button>
+  {/if}
+  {#if error?.includes('Missing permission')}
+    <button on:click={() => (location.hash = '#/permissions')}>Permissions</button>
   {/if}
 {/if}
