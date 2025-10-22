@@ -80,6 +80,11 @@ class BskyOAuthService {
 						actions: ['create'],
 						identifier: 'com.radio4000.track',
 					},
+					{
+						type: 'atproto_repo',
+						actions: ['create','delete'],
+						identifier: 'app.bsky.graph.follow',
+					},
 				],
 			})
 

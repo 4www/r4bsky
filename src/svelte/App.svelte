@@ -4,6 +4,7 @@
   import { buildLoopbackClientId } from '@atproto/oauth-client-browser'
   import TrackCreate from './TrackCreate.svelte'
   import UserTracks from './UserTracks.svelte'
+  import Router from './Router.svelte'
 
   let ready = false
   let handle = ''
@@ -51,14 +52,6 @@
       </form>
     </section>
   {:else}
-    <section>
-      <div>Logged in as <strong>{userHandle}</strong></div>
-      <h2>Save a Track</h2>
-      <TrackCreate />
-      <h2>Your Tracks</h2>
-      <UserTracks />
-      <button on:click={signOut}>Logout</button>
-    </section>
+    <Router {userHandle} on:logout={signOut} />
   {/if}
 {/if}
-
