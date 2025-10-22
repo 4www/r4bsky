@@ -47,39 +47,28 @@ signInComponent.addEventListener('submit', (e) => {
 })
 
 async function handleOAuthCallback() {
-  const params = new URLSearchParams(window.location.hash.substring(1))
+  // The bskyOAuth.handleCallback() method will internally check for relevant URL parameters
+  // and process the OAuth response. This function will be called on every page load
+  // to ensure any pending OAuth callback is processed.
+  // We also need to ensure that the URL is cleaned up after the callback, regardless of success or failure.
 
-  // Check if this is an OAuth callback
-  if (params.has('code') || params.has('error')) {
-    if (params.has('error')) {
-      const errorDesc = params.get('error_description') || params.get('error')
-      showStatus(`OAuth error: ${errorDesc}`, 'error')
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-      return
+  try {
+    const result = await bskyOAuth.handleCallback()
+
+    if (result.error) {
+      // If there's an OAuth error (e.g., user denied access), display it.
+      showStatus(`OAuth error: ${result.error.message}`, "error")
+    } else if (result.session) {
+      // If a session is successfully established, log the user in.
+      showLoggedIn(result.session.handle)
+      showStatus("Logged in successfully!", "success")
     }
-
-    showStatus('Processing OAuth callback...', 'success')
-
-    try {
-      const result = await bskyOAuth.handleCallback()
-
-      if (result.error) {
-        throw result.error
-      }
-
-      if (result.session) {
-        showLoggedIn(result.session.handle)
-        showStatus('Logged in successfully!', 'success')
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname)
-      }
-    } catch (error) {
-      console.error('OAuth callback error:', error)
-      showStatus(`Login failed: ${error.message}`, 'error')
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
+  } catch (error) {
+    console.error("OAuth callback error:", error)
+    showStatus(`Login failed: ${error.message}`, "error")
+  } finally {
+    // Always clean up the URL after attempting to handle the OAuth callback
+    window.history.replaceState({}, document.title, window.location.pathname)
   }
 }
 

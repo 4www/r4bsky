@@ -67,27 +67,26 @@ class BskyOAuthService {
 				throw new Error('OAuth client not initialized')
 			}
 
-			// This is called automatically when the user returns from OAuth
-			const params = new URLSearchParams(window.location.search)
-
-			if (params.has('error')) {
-				throw new Error(params.get('error_description') || 'OAuth callback error')
-			}
-
-			// The client handles the callback automatically
-			// Try to restore the session
-			const storedDid = localStorage.getItem('bsky-oauth-did')
-			if (storedDid) {
-				return await this.restoreSession(storedDid)
-			}
-
-			return {
-				session: null,
-				error: {
-					code: 'no-session',
-					message: 'No session found'
-				}
-			}
+                // The BrowserOAuthClient automatically handles the callback when it initializes if the URL contains OAuth parameters.
+                // We simply need to check if a session was established or restored.
+                const oauthSession = this.client.currentSession
+                if (oauthSession) {
+                    localStorage.setItem("bsky-oauth-did", oauthSession.did)
+                    return await this.restoreSession(oauthSession.did)
+                } else {
+                    // If there are OAuth parameters but no session was established, it means there was an error or user denied access.
+                    const params = new URLSearchParams(window.location.search)
+                    if (params.has("error")) {
+                        throw new Error(params.get("error_description") || "OAuth callback error")
+                    }
+                    return {
+                        session: null,
+                        error: {
+                            code: "no-session",
+                            message: "No session found after callback or user denied access."
+                        }
+                    }
+                }
 		} catch (error) {
 			console.error('OAuth callback error:', error)
 			return {
