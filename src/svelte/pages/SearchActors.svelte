@@ -17,8 +17,7 @@
   }
 
   function openAuthor(handle) {
-    location.hash = '#/author'
-    // pre-fill not persisted; user can paste handle
+    location.hash = `#/author?handle=${encodeURIComponent(handle)}`
   }
 </script>
 
@@ -35,4 +34,3 @@
     </li>
   {/each}
   </ul>
-

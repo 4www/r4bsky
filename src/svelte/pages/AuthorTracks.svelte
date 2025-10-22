@@ -28,6 +28,18 @@
     items = [...items, ...tracks]
     cursor = c
   }
+
+  // Prefill from URL hash query (#/author?handle=...)
+  import { onMount } from 'svelte'
+  onMount(() => {
+    const hash = location.hash
+    const i = hash.indexOf('?')
+    if (i !== -1) {
+      const q = new URLSearchParams(hash.slice(i + 1))
+      const h = q.get('handle')
+      if (h) { handle = h; loadAuthor() }
+    }
+  })
 </script>
 
 <h2>Author Tracks</h2>

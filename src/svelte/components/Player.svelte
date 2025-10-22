@@ -23,6 +23,16 @@
   })
 
   onMount(() => () => unsub())
+  function onKey(e) {
+    if (!current) return
+    if (e.key === ' ') { e.preventDefault(); toggle() }
+    if (e.key === 'ArrowRight') next()
+    if (e.key === 'ArrowLeft') prev()
+  }
+  onMount(() => {
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
   function opened() {
     // noop placeholder for future
   }
@@ -44,4 +54,3 @@
     <audio bind:this={audio} on:ended={next} on:play={opened}></audio>
   </section>
 {/if}
-

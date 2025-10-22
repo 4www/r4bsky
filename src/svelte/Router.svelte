@@ -7,6 +7,7 @@
   import TimelineTracks from './pages/TimelineTracks.svelte'
   import Followers from './pages/Followers.svelte'
   import Player from './components/Player.svelte'
+  import Permissions from './pages/Permissions.svelte'
   export let userHandle = ''
   let current = '/'
   const links = [
@@ -17,6 +18,7 @@
     ['/search', 'Search'],
     ['/followers', 'Followers'],
     ['/following', 'Following'],
+    ['/permissions', 'Permissions'],
   ]
   onMount(() => {
     initRouter()
@@ -49,6 +51,8 @@
   <Followers mode="followers" />
 {:else if current === '/following'}
   <Followers mode="following" />
+{:else if current === '/permissions'}
+  <Permissions />
 {:else}
   <div>Not found</div>
 {/if}

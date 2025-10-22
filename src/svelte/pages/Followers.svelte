@@ -10,11 +10,11 @@
     try {
       const did = await getMyDid()
       if (mode === 'followers') {
-        const res = await getFollowers(did)
+        const res = await getFollowers(did, { cursor })
         items = res.followers
         cursor = res.cursor
       } else {
-        const res = await getFollows(did)
+        const res = await getFollows(did, { cursor })
         items = res.follows
         cursor = res.cursor
       }
@@ -24,6 +24,20 @@
   }
 
   onMount(load)
+
+  async function more() {
+    if (!cursor) return
+    const did = await getMyDid()
+    if (mode === 'followers') {
+      const res = await getFollowers(did, { cursor })
+      items = [...items, ...(res.followers||[])]
+      cursor = res.cursor
+    } else {
+      const res = await getFollows(did, { cursor })
+      items = [...items, ...(res.follows||[])]
+      cursor = res.cursor
+    }
+  }
 </script>
 
 <h2>{mode === 'followers' ? 'Followers' : 'Following'}</h2>
@@ -38,5 +52,7 @@
       <li>None</li>
     {/if}
   </ul>
+  {#if cursor}
+    <button on:click={more}>Load more</button>
+  {/if}
 {/if}
-
