@@ -5,6 +5,7 @@
   import AuthorTracks from './pages/AuthorTracks.svelte'
   import SearchActors from './pages/SearchActors.svelte'
   import TimelineTracks from './pages/TimelineTracks.svelte'
+  import Followers from './pages/Followers.svelte'
   export let userHandle = ''
   let current = '/'
   const links = [
@@ -13,6 +14,8 @@
     ['/author', 'Author'],
     ['/timeline', 'Timeline'],
     ['/search', 'Search'],
+    ['/followers', 'Followers'],
+    ['/following', 'Following'],
   ]
   onMount(() => {
     initRouter()
@@ -41,6 +44,10 @@
   <TimelineTracks />
 {:else if current === '/search'}
   <SearchActors />
+{:else if current === '/followers'}
+  <Followers mode="followers" />
+{:else if current === '/following'}
+  <Followers mode="following" />
 {:else}
   <div>Not found</div>
 {/if}
