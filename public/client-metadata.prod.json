@@ -6,7 +6,8 @@
   "tos_uri": "https://4www.github.io/r4bsky/tos",
   "policy_uri": "https://4www.github.io/r4bsky/privacy",
   "redirect_uris": [
-    "https://4www.github.io/r4bsky"
+    "https://4www.github.io/r4bsky",
+    "https://4www.github.io/r4bsky/"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],

@@ -20,12 +20,15 @@
     ['/following', 'Following'],
     ['/permissions', 'Permissions'],
   ]
+  import { createEventDispatcher } from 'svelte'
+  const dispatch = createEventDispatcher()
+
   onMount(() => {
     initRouter()
     const unsub = route.subscribe((r) => (current = r))
     return () => unsub()
   })
-  function logout() { dispatchEvent(new CustomEvent('logout')) }
+  function logout() { dispatch('logout') }
 </script>
 
   <nav>

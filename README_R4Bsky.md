@@ -12,11 +12,12 @@ OAuth
 - client_id:
   - HTTPS: `https://your.domain/client-metadata.json`
   - HTTP loopback: uses loopback client id (no path) automatically.
-- Required permissions (authorization_details):
+- Optional fine-grained permissions (authorization_details when supported):
   - `com.radio4000.track` actions: create (for saving tracks)
   - `app.bsky.graph.follow` actions: create, delete (for follow/unfollow)
-  - (optional) `app.bsky.feed.post` create
 - Update `public/client-metadata.json` to set `authorization_details_types: ["atproto_repo"]` and correct `redirect_uris`.
+  - Do not include `authorization_details_types` if your AS does not support it.
+  - Ensure `redirect_uris` match your deployed path exactly (add both with and without trailing slash for GitHub Pages like `/r4bsky` and `/r4bsky/`).
 
 Data Model
 - Custom collection: `com.radio4000.track`
@@ -39,4 +40,3 @@ Testing
 Notes
 - No styles are included in the Svelte templates.
 - Player integration is planned; current pages link out to providers or files directly.
-
