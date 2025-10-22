@@ -7,29 +7,7 @@
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-  <h1>R4Bsky</h1>
-  <p class="tagline">Share music tracks on Bluesky</p>
-
-  <div id="status"></div>
-
-  <!-- Login Form -->
-  <div id="loginSection" class="card">
-    <h2>Login to Bluesky</h2>
-    <bsky-oauth-sign-in></bsky-oauth-sign-in>
-  </div>
-
-  <!-- Post Track Form -->
-  <div id="postSection" class="card hidden">
-    <div class="user-info">
-      Logged in as <strong id="userHandle"></strong>
-    </div>
-    <h2>Save a Track to your R4 collection</h2>
-    <r4b-track-create></r4b-track-create>
-    <h2>Your Tracks</h2>
-    <r4b-user-tracks></r4b-user-tracks>
-    <button class="logout-btn" id="logoutBtn">Logout</button>
-  </div>
-
-  <script type="module" src="/main.js"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/svelte/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,64 @@
+<script>
+  import { onMount } from 'svelte'
+  import { bskyOAuth } from '../libs/bsky-oauth.js'
+  import { buildLoopbackClientId } from '@atproto/oauth-client-browser'
+  import TrackCreate from './TrackCreate.svelte'
+  import UserTracks from './UserTracks.svelte'
+
+  let ready = false
+  let handle = ''
+  let userHandle = ''
+
+  async function initOAuth() {
+    const clientId = window.location.protocol === 'https:'
+      ? new URL('client-metadata.json', window.location.href).href
+      : buildLoopbackClientId(window.location)
+    await bskyOAuth.init(clientId)
+    // handleCallback not needed if client.init() already processed
+    if (bskyOAuth.session?.handle) {
+      userHandle = bskyOAuth.session.handle
+    }
+    ready = true
+  }
+
+  onMount(() => {
+    initOAuth()
+  })
+
+  async function signIn() {
+    if (!handle) return
+    await bskyOAuth.signIn(handle)
+  }
+
+  async function signOut() {
+    await bskyOAuth.signOut()
+    userHandle = ''
+  }
+</script>
+
+{#if !ready}
+  <div>Loading…</div>
+{:else}
+  {#if !bskyOAuth.isAuthenticated()}
+    <section>
+      <h2>Sign in with Bluesky</h2>
+      <form on:submit|preventDefault={signIn}>
+        <label>
+          Handle
+          <input type="text" bind:value={handle} placeholder="your-handle.bsky.social" required />
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+    </section>
+  {:else}
+    <section>
+      <div>Logged in as <strong>{userHandle}</strong></div>
+      <h2>Save a Track</h2>
+      <TrackCreate />
+      <h2>Your Tracks</h2>
+      <UserTracks />
+      <button on:click={signOut}>Logout</button>
+    </section>
+  {/if}
+{/if}
+
