@@ -9,7 +9,6 @@
     "https://4www.github.io/r4bsky"
   ],
   "scope": "atproto transition:generic",
-  "authorization_details_types": ["atproto_repo"],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
   "application_type": "web",

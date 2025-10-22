@@ -1,5 +1,6 @@
 import {bskyOAuth} from './bsky-oauth.js'
 import {parseTrackUrl} from './url-patterns.js'
+import { AtUri } from '@atproto/api'
 
 export const R4_COLLECTION = 'com.radio4000.track'
 
@@ -122,22 +123,26 @@ export async function timelineTracks({limitPerActor = 10} = {}) {
 
 export async function deleteTrackByUri(uri) {
   const agent = assertAgent()
-  const u = new URL(uri)
-  const rkey = u.pathname.split('/').pop()
+  const at = new AtUri(uri)
+  const repo = at.hostname
+  const collection = at.collection || R4_COLLECTION
+  const rkey = at.rkey
   return agent.com.atproto.repo.deleteRecord({
-    repo: agent.accountDid,
-    collection: R4_COLLECTION,
+    repo,
+    collection,
     rkey,
   })
 }
 
 export async function updateTrackByUri(uri, changes) {
   const agent = assertAgent()
-  const u = new URL(uri)
-  const rkey = u.pathname.split('/').pop()
+  const at = new AtUri(uri)
+  const repo = at.hostname
+  const collection = at.collection || R4_COLLECTION
+  const rkey = at.rkey
   const existing = await agent.com.atproto.repo.getRecord({
-    repo: agent.accountDid,
-    collection: R4_COLLECTION,
+    repo,
+    collection,
     rkey,
   })
   const record = existing.data?.value || {}
@@ -146,8 +151,8 @@ export async function updateTrackByUri(uri, changes) {
     ...changes,
   }
   return agent.com.atproto.repo.putRecord({
-    repo: agent.accountDid,
-    collection: R4_COLLECTION,
+    repo,
+    collection,
     rkey,
     record: updated,
   })

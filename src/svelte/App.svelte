@@ -16,8 +16,10 @@
       : buildLoopbackClientId(window.location)
     await bskyOAuth.init(clientId)
     // handleCallback not needed if client.init() already processed
-    if (bskyOAuth.session?.handle) {
-      userHandle = bskyOAuth.session.handle
+    if (bskyOAuth.session?.handle) userHandle = bskyOAuth.session.handle
+    // Lazy resolve human handle (avoid eager network on hydration)
+    if (bskyOAuth.isAuthenticated()) {
+      bskyOAuth.resolveHandle().then((h) => { if (h) userHandle = h })
     }
     ready = true
   }

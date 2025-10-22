@@ -63,30 +63,33 @@ class BskyOAuthService {
 				throw new Error('OAuth client not initialized')
 			}
 
-			// Start the OAuth flow - this will redirect the user
-			await this.client.signIn(handle, {
-				state: window.location.pathname, // Store current path to return to
+			const baseOpts = {
+				state: window.location.pathname,
 				signal: new AbortController().signal,
 				prompt: 'consent',
-				// Request fine-grained permission to create feed posts
+			}
+
+
+
+			// Try fine-grained permissions first; if AS rejects, fall back to base scope
+			const withAuthz = {
+				...baseOpts,
 				authorization_details: [
-					{
-						type: 'atproto_repo',
-						actions: ['create'],
-						identifier: 'app.bsky.feed.post',
-					},
-					{
-						type: 'atproto_repo',
-						actions: ['create'],
-						identifier: 'com.radio4000.track',
-					},
-					{
-						type: 'atproto_repo',
-						actions: ['create','delete'],
-						identifier: 'app.bsky.graph.follow',
-					},
+					{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
+					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 				],
-			})
+			}
+
+			try {
+				await this.client.signIn(handle, withAuthz)
+			} catch (e) {
+				const msg = String(e?.message || e)
+				if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata')) {
+					await this.client.signIn(handle, baseOpts)
+				} else {
+					throw e
+				}
+			}
 
 			return {
 				success: true,
@@ -101,6 +104,38 @@ class BskyOAuthService {
 					message: error.message || 'Failed to start OAuth flow'
 				}
 			}
+		}
+	}
+
+	/**
+	 * Request additional fine-grained permissions via re-consent.
+	 */
+	async requestScopes() {
+		if (!this.initialized) throw new Error('OAuth client not initialized')
+		const handle = this.session?.handle || this.session?.did
+		if (!handle) throw new Error('No session')
+		const opts = {
+			state: window.location.pathname,
+			signal: new AbortController().signal,
+			prompt: 'consent',
+			authorization_details: [
+				{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
+				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
+			],
+		}
+		return this.client.signIn(handle, opts)
+	}
+
+	/** Resolve handle lazily and update session */
+	async resolveHandle() {
+		if (!this.agent || !this.session?.did) return this.session?.handle
+		try {
+			const profile = await this.agent.getProfile({ actor: this.session.did })
+			const handle = profile.data?.handle || this.session.handle
+			this.session = { ...this.session, handle }
+			return handle
+		} catch {
+			return this.session.handle
 		}
 	}
 
@@ -235,16 +270,10 @@ class BskyOAuthService {
 			did: oauthSession.did,
 		})
 
-		// Best-effort: try to fetch the profile to get the handle; fall back to did
-		let handle = oauthSession.did
-		try {
-			const profile = await this.agent.getProfile({ actor: oauthSession.did })
-			handle = profile.data?.handle || handle
-		} catch (_) {
-			// ignore, fallback to DID
-		}
 
-		this.session = { did: oauthSession.did, handle }
+		// Avoid initial network calls that may trigger DPoP nonce handshake
+		// Use DID as placeholder; UI can resolve handle lazily if needed
+		this.session = { did: oauthSession.did, handle: oauthSession.did }
 		localStorage.setItem('bsky-oauth-did', oauthSession.did)
 	}
 }
