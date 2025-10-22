@@ -1,8 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { route, navigate, initRouter } from './router.js'
-  import TrackCreate from './TrackCreate.svelte'
-  import UserTracks from './UserTracks.svelte'
+  import MyTracks from './pages/MyTracks.svelte'
   import AuthorTracks from './pages/AuthorTracks.svelte'
   import SearchActors from './pages/SearchActors.svelte'
   import TimelineTracks from './pages/TimelineTracks.svelte'
@@ -33,13 +32,9 @@
 </nav>
 
 {#if current === '/'}
-  <h2>Save a Track</h2>
-  <TrackCreate />
-  <h2>Your Tracks</h2>
-  <UserTracks />
+  <MyTracks />
 {:else if current === '/my'}
-  <h2>Your Tracks</h2>
-  <UserTracks />
+  <MyTracks />
 {:else if current === '/author'}
   <AuthorTracks />
 {:else if current === '/timeline'}
@@ -49,4 +44,3 @@
 {:else}
   <div>Not found</div>
 {/if}
-

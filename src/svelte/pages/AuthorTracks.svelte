@@ -1,6 +1,7 @@
 <script>
   import { resolveHandle, listTracksByDid } from '../../libs/r4-service.js'
   import { parseTrackUrl } from '../../libs/url-patterns.js'
+  import FollowButton from '../components/FollowButton.svelte'
   let handle = ''
   let did = ''
   let items = []
@@ -43,8 +44,10 @@
       {/if}
     {/each}
   </ul>
+  {#if did}
+    <FollowButton actorDid={did} />
+  {/if}
   {#if cursor}
     <button on:click={more}>Load more</button>
   {/if}
 {/if}
-
