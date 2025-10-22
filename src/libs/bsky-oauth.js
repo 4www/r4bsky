@@ -9,6 +9,16 @@ class BskyOAuthService {
 		this.initialized = false
 	}
 
+	#canonicalRedirectUri() {
+		try {
+			const {origin, pathname} = window.location
+			const path = pathname.endsWith('/') ? pathname : pathname + '/'
+			return origin + path
+		} catch {
+			return undefined
+		}
+	}
+
 	async init(clientId) {
 		if (this.initialized) return
 
@@ -67,6 +77,7 @@ class BskyOAuthService {
 				state: window.location.pathname,
 				signal: new AbortController().signal,
 				prompt: 'consent',
+				redirect_uri: this.#canonicalRedirectUri(),
 			}
 
 
@@ -154,7 +165,7 @@ class BskyOAuthService {
 				return { session: null, error: null }
 			}
 
-			const { session } = await this.client.initCallback(params)
+			const { session } = await this.client.initCallback(params, this.#canonicalRedirectUri())
 			await this.#hydrateFromOAuthSession(session)
 			return { session: this.session, error: null }
 		} catch (error) {
