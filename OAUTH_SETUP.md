@@ -45,31 +45,23 @@ Edit `public/client-metadata.json` with your actual domain:
 **Important**:
 - `client_id` must be the exact URL where this JSON file is hosted
 - The file must be publicly accessible
-- The redirect URI must match your app's URL
+- The redirect URI must match your app's URL exactly (path and trailing slash).
+  - For GitHub Pages under `/r4bsky`, include both:
+    - `https://user.github.io/r4bsky`
+    - `https://user.github.io/r4bsky/`
 
-### 3. Initialize OAuth in Your App
 
-Update `main.js` to use OAuth:
+### 3. Initialize OAuth in the app
 
-```javascript
-import { bskyOAuth } from './src/libs/bsky-oauth.js'
+The app initializes OAuth at startup and computes the proper client id based on environment (loopback vs HTTPS). No extra setup required beyond `public/client-metadata.json`.
 
-// Initialize with your client_id (the URL to your client-metadata.json)
-await bskyOAuth.init('https://yourdomain.com/client-metadata.json')
-```
+### 4. Consent and permissions
 
-### 4. Update Sign-In Component
+Some servers support fine-grained repo scopes via `authorization_details`. When supported, the app requests:
+- `com.radio4000.track` actions: create
+- `app.bsky.graph.follow` actions: create, delete
 
-The sign-in component now only needs the user's handle:
-
-```javascript
-// User enters: alice.bsky.social
-// App calls:
-await bskyOAuth.signIn('alice.bsky.social')
-// User is redirected to their Bluesky instance
-// User authorizes the app
-// User is redirected back with auth token
-```
+If the server doesn’t support it, the app falls back to the default atproto scope automatically. You can re-consent at any time from the Permissions page.
 
 ## Implementation Status
 
@@ -102,22 +94,7 @@ bskyOAuth.isAuthenticated()
 
 ## Development vs Production
 
-### Development (Password-Based - Current)
-
-For quick local development without HTTPS:
-- Uses `@atproto/api` directly
-- Users enter handle + password/app-password
-- Works on localhost
-- Less secure (credentials in app)
-
-### Production (OAuth - Recommended)
-
-For deployed apps:
-- Uses `@atproto/oauth-client-browser`
-- Users only enter handle
-- Redirects to Bluesky for auth
-- Requires HTTPS
-- More secure (no credentials in app)
+The app only uses OAuth authentication (no passwords).
 
 ## Migration Path
 
@@ -178,7 +155,7 @@ export default {
 }
 ```
 
-### Option 3: Deploy to Vercel/Netlify
+### Option 3: Deploy to Vercel/Netlify/GitHub Pages
 
 Easiest for testing - just push and deploy:
 
@@ -192,12 +169,15 @@ netlify deploy
 
 ## Common Issues
 
-### "OAuth client not initialized"
-- Make sure to call `await bskyOAuth.init(clientId)` before any other methods
+### invalid_grant: The redirect_uri parameter must match
+- Ensure the path (and trailing slash) of the callback URL matches one in `redirect_uris`.
+- The app passes the same canonical redirect URL for both authorization and callback.
 
-### "Client metadata not found"
-- Verify `public/client-metadata.json` is accessible at the `client_id` URL
-- Check CORS settings if on a different domain
+### authorization_details invalid_request
+- Your AS may not support RFC 9396 yet. The app will fall back to default scope automatically.
+
+### DPoP "nonce" mismatch (401)
+- Can occur on the first request after hydration; the app avoids eager profile fetch. You can ignore transient 401s in devtools.
 
 ### "Redirect URI mismatch"
 - Ensure redirect URIs in client metadata match your app's URL exactly

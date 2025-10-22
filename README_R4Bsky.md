@@ -19,6 +19,14 @@ OAuth
   - Do not include `authorization_details_types` if your AS does not support it.
   - Ensure `redirect_uris` match your deployed path exactly (add both with and without trailing slash for GitHub Pages like `/r4bsky` and `/r4bsky/`).
 
+Routes
+- `/` timeline
+- `/#/@handle` author/my tracks
+- `/#/search` search actors
+- `/#/followers`, `/#/following` lists with pagination
+- `/#/t/:repo/:rkey` view track; `/#/t/:repo/:rkey/edit` edit track
+- `/#/permissions` grant permissions when needed
+
 Data Model
 - Custom collection: `com.radio4000.track`
   - Fields: `url` (string), `title` (string), `description?` (string), `discogsUrl?` (string), `createdAt` (string ISO)
@@ -40,3 +48,9 @@ Testing
 Notes
 - No styles are included in the Svelte templates.
 - Player integration is planned; current pages link out to providers or files directly.
+ - The player auto-advances for files; embedded providers (YouTube/Vimeo/SoundCloud) autoplay.
+
+Troubleshooting
+- GitHub Pages callback: include both `/r4bsky` and `/r4bsky/` in `redirect_uris`.
+- invalid_request on Permissions: your AS may not support authorization_details yet; the app falls back automatically.
+- Missing scopes on Timeline/Followers: use the Permissions page to re-consent.
