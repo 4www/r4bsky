@@ -1,6 +1,7 @@
 <script>
   import { parseTrackUrl } from '../../libs/url-patterns.js'
   import { deleteTrackByUri, updateTrackByUri } from '../../libs/r4-service.js'
+  import { setPlaylist, playIndex } from '../player/store.js'
   export let items = [] // [{ uri, title, url, description }]
   export let editable = false
   let message = ''
@@ -25,6 +26,10 @@
       message = e?.message || String(e)
     }
   }
+
+  function playAll(fromIdx) {
+    setPlaylist(items, fromIdx)
+  }
 </script>
 
 {#if message}<div>{message}</div>{/if}
@@ -40,6 +45,7 @@
           <button on:click={() => remove(t.uri)}>Delete</button>
         {:else}
           <a href={parseTrackUrl(t.url).url} target="_blank">{t.title || parseTrackUrl(t.url).url}</a>
+          <button on:click={() => playAll(i)}>Play</button>
         {/if}
       </li>
     {/if}
@@ -48,4 +54,3 @@
     <li>No tracks</li>
   {/if}
 </ul>
-

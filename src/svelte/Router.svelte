@@ -6,6 +6,7 @@
   import SearchActors from './pages/SearchActors.svelte'
   import TimelineTracks from './pages/TimelineTracks.svelte'
   import Followers from './pages/Followers.svelte'
+  import Player from './components/Player.svelte'
   export let userHandle = ''
   let current = '/'
   const links = [
@@ -25,14 +26,14 @@
   function logout() { dispatchEvent(new CustomEvent('logout')) }
 </script>
 
-<nav>
+  <nav>
   {#each links as [href, title]}
     <a href={'#' + href} aria-current={current === href ? 'page' : undefined}>{title}</a>
   {/each}
   <span>Logged in as <strong>{userHandle}</strong></span>
   <button on:click={logout}>Logout</button>
   <hr />
-</nav>
+  </nav>
 
 {#if current === '/'}
   <MyTracks />
@@ -51,3 +52,5 @@
 {:else}
   <div>Not found</div>
 {/if}
+
+<svelte:component this={Player} />
