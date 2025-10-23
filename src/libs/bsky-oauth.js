@@ -73,34 +73,15 @@ class BskyOAuthService {
 				throw new Error('OAuth client not initialized')
 			}
 
-			const baseOpts = {
-				state: window.location.pathname,
-				signal: new AbortController().signal,
-				prompt: 'consent',
-				redirect_uri: this.#canonicalRedirectUri(),
-			}
-
-
-
-			// Try fine-grained permissions first; if AS rejects, fall back to base scope
-			const withAuthz = {
-				...baseOpts,
-				authorization_details: [
-					{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
-					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
-				],
-			}
-
-			try {
-				await this.client.signIn(handle, withAuthz)
-			} catch (e) {
-				const msg = String(e?.message || e)
-				if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata')) {
-					await this.client.signIn(handle, baseOpts)
-				} else {
-					throw e
+				const baseOpts = {
+					state: window.location.pathname,
+					signal: new AbortController().signal,
+					prompt: 'consent',
+					redirect_uri: this.#canonicalRedirectUri(),
+					scope: 'atproto transition:generic',
 				}
-			}
+
+				await this.client.signIn(handle, baseOpts)
 
 			return {
 				success: true,
@@ -125,29 +106,14 @@ class BskyOAuthService {
 		if (!this.initialized) throw new Error('OAuth client not initialized')
 		const handle = this.session?.handle || this.session?.did
 		if (!handle) throw new Error('No session')
-		const baseOpts = {
-			state: window.location.pathname,
-			signal: new AbortController().signal,
-			prompt: 'consent',
-			redirect_uri: this.#canonicalRedirectUri(),
-		}
-		const withAuthz = {
-			...baseOpts,
-			authorization_details: [
-				{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
-				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
-			],
-		}
-		try {
-			return await this.client.signIn(handle, withAuthz)
-		} catch (e) {
-			const msg = String(e?.message || e)
-			// If the AS does not support authorization_details, retry without
-			if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata')) {
-				return await this.client.signIn(handle, baseOpts)
+			const baseOpts = {
+				state: window.location.pathname,
+				signal: new AbortController().signal,
+				prompt: 'consent',
+				redirect_uri: this.#canonicalRedirectUri(),
+				scope: 'atproto transition:generic',
 			}
-			throw e
-		}
+			return await this.client.signIn(handle, baseOpts)
 	}
 
 	/** Resolve handle lazily and update session */
