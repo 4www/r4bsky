@@ -28,45 +28,39 @@ export async function resolveHandle(handle) {
 
 export async function createTrack({url, title, description, discogs_url}) {
   const agent = assertAgent()
+  // Always save to the R4 library first (primary store)
+  const record = {
+    url,
+    title,
+    description: description || undefined,
+    discogsUrl: discogs_url || undefined,
+    createdAt: new Date().toISOString(),
+  }
   try {
-    // Try feed post first for broader compatibility
-    const textParts = [title]
-    if (description) textParts.push('', description)
-    textParts.push('', url)
-    const text = textParts.join('\n')
-    const res = await agent.post({ text, createdAt: new Date().toISOString() })
-    return res
-  } catch (e) {
-    const msg = String(e?.message || e)
-    if (msg.includes('repo:app.bsky.feed.post?action=create')) {
-      const err3 = new Error('Missing permission to create feed posts. Visit Settings to manage permissions.')
-      err3.code = 'scope-missing'
-      throw err3
-    }
-    // Try custom record as a secondary option if feed post not allowed, but custom record may still work
+    const saved = await agent.com.atproto.repo.createRecord({
+      repo: agent.accountDid,
+      collection: R4_COLLECTION,
+      record,
+    })
+    // Best-effort: post to feed if permitted; ignore scope errors
     try {
-      const record = {
-        url,
-        title,
-        description: description || undefined,
-        discogsUrl: discogs_url || undefined,
-        createdAt: new Date().toISOString(),
-      }
-      const res2 = await agent.com.atproto.repo.createRecord({
-        repo: agent.accountDid,
-        collection: R4_COLLECTION,
-        record,
-      })
-      return res2
-    } catch (err) {
-      const msg2 = String(err?.message || err)
-      if (msg2.includes('repo:com.radio4000.track?action=create')) {
-        const err2 = new Error('Missing permission to save to library. Visit Settings to manage permissions.')
-        err2.code = 'scope-missing'
-        throw err2
-      }
-      throw err
+      const textParts = [title]
+      if (description) textParts.push('', description)
+      textParts.push('', url)
+      const text = textParts.join('\n')
+      await agent.post({ text, createdAt: new Date().toISOString() })
+    } catch (_) {
+      // ignore feed-post scope errors; library save succeeded
     }
+    return saved
+  } catch (err) {
+    const msg = String(err?.message || err)
+    if (msg.includes('repo:com.radio4000.track?action=create')) {
+      const e2 = new Error('Missing permission to save to library. Open Settings to re-consent.')
+      e2.code = 'scope-missing'
+      throw e2
+    }
+    throw err
   }
 }
 
