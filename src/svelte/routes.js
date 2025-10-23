@@ -11,8 +11,8 @@ import { compile } from './routing/match.js'
 export const routes = [
   { pattern: '/', component: Home },
   { pattern: '/search', component: SearchActors },
-  { pattern: '/followers', component: Followers },
-  { pattern: '/following', component: Followers },
+  { pattern: '/followers', component: Followers, props: { mode: 'followers' } },
+  { pattern: '/following', component: Followers, props: { mode: 'following' } },
   { pattern: '/permissions', component: Permissions },
   { pattern: '/@:handle', component: AuthorTracks },
   { pattern: '/t/:repo/:rkey', component: TrackView },

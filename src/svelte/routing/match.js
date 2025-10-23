@@ -26,8 +26,7 @@ export function compile(pattern) {
 export function resolve(routes, path) {
   for (const r of routes) {
     const params = r.match(path)
-    if (params) return { component: r.component, params }
+    if (params) return { component: r.component, params, props: r.props || {} }
   }
   return null
 }
-

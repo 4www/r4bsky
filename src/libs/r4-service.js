@@ -1,12 +1,18 @@
 import {bskyOAuth} from './bsky-oauth.js'
 import {parseTrackUrl} from './url-patterns.js'
-import { AtUri } from '@atproto/api'
+import { Agent, AtUri } from '@atproto/api'
 
 export const R4_COLLECTION = 'com.radio4000.track'
 
 function assertAgent() {
   if (!bskyOAuth.agent) throw new Error('Not authenticated')
   return bskyOAuth.agent
+}
+
+let publicAgent
+function getPublicAgent() {
+  if (!publicAgent) publicAgent = new Agent({ service: 'https://api.bsky.app' })
+  return publicAgent
 }
 
 export async function getMyDid() {
@@ -22,19 +28,46 @@ export async function resolveHandle(handle) {
 
 export async function createTrack({url, title, description, discogs_url}) {
   const agent = assertAgent()
-  const record = {
-    url,
-    title,
-    description: description || undefined,
-    discogsUrl: discogs_url || undefined,
-    createdAt: new Date().toISOString(),
+  try {
+    // Try feed post first for broader compatibility
+    const textParts = [title]
+    if (description) textParts.push('', description)
+    textParts.push('', url)
+    const text = textParts.join('\n')
+    const res = await agent.post({ text, createdAt: new Date().toISOString() })
+    return res
+  } catch (e) {
+    const msg = String(e?.message || e)
+    if (msg.includes('repo:app.bsky.feed.post?action=create')) {
+      const err3 = new Error('Missing permission to create feed posts. Visit Permissions to re-consent.')
+      err3.code = 'scope-missing'
+      throw err3
+    }
+    // Try custom record as a secondary option if feed post not allowed, but custom record may still work
+    try {
+      const record = {
+        url,
+        title,
+        description: description || undefined,
+        discogsUrl: discogs_url || undefined,
+        createdAt: new Date().toISOString(),
+      }
+      const res2 = await agent.com.atproto.repo.createRecord({
+        repo: agent.accountDid,
+        collection: R4_COLLECTION,
+        record,
+      })
+      return res2
+    } catch (err) {
+      const msg2 = String(err?.message || err)
+      if (msg2.includes('repo:com.radio4000.track?action=create')) {
+        const err2 = new Error('Missing permission to save to library. Visit Permissions to re-consent.')
+        err2.code = 'scope-missing'
+        throw err2
+      }
+      throw err
+    }
   }
-  const res = await agent.com.atproto.repo.createRecord({
-    repo: agent.accountDid,
-    collection: R4_COLLECTION,
-    record,
-  })
-  return res
 }
 
 export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
@@ -54,13 +87,13 @@ export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
 
 // Social helpers
 export async function searchActors(query, {limit = 25} = {}) {
-  const agent = assertAgent()
+  const agent = getPublicAgent()
   const res = await agent.searchActors({ q: query, limit })
   return res.data?.actors || []
 }
 
 export async function getFollowers(did, {limit = 50, cursor} = {}) {
-  const agent = assertAgent()
+  const agent = getPublicAgent()
   try {
     const res = await agent.getFollowers({ actor: did, limit, cursor })
     return { followers: res.data?.followers || [], cursor: res.data?.cursor }
@@ -70,7 +103,7 @@ export async function getFollowers(did, {limit = 50, cursor} = {}) {
 }
 
 export async function getFollows(did, {limit = 50, cursor} = {}) {
-  const agent = assertAgent()
+  const agent = getPublicAgent()
   try {
     const res = await agent.getFollows({ actor: did, limit, cursor })
     return { follows: res.data?.follows || [], cursor: res.data?.cursor }
@@ -105,8 +138,7 @@ export async function findFollowUri(subjectDid) {
 
 // Timeline mix: gather latest tracks from followed accounts
 export async function timelineTracks({limitPerActor = 10} = {}) {
-  const agent = assertAgent()
-  const did = agent.accountDid
+  const did = assertAgent().accountDid
   const {follows} = await getFollows(did, {limit: 100})
   const actorDids = follows.map((f) => f.did)
   const chunks = await Promise.all(

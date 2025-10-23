@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { getMyDid, getFollowers, getFollows } from '../../libs/r4-service.js'
-  let mode = 'followers' // or 'following'
+  export let mode = 'followers' // or 'following'
   let items = []
   let cursor = undefined
   let error = ''

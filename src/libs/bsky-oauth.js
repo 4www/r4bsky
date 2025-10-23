@@ -86,6 +86,7 @@ class BskyOAuthService {
 			const withAuthz = {
 				...baseOpts,
 				authorization_details: [
+					{ type: 'atproto_repo', actions: ['create'], identifier: 'app.bsky.feed.post' },
 					{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
 					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 				],
@@ -134,6 +135,7 @@ class BskyOAuthService {
 		const withAuthz = {
 			...baseOpts,
 			authorization_details: [
+				{ type: 'atproto_repo', actions: ['create'], identifier: 'app.bsky.feed.post' },
 				{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
 				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 			],
@@ -295,10 +297,39 @@ class BskyOAuthService {
 		})
 
 
-		// Avoid initial network calls that may trigger DPoP nonce handshake
-		// Use DID as placeholder; UI can resolve handle lazily if needed
-		this.session = { did: oauthSession.did, handle: oauthSession.did }
+
+		// Set initial handle from cache if available, else DID placeholder
+		const cached = localStorage.getItem(`bsky-handle:${oauthSession.did}`)
+		const initialHandle = cached || oauthSession.did
+		this.session = { did: oauthSession.did, handle: initialHandle }
 		localStorage.setItem('bsky-oauth-did', oauthSession.did)
+	}
+
+	/** Resolve handle lazily and update session */
+	async resolveHandle() {
+		if (!this.session?.did) return this.session?.handle
+		const fetchHandle = async () => {
+			// Use public agent to avoid DPoP handshake issues
+			const publicAgent = new Agent({ service: 'https://api.bsky.app' })
+			const profile = await publicAgent.getProfile({ actor: this.session.did })
+			const handle = profile.data?.handle || this.session.handle
+			if (handle && handle !== this.session.handle) {
+				this.session = { ...this.session, handle }
+				localStorage.setItem(`bsky-handle:${this.session.did}`, handle)
+			}
+			return handle
+		}
+		try {
+			return await fetchHandle()
+		} catch (_) {
+			// Retry with small delay
+			await new Promise((r) => setTimeout(r, 500))
+			try {
+				return await fetchHandle()
+			} catch {
+				return this.session.handle
+			}
+		}
 	}
 }
 

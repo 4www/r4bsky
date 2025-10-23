@@ -7,7 +7,8 @@
   export let userHandle = ''
   let current = '/'
   $: myPath = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/'
-  const links = [
+  let links = []
+  $: links = [
     ['/', 'Home'],
     [myPath, 'My Tracks'],
     ['/search', 'Search'],
@@ -38,7 +39,7 @@
   {#key current}
     {#await Promise.resolve(resolve(routes, current)) then m}
       {#if m}
-        <svelte:component this={m.component} {...m.params}/>
+        <svelte:component this={m.component} {...m.props} {...m.params}/>
       {:else}
         <div>Not found</div>
       {/if}
