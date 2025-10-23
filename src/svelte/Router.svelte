@@ -6,7 +6,6 @@
   import { resolve } from './routing/match.js'
   export let userHandle = ''
   let current = '/'
-  export let userHandle = ''
   $: myPath = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/'
   const links = [
     ['/', 'Home'],

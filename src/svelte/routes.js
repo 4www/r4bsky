@@ -1,4 +1,5 @@
 import TimelineTracks from './pages/TimelineTracks.svelte'
+import Home from './pages/Home.svelte'
 import AuthorTracks from './pages/AuthorTracks.svelte'
 import SearchActors from './pages/SearchActors.svelte'
 import Followers from './pages/Followers.svelte'
@@ -8,7 +9,7 @@ import TrackEdit from './pages/TrackEdit.svelte'
 import { compile } from './routing/match.js'
 
 export const routes = [
-  { pattern: '/', component: TimelineTracks },
+  { pattern: '/', component: Home },
   { pattern: '/search', component: SearchActors },
   { pattern: '/followers', component: Followers },
   { pattern: '/following', component: Followers },
