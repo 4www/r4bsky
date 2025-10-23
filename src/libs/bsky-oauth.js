@@ -12,7 +12,15 @@ class BskyOAuthService {
 	#canonicalRedirectUri() {
 		try {
 			const {origin, pathname} = window.location
-			const path = pathname.endsWith('/') ? pathname : pathname + '/'
+			let path = pathname
+			if (!path.endsWith('/')) {
+				if (path.endsWith('/index.html')) {
+					path = path.slice(0, -('/index.html'.length))
+					if (!path.endsWith('/')) path = path + '/'
+				} else {
+					path = path + '/'
+				}
+			}
 			return origin + path
 		} catch {
 			return undefined
@@ -73,11 +81,13 @@ class BskyOAuthService {
 				throw new Error('OAuth client not initialized')
 			}
 
+				const redirectUri = this.#canonicalRedirectUri()
+				try { localStorage.setItem('bsky-oauth-redirect', redirectUri || '') } catch {}
 				const baseOpts = {
 					state: window.location.pathname,
 					signal: new AbortController().signal,
 					prompt: 'consent',
-					redirect_uri: this.#canonicalRedirectUri(),
+					redirect_uri: redirectUri,
 				}
 
 				// Try fine-grained permissions first; if AS rejects, fall back to base scope
@@ -178,7 +188,10 @@ class BskyOAuthService {
 				return { session: null, error: null }
 			}
 
-			const { session } = await this.client.initCallback(params, this.#canonicalRedirectUri())
+			let savedRedirect
+			try { savedRedirect = localStorage.getItem('bsky-oauth-redirect') || undefined } catch {}
+			const { session } = await this.client.initCallback(params, savedRedirect || this.#canonicalRedirectUri())
+			try { localStorage.removeItem('bsky-oauth-redirect') } catch {}
 			await this.#hydrateFromOAuthSession(session)
 			return { session: this.session, error: null }
 		} catch (error) {
