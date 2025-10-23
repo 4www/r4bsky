@@ -9,9 +9,11 @@
   let handle = ''
 
   async function initOAuth() {
-    let clientId = import.meta.env && import.meta.env.VITE_CLIENT_ID
-      ? import.meta.env.VITE_CLIENT_ID
-      : (window.location.protocol === 'https:'
+    let stored = null
+    try { stored = localStorage.getItem('bsky-client-id') || null } catch {}
+    let clientId = stored
+      || (import.meta.env && import.meta.env.VITE_CLIENT_ID ? import.meta.env.VITE_CLIENT_ID : null)
+      || (window.location.protocol === 'https:'
         ? new URL('client-metadata.json', window.location.href).href
         : buildLoopbackClientId(window.location))
     await bskyOAuth.init(clientId)

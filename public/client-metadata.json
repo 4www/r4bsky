@@ -9,7 +9,6 @@
     "https://c3.risk-tritone.ts.net",
     "https://c3.risk-tritone.ts.net/"
   ],
-  "authorization_details_types": ["atproto_repo"],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],

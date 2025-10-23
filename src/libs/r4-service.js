@@ -9,6 +9,23 @@ function assertAgent() {
   return bskyOAuth.agent
 }
 
+async function withDpopRetry(fn) {
+  try {
+    return await fn()
+  } catch (e) {
+    const msg = String(e?.message || e)
+    if (msg.includes('use_dpop_nonce') || msg.includes('DPoP')) {
+      // Retry once after nonce update
+      try {
+        return await fn()
+      } catch (e2) {
+        throw e2
+      }
+    }
+    throw e
+  }
+}
+
 let publicAgent
 function getPublicAgent() {
   if (!publicAgent) publicAgent = new Agent({ service: 'https://api.bsky.app' })
@@ -37,15 +54,15 @@ export async function createTrack({url, title, description, discogs_url}) {
     createdAt: new Date().toISOString(),
   }
   try {
-    return await agent.com.atproto.repo.createRecord({
+    return await withDpopRetry(() => agent.com.atproto.repo.createRecord({
       repo: agent.accountDid,
       collection: R4_COLLECTION,
       record,
-    })
+    }))
   } catch (err) {
     const msg = String(err?.message || err)
     if (msg.includes('repo:com.radio4000.track?action=create')) {
-      const e2 = new Error('Missing permission to save to library. Open Settings to re-consent.')
+      const e2 = new Error('Missing permission to save to library. Open Settings to re-consent. If on localhost, set a HTTPS client metadata URL and re-login.')
       e2.code = 'scope-missing'
       throw e2
     }
@@ -184,22 +201,22 @@ export async function updateTrackByUri(uri, changes) {
   const repo = at.hostname
   const collection = at.collection || R4_COLLECTION
   const rkey = at.rkey
-  const existing = await agent.com.atproto.repo.getRecord({
+  const existing = await withDpopRetry(() => agent.com.atproto.repo.getRecord({
     repo,
     collection,
     rkey,
-  })
+  }))
   const record = existing.data?.value || {}
   const updated = {
     ...record,
     ...changes,
   }
-  return agent.com.atproto.repo.putRecord({
+  return withDpopRetry(() => agent.com.atproto.repo.putRecord({
     repo,
     collection,
     rkey,
     record: updated,
-  })
+  }))
 }
 
 export async function getTrackByUri(uri) {
@@ -208,7 +225,7 @@ export async function getTrackByUri(uri) {
   const repo = at.hostname
   const collection = at.collection || R4_COLLECTION
   const rkey = at.rkey
-  const res = await agent.com.atproto.repo.getRecord({ repo, collection, rkey })
+  const res = await withDpopRetry(() => agent.com.atproto.repo.getRecord({ repo, collection, rkey }))
   const value = res.data?.value || {}
   return { uri, ...value }
 }

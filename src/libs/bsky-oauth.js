@@ -78,10 +78,27 @@ class BskyOAuthService {
 					signal: new AbortController().signal,
 					prompt: 'consent',
 					redirect_uri: this.#canonicalRedirectUri(),
-					scope: 'atproto transition:generic',
 				}
 
-				await this.client.signIn(handle, baseOpts)
+				// Try fine-grained permissions first; if AS rejects, fall back to base scope
+				const withAuthz = {
+					...baseOpts,
+					authorization_details: [
+						{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
+						{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
+					],
+				}
+
+				try {
+					await this.client.signIn(handle, withAuthz)
+				} catch (e) {
+					const msg = String(e?.message || e)
+					if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata') || msg.includes('invalid_scope')) {
+						await this.client.signIn(handle, baseOpts)
+					} else {
+						throw e
+					}
+				}
 
 			return {
 				success: true,
@@ -111,9 +128,23 @@ class BskyOAuthService {
 				signal: new AbortController().signal,
 				prompt: 'consent',
 				redirect_uri: this.#canonicalRedirectUri(),
-				scope: 'atproto transition:generic',
 			}
-			return await this.client.signIn(handle, baseOpts)
+			const withAuthz = {
+				...baseOpts,
+				authorization_details: [
+					{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
+					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
+				],
+			}
+			try {
+				return await this.client.signIn(handle, withAuthz)
+			} catch (e) {
+				const msg = String(e?.message || e)
+				if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata') || msg.includes('invalid_scope')) {
+					return await this.client.signIn(handle, baseOpts)
+				}
+				throw e
+			}
 	}
 
 	/** Resolve handle lazily and update session */
