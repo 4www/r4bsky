@@ -16,8 +16,8 @@
     }
   }
 
-  function openAuthor(handle) {
-    location.hash = `#/author?handle=${encodeURIComponent(handle)}`
+  function authorHref(handle) {
+    return `#/@${encodeURIComponent(handle)}`
   }
 </script>
 
@@ -30,7 +30,7 @@
 <ul>
   {#each results as a}
     <li>
-      <button on:click={() => openAuthor(a.handle)}>{a.handle}</button>
+      <a href={authorHref(a.handle)}>{a.handle}</a>
     </li>
   {/each}
   </ul>

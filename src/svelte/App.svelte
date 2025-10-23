@@ -17,10 +17,20 @@
     // Lazy resolve human handle (avoid eager network on hydration)
     if (bskyOAuth.isAuthenticated()) {
       bskyOAuth.resolveHandle().then((_) => { session.refresh() })
-      // Ensure we land on a known route after login
-      const allowed = new Set(['/', '/timeline', '/add', '/search', '/followers', '/following', '/settings'])
+      // Keep current route unless clearly invalid; allow dynamic /@ and /t paths
       const hashPath = (location.hash || '').replace(/^#/, '') || '/'
-      if (!allowed.has(hashPath)) {
+      const isAllowed = (
+        hashPath === '/' ||
+        hashPath === '/timeline' ||
+        hashPath === '/add' ||
+        hashPath === '/search' ||
+        hashPath === '/followers' ||
+        hashPath === '/following' ||
+        hashPath === '/settings' ||
+        hashPath.startsWith('/@') ||
+        hashPath.startsWith('/t/')
+      )
+      if (!isAllowed) {
         const me = bskyOAuth.session?.handle || bskyOAuth.session?.did
         if (me) location.hash = `#/@${encodeURIComponent(me)}`
         else location.hash = '#/'
