@@ -10,24 +10,28 @@
   let initial = { url: '', title: '', description: '', discogs_url: '' }
   let uri = ''
 
-  $: (async () => {
-    // build uri from either repo+rkey or handle+rkey
-    let didOrRepo = repo
-    if (!didOrRepo && handle) {
-      try { didOrRepo = await resolveHandle(handle) } catch {}
-    }
-    if (didOrRepo && rkey) {
-      uri = `at://${didOrRepo}/com.radio4000.track/${rkey}`
-    }
-  })()
+  $effect(() => {
+    ;(async () => {
+      // build uri from either repo+rkey or handle+rkey
+      let didOrRepo = repo
+      if (!didOrRepo && handle) {
+        try { didOrRepo = await resolveHandle(handle) } catch {}
+      }
+      if (didOrRepo && rkey) {
+        uri = `at://${didOrRepo}/com.radio4000.track/${rkey}`
+      }
+    })()
+  })
 
-  $: (async () => {
+  $effect(() => {
     if (!uri) return
-    try {
-      const rec = await getTrackByUri(uri)
-      initial = { url: rec.url || '', title: rec.title || '', description: rec.description || '', discogs_url: rec.discogsUrl || '' }
-    } catch (_) {}
-  })()
+    ;(async () => {
+      try {
+        const rec = await getTrackByUri(uri)
+        initial = { url: rec.url || '', title: rec.title || '', description: rec.description || '', discogs_url: rec.discogsUrl || '' }
+      } catch (_) {}
+    })()
+  })
 
   // Prefill form from URL query params (optional) or leave empty; in a full app we'd fetch the record
   function close() {

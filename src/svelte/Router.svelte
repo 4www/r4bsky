@@ -6,11 +6,10 @@
   import { resolve } from './routing/match.js'
   import { session } from './state/session.js'
   let current = '/'
-  $: userHandle = $session.handle || ''
-  $: myPath = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/'
-  let links = []
-  $: links = (() => {
-    const authed = !!$session?.did
+  const userHandle = $derived(($session && $session.handle) || '')
+  const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/')
+  const links = $derived(() => {
+    const authed = !!($session && $session.did)
     if (authed) {
       const arr = [
         ['/', 'Home'],
@@ -28,7 +27,7 @@
       ['/search', 'Search'],
       ['/settings', 'Settings'],
     ]
-  })()
+  })
 
   onMount(() => {
     initRouter()

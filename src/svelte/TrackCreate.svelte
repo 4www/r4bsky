@@ -8,9 +8,8 @@
   let discogs_url = ''
   let status = ''
   let savedUri = ''
-  let savedAt = null
   import { parseAtUri } from '../libs/track-uri.js'
-  $: savedAt = savedUri ? parseAtUri(savedUri) : null
+  const savedAt = $derived(savedUri ? parseAtUri(savedUri) : null)
 
   async function submit(e) {
     e.preventDefault()
@@ -39,14 +38,16 @@
     }
   }
 
-  $: (async () => {
+  $effect(() => {
     if (url && !title) {
-      try {
-        const data = await fetchOEmbed(url)
-        if (data?.title && !title) title = data.title
-      } catch (_) {}
+      ;(async () => {
+        try {
+          const data = await fetchOEmbed(url)
+          if (data?.title && !title) title = data.title
+        } catch (_) {}
+      })()
     }
-  })()
+  })
 </script>
 
 <form on:submit={submit}>

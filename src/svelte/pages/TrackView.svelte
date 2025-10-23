@@ -4,8 +4,7 @@
   import { setPlaylist } from '../player/store.js'
   export let repo
   export let rkey
-  let item
-  $: item = item || { url: `at://${repo}/${rkey}`, title: rkey }
+  const item = $derived({ url: `at://${repo}/${rkey}`, title: rkey })
   function play() { setPlaylist([item], 0) }
 </script>
 
@@ -15,4 +14,3 @@
   <div>Key: {rkey}</div>
   <button on:click={play}>Play</button>
 </div>
-

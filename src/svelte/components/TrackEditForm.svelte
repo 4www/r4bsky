@@ -10,13 +10,15 @@
   let prefilled = false
 
   // Prefill once when initial arrives (from async load)
-  $: if (!prefilled && initial && (initial.url || initial.title || initial.description || initial.discogs_url || initial.discogsUrl)) {
-    url = initial.url || ''
-    title = initial.title || ''
-    description = initial.description || ''
-    discogs_url = initial.discogs_url || initial.discogsUrl || ''
-    prefilled = true
-  }
+  $effect(() => {
+    if (!prefilled && initial && (initial.url || initial.title || initial.description || initial.discogs_url || initial.discogsUrl)) {
+      url = initial.url || ''
+      title = initial.title || ''
+      description = initial.description || ''
+      discogs_url = initial.discogs_url || initial.discogsUrl || ''
+      prefilled = true
+    }
+  })
 
   async function save(e) {
     e.preventDefault()

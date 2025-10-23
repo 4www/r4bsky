@@ -8,7 +8,7 @@
   let items = []
   let cursor = undefined
   let status = ''
-  $: context = did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' }
+  const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' })
 
   async function loadAuthor(e) {
     e?.preventDefault()

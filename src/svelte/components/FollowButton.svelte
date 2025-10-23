@@ -4,14 +4,16 @@
   let followUri = null
   let error = ''
 
-  $: (async () => {
+  $effect(() => {
     if (!actorDid) return
-    try {
-      followUri = await findFollowUri(actorDid)
-    } catch (e) {
-      error = e?.message || String(e)
-    }
-  })()
+    ;(async () => {
+      try {
+        followUri = await findFollowUri(actorDid)
+      } catch (e) {
+        error = e?.message || String(e)
+      }
+    })()
+  })
 
   async function toggle() {
     error = ''
@@ -31,4 +33,3 @@
 
 <button on:click={toggle}>{followUri ? 'Unfollow' : 'Follow'}</button>
 {#if error}<div>{error}</div>{/if}
-
