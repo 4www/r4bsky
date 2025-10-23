@@ -11,6 +11,7 @@
   let links = []
   $: links = [
     ['/', 'Home'],
+    ['/add', 'Add'],
     [myPath, userHandle ? `@${userHandle}` : '@me'],
     ['/search', 'Search'],
     ['/following', 'Following'],

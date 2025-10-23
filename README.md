@@ -29,6 +29,7 @@ npm test
 
 Routing
 - `/` — Timeline (followed users’ tracks)
+- `/#/add` — Add a track
 - `/#/@alice.bsky.social` — Author/My tracks
 - `/#/search` — Search actors
 - `/#/followers`, `/#/following` — Lists, with pagination

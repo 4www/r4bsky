@@ -21,6 +21,7 @@ OAuth
 
 Routes
 - `/` timeline
+- `/#/add` add a track
 - `/#/@handle` author/my tracks
 - `/#/search` search actors
 - `/#/followers`, `/#/following` lists with pagination
