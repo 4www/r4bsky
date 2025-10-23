@@ -7,6 +7,10 @@
   let description = ''
   let discogs_url = ''
   let status = ''
+  let savedUri = ''
+  let savedAt = null
+  import { parseAtUri } from '../libs/track-uri.js'
+  $: savedAt = savedUri ? parseAtUri(savedUri) : null
 
   async function submit(e) {
     e.preventDefault()
@@ -23,7 +27,8 @@
           }
         } catch (_) {}
       }
-      await createTrack({ url, title, description: fullDescription, discogs_url })
+      const res = await createTrack({ url, title, description: fullDescription, discogs_url })
+      savedUri = res?.data?.uri || res?.uri || ''
       url = ''
       title = ''
       description = ''
@@ -62,6 +67,14 @@
     <input type="url" bind:value={discogs_url} placeholder="https://www.discogs.com/release/..." />
   </label>
   <button type="submit">Save</button>
-  {#if status}<div>{status}</div>{/if}
+  {#if status}
+    <div>{status}
+      {#if savedAt}
+        <div>
+          <a href={`#/t/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`}>Open track</a>
+        </div>
+      {/if}
+    </div>
+  {/if}
   
 </form>

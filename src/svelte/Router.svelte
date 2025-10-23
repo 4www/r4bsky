@@ -18,15 +18,12 @@
     ['/followers', 'Followers'],
     ['/settings', 'Settings'],
   ]
-  import { createEventDispatcher } from 'svelte'
-  const dispatch = createEventDispatcher()
 
   onMount(() => {
     initRouter()
     const unsub = route.subscribe((r) => (current = r))
     return () => unsub()
   })
-  function logout() { dispatch('logout') }
 </script>
 
   <nav>
@@ -34,7 +31,6 @@
     <a href={'#' + href} aria-current={current === href ? 'page' : undefined}>{title}</a>
   {/each}
   <span>Logged in as <strong>{userHandle}</strong></span>
-  <button on:click={logout}>Logout</button>
   <hr />
   </nav>
 

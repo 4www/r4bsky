@@ -72,20 +72,37 @@ export async function createTrack({url, title, description, discogs_url}) {
 
 export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
   // Use authenticated agent for own repo; public appview for others
-  let agent
+  let useAuth = false
+  let my
   try {
-    const my = assertAgent()
-    agent = (my.accountDid === did || my.did === did) ? my : getPublicAgent()
-  } catch {
-    agent = getPublicAgent()
+    my = assertAgent()
+    useAuth = (my.accountDid === did || my.did === did)
+  } catch {}
+  async function fetchWith(agent) {
+    return agent.com.atproto.repo.listRecords({
+      repo: did,
+      collection: R4_COLLECTION,
+      limit,
+      cursor,
+      reverse: true,
+    })
   }
-  const res = await agent.com.atproto.repo.listRecords({
-    repo: did,
-    collection: R4_COLLECTION,
-    limit,
-    cursor,
-    reverse: true,
-  })
+  let res
+  try {
+    res = await fetchWith(useAuth ? my : getPublicAgent())
+  } catch (e) {
+    const msg = String(e?.message || e)
+    // Fallback: try with authenticated agent if public appview returns 404/not found
+    if (!useAuth) {
+      try {
+        res = await fetchWith(assertAgent())
+      } catch (e2) {
+        throw e2
+      }
+    } else {
+      throw e
+    }
+  }
   const items = (res.data?.records || []).map((r) => ({uri: r.uri, cid: r.cid, rkey: r.uri?.split('/').pop(), ...r.value}))
   // Only keep items that have a parsable URL
   const tracks = items.filter((it) => parseTrackUrl(it.url))
