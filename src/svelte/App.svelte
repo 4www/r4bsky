@@ -37,6 +37,7 @@
   async function signIn() {
     if (!handle) return
     await bskyOAuth.signIn(handle)
+    session.refresh()
   }
 
   async function signOut() {
@@ -48,7 +49,7 @@
 {#if !ready}
   <div>Loading…</div>
 {:else}
-  {#if !bskyOAuth.isAuthenticated()}
+  {#if !$session?.did}
     <section>
       <h2>Sign in with Bluesky</h2>
       <form on:submit|preventDefault={signIn}>
