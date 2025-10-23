@@ -32,6 +32,22 @@ function getPublicAgent() {
   return publicAgent
 }
 
+// Resolve a DID to its PDS endpoint via PLC directory and cache it
+const pdsCache = new Map()
+async function getPdsForDid(did) {
+  if (pdsCache.has(did)) return pdsCache.get(did)
+  const url = `https://plc.directory/${encodeURIComponent(did)}`
+  const res = await fetch(url, { headers: { accept: 'application/json' } })
+  if (!res.ok) throw new Error(`Failed to resolve PDS for ${did}`)
+  const doc = await res.json()
+  const services = doc?.service || []
+  const pds = services.find((s) => (s?.id === '#atproto_pds' || /atproto.*pds/i.test(s?.type)) && (s?.serviceEndpoint || s?.endpoint))
+  const endpoint = pds?.serviceEndpoint || pds?.endpoint
+  if (!endpoint) throw new Error(`No PDS endpoint in DID doc for ${did}`)
+  pdsCache.set(did, endpoint)
+  return endpoint
+}
+
 export async function getMyDid() {
   const agent = assertAgent()
   return agent.did
@@ -94,10 +110,18 @@ export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
     const msg = String(e?.message || e)
     // Fallback: try with authenticated agent if public appview returns 404/not found
     if (!useAuth) {
+      // If appview fails, try direct PDS endpoint via PLC resolution
       try {
-        res = await fetchWith(assertAgent())
+        const pds = await getPdsForDid(did)
+        const remote = new Agent({ service: pds })
+        res = await fetchWith(remote)
       } catch (e2) {
-        throw e2
+        // As a last resort, try the authenticated agent (may work if your PDS can proxy)
+        try {
+          res = await fetchWith(assertAgent())
+        } catch (_) {
+          throw e2
+        }
       }
     } else {
       throw e

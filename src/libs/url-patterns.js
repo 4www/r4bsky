@@ -100,14 +100,15 @@ export function buildEmbedUrl(meta, {autoplay = true} = {}) {
   if (!meta) return null
   const ap = autoplay ? 1 : 0
   if (meta.provider === 'youtube' && meta.id) {
-    return `https://www.youtube.com/embed/${meta.id}?autoplay=${ap}`
+    const origin = encodeURIComponent(window.location.origin)
+    return `https://www.youtube.com/embed/${meta.id}?autoplay=${ap}&enablejsapi=1&origin=${origin}`
   }
   if (meta.provider === 'vimeo' && meta.id) {
-    return `https://player.vimeo.com/video/${meta.id}?autoplay=${ap}`
+    return `https://player.vimeo.com/video/${meta.id}?autoplay=${ap}&api=1&player_id=r4player`
   }
   if (meta.provider === 'soundcloud') {
     const url = encodeURIComponent(meta.url)
-    return `https://w.soundcloud.com/player/?url=${url}&auto_play=${autoplay ? 'true' : 'false'}`
+    return `https://w.soundcloud.com/player/?url=${url}&auto_play=${autoplay ? 'true' : 'false'}&api=true&player_id=r4player`
   }
   return null
 }

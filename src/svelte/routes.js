@@ -11,6 +11,7 @@ import { compile } from './routing/match.js'
 
 export const routes = [
   { pattern: '/', component: Home },
+  { pattern: '/timeline', component: TimelineTracks },
   { pattern: '/search', component: SearchActors },
   { pattern: '/add', component: TrackCreate },
   { pattern: '/followers', component: Followers, props: { mode: 'followers' } },

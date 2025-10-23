@@ -6,7 +6,6 @@
   import { session } from './state/session.js'
 
   let ready = false
-  let handle = ''
 
   async function initOAuth() {
     const clientId = window.location.protocol === 'https:'
@@ -15,6 +14,15 @@
     await bskyOAuth.init(clientId)
     // Ensure OAuth callback is processed (in case client.init didn't hydrate)
     try { await bskyOAuth.handleCallback() } catch {}
+    // Try restoring existing session
+    try {
+      if (!bskyOAuth.session?.did) {
+        const did = bskyOAuth.getStoredDid && bskyOAuth.getStoredDid()
+        if (did) {
+          await bskyOAuth.restoreSession(did)
+        }
+      }
+    } catch {}
     // handleCallback not needed if client.init() already processed
     // Lazy resolve human handle (avoid eager network on hydration)
     if (bskyOAuth.isAuthenticated()) {
@@ -46,33 +54,11 @@
     initOAuth()
   })
 
-  async function signIn() {
-    if (!handle) return
-    await bskyOAuth.signIn(handle)
-    session.refresh()
-  }
-
-  async function signOut() {
-    await bskyOAuth.signOut()
-    session.refresh()
-  }
+  async function signOut() { await bskyOAuth.signOut(); session.refresh() }
 </script>
 
 {#if !ready}
   <div>Loading…</div>
 {:else}
-  {#if !$session?.did}
-    <section>
-      <h2>Sign in with Bluesky</h2>
-      <form on:submit|preventDefault={signIn}>
-        <label>
-          Handle
-          <input type="text" bind:value={handle} placeholder="your-handle.bsky.social" required />
-        </label>
-        <button type="submit">Sign in</button>
-      </form>
-    </section>
-  {:else}
-    <Router on:logout={signOut} />
-  {/if}
+  <Router on:logout={signOut} />
 {/if}

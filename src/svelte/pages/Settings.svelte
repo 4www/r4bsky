@@ -2,6 +2,7 @@
   import { bskyOAuth } from '../../libs/bsky-oauth.js'
   import { session } from '../state/session.js'
   let working = false
+  let handle = ''
   async function managePermissions() {
     try {
       working = true
@@ -20,4 +21,14 @@
 <div>
   <div>Logged in as: {$session?.handle || $session?.did}</div>
   <button disabled={working} on:click={managePermissions}>Manage permissions</button>
+  {#if !$session?.did}
+    <h3>Sign in</h3>
+    <form on:submit|preventDefault={async () => { if (handle) { await bskyOAuth.signIn(handle); session.refresh() } }}>
+      <label>
+        Handle
+        <input type="text" bind:value={handle} placeholder="your-handle.bsky.social" />
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  {/if}
 </div>
