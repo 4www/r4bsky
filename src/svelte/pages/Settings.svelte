@@ -32,9 +32,9 @@
 <h2>Settings</h2>
 <div>
   <div>Logged in as: {$session?.handle || $session?.did}</div>
-  <button disabled={working} on:click={managePermissions}>Manage permissions</button>
+  <svelte:component this={(await import('../ui/Button.svelte')).default} disabled={working} on:click={managePermissions}>Manage permissions</svelte:component>
   {#if $session?.did}
-    <button disabled={working} on:click={signOut}>Logout</button>
+    <svelte:component this={(await import('../ui/Button.svelte')).default} disabled={working} on:click={signOut}>Logout</svelte:component>
   {/if}
   {#if !$session?.did}
     <h3>Sign in</h3>
@@ -43,7 +43,7 @@
         Handle
         <input type="text" bind:value={handle} placeholder="your-handle.bsky.social" />
       </label>
-      <button type="submit">Sign in</button>
+      <svelte:component this={(await import('../ui/Button.svelte')).default} type="submit">Sign in</svelte:component>
     </form>
   {/if}
 </div>

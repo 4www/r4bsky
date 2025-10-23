@@ -171,9 +171,9 @@
       <strong>{current.title}</strong>
     </div>
     <div>
-      <button on:click={prev}>Prev</button>
-      <button on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</button>
-      <button on:click={next}>Next</button>
+      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={prev}>Prev</svelte:component>
+      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</svelte:component>
+      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={next}>Next</svelte:component>
       <a href={parseTrackUrl(current.url).url} target="_blank">Open</a>
     </div>
     {#if parseTrackUrl(current.url)?.provider === 'file'}

@@ -51,20 +51,16 @@
 </script>
 
 <form on:submit={submit}>
-  <label>
-    URL
+  <label>URL
     <input type="url" bind:value={url} required placeholder="https://youtube.com/watch?v=..." />
   </label>
-  <label>
-    Title
+  <label>Title
     <input type="text" bind:value={title} required placeholder="Artist - Song" />
   </label>
-  <label>
-    Description (optional)
+  <label>Description (optional)
     <textarea bind:value={description} placeholder="Add context..."></textarea>
   </label>
-  <label>
-    Discogs URL (optional)
+  <label>Discogs URL (optional)
     <input type="url" bind:value={discogs_url} placeholder="https://www.discogs.com/release/..." />
   </label>
   <button type="submit">Save</button>

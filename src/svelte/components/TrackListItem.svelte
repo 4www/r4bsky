@@ -5,6 +5,9 @@
   import { session } from '../state/session.js'
   import { buildEditHash } from '../../libs/track-uri.js'
   import { createEventDispatcher } from 'svelte'
+  import Button from '../ui/Button.svelte'
+  import Card from '../ui/Card.svelte'
+  import DropdownMenu from '../ui/DropdownMenu.svelte'
   const { item, index = 0, items = [], context = null, editable = false } = $props()
   let message = ''
   const dispatch = createEventDispatcher()
@@ -28,15 +31,17 @@
 </script>
 
 {#if parseTrackUrl(item.url)}
-  <div>
+  <svelte:component this={Card}>
     <div>
       <a href={parseTrackUrl(item.url).url} target="_blank">{item.title || parseTrackUrl(item.url).url}</a>
-      <button on:click={play}>Play</button>
+      <svelte:component this={Button} on:click={play}>Play</svelte:component>
       {#if editable}
-        {#if editHref()}
-          <a href={editHref()}>Edit</a>
-        {/if}
-        <button on:click={remove}>Delete</button>
+        <svelte:component this={DropdownMenu} label="Actions">
+          {#if editHref()}
+            <a href={editHref()}>Edit</a>
+          {/if}
+          <button on:click={remove}>Delete</button>
+        </svelte:component>
       {/if}
     </div>
     {#if item.description}
@@ -45,5 +50,5 @@
     {#if message}
       <div>{message}</div>
     {/if}
-  </div>
+  </svelte:component>
 {/if}

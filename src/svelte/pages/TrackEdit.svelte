@@ -1,7 +1,7 @@
 <script>
   import { updateTrackByUri, resolveHandle, getTrackByUri } from '../../libs/r4-service.js'
   import { session } from '../state/session.js'
-  import Modal from '../components/Modal.svelte'
+  import Dialog from '../ui/Dialog.svelte'
   import TrackEditForm from '../components/TrackEditForm.svelte'
   const { repo, rkey, handle } = $props()
   let initial = { url: '', title: '', description: '', discogs_url: '' }
@@ -38,6 +38,6 @@
   }
 </script>
 
-<svelte:component this={Modal} title="Edit Track" onClose={close}>
+<svelte:component this={Dialog} title="Edit Track" onClose={close}>
   <svelte:component this={TrackEditForm} uri={uri} initial={initial} />
 </svelte:component>

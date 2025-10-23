@@ -1,6 +1,8 @@
 <script>
   import TrackListItem from './TrackListItem.svelte'
-  const { items = [], editable = false, context = null } = $props()
+  const { items: _items = [], editable = false, context = null } = $props()
+  let items = _items
+  $effect(() => { items = _items })
   let message = ''
   function onRemove(e) {
     const uri = e?.detail?.uri
