@@ -10,11 +10,11 @@
   let links = []
   $: links = [
     ['/', 'Home'],
-    [myPath, 'My Tracks'],
+    [myPath, userHandle ? `@${userHandle}` : '@me'],
     ['/search', 'Search'],
-    ['/followers', 'Followers'],
     ['/following', 'Following'],
-    ['/permissions', 'Permissions'],
+    ['/followers', 'Followers'],
+    ['/settings', 'Settings'],
   ]
   import { createEventDispatcher } from 'svelte'
   const dispatch = createEventDispatcher()

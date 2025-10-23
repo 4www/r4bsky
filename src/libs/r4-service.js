@@ -39,7 +39,7 @@ export async function createTrack({url, title, description, discogs_url}) {
   } catch (e) {
     const msg = String(e?.message || e)
     if (msg.includes('repo:app.bsky.feed.post?action=create')) {
-      const err3 = new Error('Missing permission to create feed posts. Visit Permissions to re-consent.')
+      const err3 = new Error('Missing permission to create feed posts. Visit Settings to manage permissions.')
       err3.code = 'scope-missing'
       throw err3
     }
@@ -61,7 +61,7 @@ export async function createTrack({url, title, description, discogs_url}) {
     } catch (err) {
       const msg2 = String(err?.message || err)
       if (msg2.includes('repo:com.radio4000.track?action=create')) {
-        const err2 = new Error('Missing permission to save to library. Visit Permissions to re-consent.')
+        const err2 = new Error('Missing permission to save to library. Visit Settings to manage permissions.')
         err2.code = 'scope-missing'
         throw err2
       }
@@ -210,4 +210,15 @@ export async function updateTrackByUri(uri, changes) {
     rkey,
     record: updated,
   })
+}
+
+export async function getTrackByUri(uri) {
+  const agent = assertAgent()
+  const at = new AtUri(uri)
+  const repo = at.hostname
+  const collection = at.collection || R4_COLLECTION
+  const rkey = at.rkey
+  const res = await agent.com.atproto.repo.getRecord({ repo, collection, rkey })
+  const value = res.data?.value || {}
+  return { uri, ...value }
 }

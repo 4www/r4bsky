@@ -24,8 +24,8 @@ Routes
 - `/#/@handle` author/my tracks
 - `/#/search` search actors
 - `/#/followers`, `/#/following` lists with pagination
-- `/#/t/:repo/:rkey` view track; `/#/t/:repo/:rkey/edit` edit track
-- `/#/permissions` grant permissions when needed
+- `/#/t/:repo/:rkey` view track; `/#/@:handle/:rkey/edit` edit track (modal)
+- `/#/settings` manage permissions and session
 
 Data Model
 - Custom collection: `com.radio4000.track`
@@ -53,4 +53,4 @@ Notes
 Troubleshooting
 - GitHub Pages callback: include both `/r4bsky` and `/r4bsky/` in `redirect_uris`.
 - invalid_request on Permissions: your AS may not support authorization_details yet; the app falls back automatically.
-- Missing scopes on Timeline/Followers: use the Permissions page to re-consent.
+- Missing scopes on Timeline/Followers: open Settings to re-consent.

@@ -33,14 +33,14 @@ Routing
 - `/#/search` — Search actors
 - `/#/followers`, `/#/following` — Lists, with pagination
 - `/#/t/:repo/:rkey` — Track view
-- `/#/t/:repo/:rkey/edit` — Track edit
-- `/#/permissions` — Request fine-grained scopes (if supported)
+- `/#/@:handle/:rkey/edit` — Track edit (modal route)
+- `/#/settings` — Manage permissions (re-consent)
 
 Architecture (modular)
 - Svelte 5 components (no styles in templates):
   - Router: `src/svelte/Router.svelte`, routes: `src/svelte/routes.js`, matcher: `src/svelte/routing/match.js`
   - Player: `src/svelte/components/Player.svelte`, store: `src/svelte/player/store.js`
-  - Pages: `src/svelte/pages/…` (Timeline, Author, Followers/Following, Search, TrackView/Edit, Permissions)
+- Pages: `src/svelte/pages/…` (Timeline, Author, Followers/Following, Search, TrackView/Edit, Settings)
 - Services:
   - OAuth/session: `src/libs/bsky-oauth.js`
   - R4 data and social: `src/libs/r4-service.js`
@@ -61,12 +61,12 @@ Custom record (com.radio4000.track)
 Permissions & scopes
 - Some operations require extra scopes (e.g., create custom repo records, follow/unfollow, reading graph).
 - The app tries to request fine-grained scopes via `authorization_details`; if not supported, it falls back to default scope.
-- If reads or writes fail due to missing scope, you’ll see a clear message and a “Permissions” button.
+- If reads or writes fail due to missing scope, you’ll see a clear message and an “Open Settings” button.
 
 Troubleshooting
 - Login redirect mismatch on GitHub Pages: ensure your `public/client-metadata.json` includes both `https://user.github.io/r4bsky` and `https://user.github.io/r4bsky/` in `redirect_uris`.
 - DPoP nonce 401 seen in devtools: we avoid eager profile fetch on hydration; it’s harmless if seen intermittently.
-- Scope errors on Timeline/Followers: click “Permissions” and re-consent; if the server doesn’t support fine-grained scopes, it will fall back.
+- Scope errors on Timeline/Followers: open Settings and re-consent; if the server doesn’t support fine-grained scopes, it will fall back.
 
 License
 MIT

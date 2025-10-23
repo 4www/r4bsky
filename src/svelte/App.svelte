@@ -21,7 +21,7 @@
     if (bskyOAuth.isAuthenticated()) {
       bskyOAuth.resolveHandle().then((h) => { if (h) userHandle = h })
       // Ensure we land on a known route after login
-      const allowed = new Set(['/', '/timeline', '/search', '/followers', '/following', '/permissions'])
+      const allowed = new Set(['/', '/timeline', '/search', '/followers', '/following', '/settings'])
       const hashPath = (location.hash || '').replace(/^#/, '') || '/'
       if (!allowed.has(hashPath)) {
         const me = bskyOAuth.session?.handle || bskyOAuth.session?.did

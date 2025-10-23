@@ -27,7 +27,7 @@
     load().catch((e) => {
       const msg = String(e?.message || e)
       if (msg.includes('Missing required scope')) {
-        error = 'Missing permission to read social graph. Visit Permissions to grant access.'
+        error = 'Missing permission to read social graph. Visit Settings to manage permissions.'
       }
     })
   })
@@ -54,9 +54,9 @@
   <ul>
     {#each items as a}
       <li>
-        <button on:click={() => (location.hash = `#/@${encodeURIComponent(a.handle || a.did)}`)}>
+        <a href={`#/@${encodeURIComponent(a.handle || a.did)}`}>
           {a.handle || a.displayName || a.did}
-        </button>
+        </a>
       </li>
     {/each}
     {#if !items?.length}
@@ -67,6 +67,6 @@
     <button on:click={more}>Load more</button>
   {/if}
   {#if error?.includes('Missing permission')}
-    <button on:click={() => (location.hash = '#/permissions')}>Permissions</button>
+    <button on:click={() => (location.hash = '#/settings')}>Open Settings</button>
   {/if}
 {/if}

@@ -1,12 +1,14 @@
 <script>
-  import { resolveHandle, listTracksByDid } from '../../libs/r4-service.js'
-  import { parseTrackUrl } from '../../libs/url-patterns.js'
+  import { resolveHandle, listTracksByDid, getMyDid } from '../../libs/r4-service.js'
   import FollowButton from '../components/FollowButton.svelte'
+  import TrackList from '../components/TrackList.svelte'
+  import TrackCreate from '../TrackCreate.svelte'
   export let handle = ''
   let did = ''
   let items = []
   let cursor = undefined
   let status = ''
+  let myDid = ''
 
   async function loadAuthor(e) {
     e?.preventDefault()
@@ -36,6 +38,7 @@
     setPlaylist(items, fromIdx)
   }
   onMount(() => {
+    getMyDid().then((d) => (myDid = d)).catch(() => (myDid = ''))
     if (handle) {
       loadAuthor()
       return
@@ -51,22 +54,17 @@
 </script>
 
 <h2>Author Tracks</h2>
+{#if did && myDid && did === myDid}
+  <h3>Save a Track</h3>
+  <TrackCreate />
+{/if}
 <form on:submit={loadAuthor}>
   <input type="text" bind:value={handle} placeholder="alice.bsky.social" required />
   <button type="submit">Load</button>
 </form>
 {#if status}<div>{status}</div>{/if}
 {#if items.length}
-  <ul>
-    {#each items as t, i}
-      {#if parseTrackUrl(t.url)}
-        <li>
-          <a href={parseTrackUrl(t.url).url} target="_blank">{t.title || parseTrackUrl(t.url).url}</a>
-          <button on:click={() => playAll(i)}>Play</button>
-        </li>
-      {/if}
-    {/each}
-  </ul>
+  <svelte:component this={TrackList} {items} editable={did && myDid && did === myDid} />
   {#if did}
     <FollowButton actorDid={did} />
   {/if}
