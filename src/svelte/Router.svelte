@@ -6,7 +6,7 @@
   import { resolve } from './routing/match.js'
   import { session } from './state/session.js'
   import NavBar from './components/NavBar.svelte'
-  let current = '/'
+  let current = $state('/')
   const userHandle = $derived(($session && $session.handle) || '')
   const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/')
   const links = $derived(() => {
@@ -37,16 +37,17 @@
   })
 </script>
 
-  <svelte:component this={NavBar} {links} {current} />
+  <NavBar {links} {current} />
 
   {#key current}
     {#await Promise.resolve(resolve(routes, current)) then m}
       {#if m}
-        <svelte:component this={m.component} {...m.props} {...m.params}/>
+        {@const Comp = m.component}
+        <Comp {...m.props} {...m.params} />
       {:else}
         <div>Not found</div>
       {/if}
     {/await}
   {/key}
 
-<svelte:component this={Player} />
+<Player />

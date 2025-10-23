@@ -1,13 +1,13 @@
 <script>
   import { updateTrackByUri } from '../../libs/r4-service.js'
   const { uri = '', initial: _initial = { url: '', title: '', description: '', discogs_url: '' } } = $props()
-  let initial = _initial
-  let url = initial.url || ''
-  let title = initial.title || ''
-  let description = initial.description || ''
-  let discogs_url = initial.discogs_url || initial.discogsUrl || ''
-  let status = ''
-  let prefilled = false
+  let initial = $state(_initial)
+  let url = $state(initial.url || '')
+  let title = $state(initial.title || '')
+  let description = $state(initial.description || '')
+  let discogs_url = $state(initial.discogs_url || initial.discogsUrl || '')
+  let status = $state('')
+  let prefilled = $state(false)
 
   // Prefill once when initial arrives (from async load)
   $effect(() => {
@@ -34,7 +34,7 @@
   }
 </script>
 
-<form on:submit={save}>
+<form onsubmit={save}>
   <label>URL <input type="url" bind:value={url} required /></label>
   <label>Title <input type="text" bind:value={title} required /></label>
   <label>Description <textarea bind:value={description}></textarea></label>

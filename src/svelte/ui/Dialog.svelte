@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from 'svelte'
   const dispatch = createEventDispatcher()
   const { open = true, onClose = null, title = '' } = $props()
-  let visible = open
+  let visible = $state(open)
   $effect(() => { visible = open })
   function close() {
     visible = false
@@ -24,4 +24,3 @@
     </div>
   </div>
 {/if}
-

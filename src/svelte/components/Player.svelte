@@ -2,18 +2,19 @@
   import { onMount, onDestroy } from 'svelte'
   import { player, toggle, next, prev } from '../player/store.js'
   import { parseTrackUrl, buildEmbedUrl } from '../../libs/url-patterns.js'
-  let state = { playlist: [], index: -1, playing: false }
-  let current = null
-  let audio
-  let iframeSrc = ''
-  let iframeEl
-  let iframeProvider = ''
-  let ytPlayer = null
-  let scWidget = null
-  let vimeoPlayer = null
-  let ytApiReady = null
-  let scApiReady = null
-  let vimeoApiReady = null
+  import Button from '../ui/Button.svelte'
+  let state = $state({ playlist: [], index: -1, playing: false })
+  let current = $state(null)
+  let audio = $state(null)
+  let iframeSrc = $state('')
+  let iframeEl = $state(null)
+  let iframeProvider = $state('')
+  let ytPlayer = $state(null)
+  let scWidget = $state(null)
+  let vimeoPlayer = $state(null)
+  let ytApiReady = $state(null)
+  let scApiReady = $state(null)
+  let vimeoApiReady = $state(null)
 
   function loadScriptOnce(src, check) {
     return new Promise((resolve, reject) => {
@@ -57,7 +58,7 @@
     return vimeoApiReady
   }
 
-  let lastIndex = -1
+  let lastIndex = $state(-1)
   function cleanupProviders() {
     try { if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy() } catch {}
     ytPlayer = null
@@ -171,13 +172,13 @@
       <strong>{current.title}</strong>
     </div>
     <div>
-      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={prev}>Prev</svelte:component>
-      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</svelte:component>
-      <svelte:component this={(await import('../ui/Button.svelte')).default} on:click={next}>Next</svelte:component>
+      <Button on:click={prev}>Prev</Button>
+      <Button on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</Button>
+      <Button on:click={next}>Next</Button>
       <a href={parseTrackUrl(current.url).url} target="_blank">Open</a>
     </div>
     {#if parseTrackUrl(current.url)?.provider === 'file'}
-      <audio bind:this={audio} on:ended={next} on:play={opened} controls></audio>
+      <audio bind:this={audio} onended={next} onplay={opened} controls></audio>
     {:else if iframeSrc}
       <iframe
         bind:this={iframeEl}
@@ -187,7 +188,7 @@
         allowfullscreen
         width="560"
         height="315"
-        on:load={onIframeLoad}
+        onload={onIframeLoad}
       ></iframe>
     {/if}
   </section>

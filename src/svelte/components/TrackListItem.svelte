@@ -9,7 +9,7 @@
   import Card from '../ui/Card.svelte'
   import DropdownMenu from '../ui/DropdownMenu.svelte'
   const { item, index = 0, items = [], context = null, editable = false } = $props()
-  let message = ''
+  let message = $state('')
   const dispatch = createEventDispatcher()
 
   function play() { setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context) }
@@ -31,17 +31,17 @@
 </script>
 
 {#if parseTrackUrl(item.url)}
-  <svelte:component this={Card}>
+  <Card>
     <div>
       <a href={parseTrackUrl(item.url).url} target="_blank">{item.title || parseTrackUrl(item.url).url}</a>
-      <svelte:component this={Button} on:click={play}>Play</svelte:component>
+      <Button onclick={play}>Play</Button>
       {#if editable}
-        <svelte:component this={DropdownMenu} label="Actions">
+        <DropdownMenu label="Actions">
           {#if editHref()}
             <a href={editHref()}>Edit</a>
           {/if}
-          <button on:click={remove}>Delete</button>
-        </svelte:component>
+          <button onclick={remove}>Delete</button>
+        </DropdownMenu>
       {/if}
     </div>
     {#if item.description}
@@ -50,5 +50,5 @@
     {#if message}
       <div>{message}</div>
     {/if}
-  </svelte:component>
+  </Card>
 {/if}
