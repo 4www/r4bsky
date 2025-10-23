@@ -5,6 +5,7 @@
   import TrackList from '../components/TrackList.svelte'
   let items = []
   let error = ''
+  const context = { type: 'timeline', key: 'following' }
   onMount(async () => {
     try {
       items = await timelineTracks({limitPerActor: 5})
@@ -20,5 +21,5 @@
 {#if error}
   <div>Failed to load: {error} <button on:click={() => (location.hash = '#/settings')}>Open Settings</button></div>
 {:else}
-  <svelte:component this={TrackList} {items} />
+  <svelte:component this={TrackList} {items} {context} />
 {/if}

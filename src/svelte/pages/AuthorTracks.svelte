@@ -8,6 +8,7 @@
   let items = []
   let cursor = undefined
   let status = ''
+  $: context = did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' }
 
   async function loadAuthor(e) {
     e?.preventDefault()
@@ -60,7 +61,7 @@
 {/if}
 {#if status}<div>{status}</div>{/if}
 {#if items.length}
-  <svelte:component this={TrackList} {items} editable={($session?.did && did && $session.did === did) || false} />
+  <svelte:component this={TrackList} {items} {context} editable={($session?.did && did && $session.did === did) || false} />
   {#if did}
     <FollowButton actorDid={did} />
   {/if}

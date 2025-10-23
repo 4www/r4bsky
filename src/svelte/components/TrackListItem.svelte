@@ -8,11 +8,12 @@
   export let item // { uri, title, url, description }
   export let index = 0
   export let items = [] // full context list, used for playlist
+  export let context = null // { type: 'author'|'timeline'|..., key }
   export let editable = false
   let message = ''
   const dispatch = createEventDispatcher()
 
-  function play() { setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0) }
+  function play() { setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context) }
 
   async function remove() {
     message = ''

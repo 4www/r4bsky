@@ -22,10 +22,10 @@ function createStore(initial) {
   }
 }
 
-export const player = createStore({ playlist: [], index: -1, playing: false })
+export const player = createStore({ playlist: [], index: -1, playing: false, context: null })
 
-export function setPlaylist(items, startIndex = 0) {
-  player.set({ playlist: items || [], index: startIndex ?? 0, playing: true })
+export function setPlaylist(items, startIndex = 0, context = null) {
+  player.set({ playlist: items || [], index: startIndex ?? 0, playing: true, context })
 }
 
 export function playIndex(idx) {
@@ -54,4 +54,3 @@ export function prev() {
   const i = (s.index - 1 + s.playlist.length) % s.playlist.length
   player.set({ ...s, index: i, playing: true })
 }
-
