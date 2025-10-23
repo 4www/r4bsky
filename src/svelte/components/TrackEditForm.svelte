@@ -6,6 +6,15 @@
   let title = initial.title || ''
   let description = initial.description || ''
   let status = ''
+  let prefilled = false
+
+  // Prefill once when initial arrives (from async load)
+  $: if (!prefilled && initial && (initial.url || initial.title || initial.description)) {
+    url = initial.url || ''
+    title = initial.title || ''
+    description = initial.description || ''
+    prefilled = true
+  }
 
   async function save(e) {
     e.preventDefault()
@@ -28,4 +37,3 @@
   <button type="submit">Save</button>
   {#if status}<div>{status}</div>{/if}
 </form>
-
