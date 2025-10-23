@@ -4,10 +4,12 @@
   import { setPlaylist } from '../player/store.js'
   import { bskyOAuth } from '../../libs/bsky-oauth.js'
   import { buildEditHash } from '../../libs/track-uri.js'
+  import { createEventDispatcher } from 'svelte'
   export let item // { uri, title, url, description }
   export let index = 0
   export let editable = false
   let message = ''
+  const dispatch = createEventDispatcher()
 
   function play() { setPlaylist([item], 0) }
 
@@ -15,9 +17,7 @@
     message = ''
     try {
       await deleteTrackByUri(item.uri)
-      // bubble so parent list can filter the item out
-      const ev = new CustomEvent('remove', { detail: { uri: item.uri } })
-      dispatchEvent(ev)
+      dispatch('remove', { uri: item.uri })
     } catch (e) {
       message = e?.message || String(e)
     }
@@ -49,4 +49,3 @@
     {/if}
   </div>
 {/if}
-
