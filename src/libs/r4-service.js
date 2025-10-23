@@ -21,7 +21,7 @@ export async function getMyDid() {
 }
 
 export async function resolveHandle(handle) {
-  const agent = assertAgent()
+  const agent = getPublicAgent()
   const res = await agent.resolveHandle({handle})
   return res.data?.did
 }
@@ -54,7 +54,8 @@ export async function createTrack({url, title, description, discogs_url}) {
 }
 
 export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
-  const agent = assertAgent()
+  // Use appview (public agent) to read records across PDS boundaries
+  const agent = getPublicAgent()
   const res = await agent.com.atproto.repo.listRecords({
     repo: did,
     collection: R4_COLLECTION,
