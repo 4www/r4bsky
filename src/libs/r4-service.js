@@ -54,8 +54,14 @@ export async function createTrack({url, title, description, discogs_url}) {
 }
 
 export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
-  // Use appview (public agent) to read records across PDS boundaries
-  const agent = getPublicAgent()
+  // Use authenticated agent for own repo; public appview for others
+  let agent
+  try {
+    const my = assertAgent()
+    agent = (my.accountDid === did || my.did === did) ? my : getPublicAgent()
+  } catch {
+    agent = getPublicAgent()
+  }
   const res = await agent.com.atproto.repo.listRecords({
     repo: did,
     collection: R4_COLLECTION,
