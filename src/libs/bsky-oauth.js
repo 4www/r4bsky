@@ -86,8 +86,7 @@ class BskyOAuthService {
 			const withAuthz = {
 				...baseOpts,
 				authorization_details: [
-					{ type: 'atproto_repo', actions: ['create'], identifier: 'app.bsky.feed.post' },
-					{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
+					{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
 					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 				],
 			}
@@ -135,8 +134,7 @@ class BskyOAuthService {
 		const withAuthz = {
 			...baseOpts,
 			authorization_details: [
-				{ type: 'atproto_repo', actions: ['create'], identifier: 'app.bsky.feed.post' },
-				{ type: 'atproto_repo', actions: ['create'], identifier: 'com.radio4000.track' },
+				{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
 				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 			],
 		}

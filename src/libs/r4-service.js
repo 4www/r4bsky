@@ -28,7 +28,7 @@ export async function resolveHandle(handle) {
 
 export async function createTrack({url, title, description, discogs_url}) {
   const agent = assertAgent()
-  // Always save to the R4 library first (primary store)
+  // Save to the custom collection only (no feed posting)
   const record = {
     url,
     title,
@@ -37,22 +37,11 @@ export async function createTrack({url, title, description, discogs_url}) {
     createdAt: new Date().toISOString(),
   }
   try {
-    const saved = await agent.com.atproto.repo.createRecord({
+    return await agent.com.atproto.repo.createRecord({
       repo: agent.accountDid,
       collection: R4_COLLECTION,
       record,
     })
-    // Best-effort: post to feed if permitted; ignore scope errors
-    try {
-      const textParts = [title]
-      if (description) textParts.push('', description)
-      textParts.push('', url)
-      const text = textParts.join('\n')
-      await agent.post({ text, createdAt: new Date().toISOString() })
-    } catch (_) {
-      // ignore feed-post scope errors; library save succeeded
-    }
-    return saved
   } catch (err) {
     const msg = String(err?.message || err)
     if (msg.includes('repo:com.radio4000.track?action=create')) {
