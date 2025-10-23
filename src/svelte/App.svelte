@@ -9,9 +9,11 @@
   let handle = ''
 
   async function initOAuth() {
-    const clientId = window.location.protocol === 'https:'
-      ? new URL('client-metadata.json', window.location.href).href
-      : buildLoopbackClientId(window.location)
+    let clientId = import.meta.env && import.meta.env.VITE_CLIENT_ID
+      ? import.meta.env.VITE_CLIENT_ID
+      : (window.location.protocol === 'https:'
+        ? new URL('client-metadata.json', window.location.href).href
+        : buildLoopbackClientId(window.location))
     await bskyOAuth.init(clientId)
     // handleCallback not needed if client.init() already processed
     // Lazy resolve human handle (avoid eager network on hydration)

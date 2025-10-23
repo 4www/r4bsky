@@ -54,6 +54,7 @@ OAuth setup (prod vs dev)
   - If deploying on GitHub Pages under `/r4bsky`, include both with and without trailing slash in `redirect_uris`.
   - The app passes a canonical `redirect_uri` (with trailing slash) for both authorization and callback handling to avoid mismatches.
   - Some servers don’t support `authorization_details` yet; the app falls back to default atproto scope.
+ - Optional (force HTTPS client metadata in dev): set `VITE_CLIENT_ID` in your env to the full URL of a hosted `client-metadata.json` to request fine-grained scopes even when running locally.
 
 Custom record (com.radio4000.track)
 - Fields: `url` (string), `title` (string), optional `description`, optional `discogsUrl`, `createdAt` (ISO string).
