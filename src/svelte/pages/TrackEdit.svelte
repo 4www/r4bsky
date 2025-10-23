@@ -7,7 +7,7 @@
   export let repo
   export let rkey
   export let handle
-  let initial = { url: '', title: '', description: '' }
+  let initial = { url: '', title: '', description: '', discogs_url: '' }
   let uri = ''
 
   $: (async () => {
@@ -25,7 +25,7 @@
     if (!uri) return
     try {
       const rec = await getTrackByUri(uri)
-      initial = { url: rec.url || '', title: rec.title || '', description: rec.description || '' }
+      initial = { url: rec.url || '', title: rec.title || '', description: rec.description || '', discogs_url: rec.discogsUrl || '' }
     } catch (_) {}
   })()
 
