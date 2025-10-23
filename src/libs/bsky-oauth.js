@@ -36,30 +36,22 @@ class BskyOAuthService {
 				handleResolver: 'https://bsky.social', // Using default Bluesky resolver
 			})
 
-			// Process OAuth callback or restore existing session automatically
-			// If there is an OAuth response in the URL, this will handle it and
-			// return a session. Otherwise it will attempt to restore.
-			try {
-				const initResult = await this.client.init()
-				if (initResult?.session) {
-					await this.#hydrateFromOAuthSession(initResult.session)
-				}
-			} catch (err) {
-				// If the user refreshed or navigated back to a callback URL,
-				// the auth code may have already been consumed. In that case,
-				// clean up the URL and allow a fresh sign-in.
-				if (err instanceof OAuthCallbackError) {
-					const params = this.client.readCallbackParams()
-					if (params) {
-						if (this.client.responseMode === 'fragment') {
-							history.replaceState(null, '', location.pathname + location.search)
-						} else {
-							history.replaceState(null, '', location.pathname)
-						}
+			// Process OAuth callback explicitly with persisted redirect if present
+			const params = this.client.readCallbackParams()
+			if (params) {
+				let savedRedirect
+				try { savedRedirect = localStorage.getItem('bsky-oauth-redirect') || undefined } catch {}
+				try {
+					const { session } = await this.client.initCallback(params, savedRedirect || this.#canonicalRedirectUri())
+					await this.#hydrateFromOAuthSession(session)
+					try { localStorage.removeItem('bsky-oauth-redirect') } catch {}
+				} catch (err) {
+					if (this.client.responseMode === 'fragment') {
+						history.replaceState(null, '', location.pathname + location.search)
+					} else {
+						history.replaceState(null, '', location.pathname)
 					}
-					console.warn('OAuth callback ignored (probably reused code). URL cleaned; please retry sign-in.')
-				} else {
-					throw err
+					console.error('OAuth callback failed:', err)
 				}
 			}
 
