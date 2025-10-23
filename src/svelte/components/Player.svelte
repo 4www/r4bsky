@@ -8,6 +8,54 @@
   let iframeSrc = ''
   let iframeEl
   let iframeProvider = ''
+  let ytPlayer = null
+  let scWidget = null
+  let vimeoPlayer = null
+  let ytApiReady = null
+  let scApiReady = null
+  let vimeoApiReady = null
+
+  function loadScriptOnce(src, check) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (check && check()) return resolve()
+        const s = document.createElement('script')
+        s.src = src
+        s.async = true
+        s.onload = () => resolve()
+        s.onerror = (e) => reject(new Error('Failed to load ' + src))
+        document.head.appendChild(s)
+      } catch (e) { reject(e) }
+    })
+  }
+
+  function ensureYouTubeAPI() {
+    if (!ytApiReady) {
+      ytApiReady = new Promise((resolve) => {
+        const onReady = () => resolve()
+        if (window.YT && window.YT.Player) return resolve()
+        window.onYouTubeIframeAPIReady = onReady
+        loadScriptOnce('https://www.youtube.com/iframe_api', () => window.YT && window.YT.Player).then(() => {
+          if (window.YT && window.YT.Player) resolve()
+        }).catch(() => resolve())
+      })
+    }
+    return ytApiReady
+  }
+
+  function ensureSCAPI() {
+    if (!scApiReady) {
+      scApiReady = loadScriptOnce('https://w.soundcloud.com/player/api.js', () => window.SC && window.SC.Widget)
+    }
+    return scApiReady
+  }
+
+  function ensureVimeoAPI() {
+    if (!vimeoApiReady) {
+      vimeoApiReady = loadScriptOnce('https://player.vimeo.com/api/player.js', () => window.Vimeo && window.Vimeo.Player)
+    }
+    return vimeoApiReady
+  }
 
   const unsub = player.subscribe((s) => {
     state = s
@@ -48,20 +96,32 @@
     // noop placeholder for future
   }
 
-  function onIframeLoad() {
-    // Subscribe to finish events for providers that support postMessage APIs
+  async function onIframeLoad() {
     try {
-      const win = iframeEl?.contentWindow
-      if (!win) return
-      if (iframeProvider === 'vimeo') {
-        // Older Vimeo API
-        win.postMessage(JSON.stringify({ method: 'addEventListener', value: 'finish' }), '*')
-        // Newer event name
-        win.postMessage(JSON.stringify({ method: 'addEventListener', value: 'ended' }), '*')
+      if (!iframeEl) return
+      if (iframeProvider === 'youtube') {
+        await ensureYouTubeAPI()
+        if (!window.YT || !window.YT.Player) return
+        if (ytPlayer) { try { ytPlayer.destroy() } catch {} ytPlayer = null }
+        ytPlayer = new window.YT.Player(iframeEl, {
+          events: {
+            onReady: () => { if (state.playing) ytPlayer.playVideo() },
+            onStateChange: (e) => { if (e?.data === window.YT.PlayerState.ENDED) next() }
+          }
+        })
       } else if (iframeProvider === 'soundcloud') {
-        win.postMessage(JSON.stringify({ method: 'addEventListener', value: 'finish' }), '*')
-      } else if (iframeProvider === 'youtube') {
-        // YouTube posts onStateChange automatically when enablejsapi=1
+        await ensureSCAPI()
+        if (!window.SC || !window.SC.Widget) return
+        scWidget = window.SC.Widget(iframeEl)
+        scWidget.bind('finish', () => next())
+        scWidget.bind('ready', () => { if (state.playing) scWidget.play() })
+      } else if (iframeProvider === 'vimeo') {
+        await ensureVimeoAPI()
+        if (!window.Vimeo || !window.Vimeo.Player) return
+        if (vimeoPlayer) { try { vimeoPlayer.unload() } catch {} vimeoPlayer = null }
+        vimeoPlayer = new window.Vimeo.Player(iframeEl)
+        vimeoPlayer.on('ended', () => next())
+        if (state.playing) vimeoPlayer.play().catch(() => {})
       }
     } catch {}
   }
@@ -70,20 +130,12 @@
     try {
       const origin = e.origin || ''
       const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
-      // YouTube: event onStateChange with info 0 means ended
-      if ((/youtube\.com$/i.test(new URL(iframeSrc || 'about:blank').hostname) || origin.includes('youtube')) && data?.event === 'onStateChange' && (data?.info === 0 || data?.data === 0)) {
-        next()
-        return
-      }
+      // Keep YouTube fallback (rarely emitted without API)
+      if ((/youtube\.com$/i.test(new URL(iframeSrc || 'about:blank').hostname) || origin.includes('youtube')) && data?.event === 'onStateChange' && (data?.info === 0 || data?.data === 0)) return next()
       // Vimeo: event 'finish' or 'ended'
-      if (origin.includes('vimeo.com') && (data?.event === 'finish' || data?.event === 'ended')) {
-        next()
-        return
-      }
+      if (origin.includes('vimeo.com') && (data?.event === 'finish' || data?.event === 'ended')) return next()
       // SoundCloud: event 'finish'
-      if (origin.includes('soundcloud.com')) {
-        if (data?.event === 'finish' || data?.method === 'finish') { next(); return }
-      }
+      if (origin.includes('soundcloud.com')) { if (data?.event === 'finish' || data?.method === 'finish') return next() }
     } catch {}
   }
   onMount(() => {
