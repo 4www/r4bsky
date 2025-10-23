@@ -2,7 +2,7 @@
   import { parseTrackUrl } from '../../libs/url-patterns.js'
   import { deleteTrackByUri } from '../../libs/r4-service.js'
   import { setPlaylist } from '../player/store.js'
-  import { bskyOAuth } from '../../libs/bsky-oauth.js'
+  import { session } from '../state/session.js'
   import { buildEditHash } from '../../libs/track-uri.js'
   import { createEventDispatcher } from 'svelte'
   export let item // { uri, title, url, description }
@@ -24,7 +24,7 @@
   }
 
   function editHref() {
-    const handle = bskyOAuth.session?.handle
+    const handle = $session?.handle
     return buildEditHash(handle, item.uri)
   }
 </script>

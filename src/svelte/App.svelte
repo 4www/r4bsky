@@ -2,13 +2,11 @@
   import { onMount } from 'svelte'
   import { bskyOAuth } from '../libs/bsky-oauth.js'
   import { buildLoopbackClientId } from '@atproto/oauth-client-browser'
-  import TrackCreate from './TrackCreate.svelte'
-  import UserTracks from './UserTracks.svelte'
   import Router from './Router.svelte'
+  import { session } from './state/session.js'
 
   let ready = false
   let handle = ''
-  let userHandle = ''
 
   async function initOAuth() {
     const clientId = window.location.protocol === 'https:'
@@ -16,10 +14,9 @@
       : buildLoopbackClientId(window.location)
     await bskyOAuth.init(clientId)
     // handleCallback not needed if client.init() already processed
-    if (bskyOAuth.session?.handle) userHandle = bskyOAuth.session.handle
     // Lazy resolve human handle (avoid eager network on hydration)
     if (bskyOAuth.isAuthenticated()) {
-      bskyOAuth.resolveHandle().then((h) => { if (h) userHandle = h })
+      bskyOAuth.resolveHandle().then((_) => { session.refresh() })
       // Ensure we land on a known route after login
       const allowed = new Set(['/', '/timeline', '/search', '/followers', '/following', '/settings'])
       const hashPath = (location.hash || '').replace(/^#/, '') || '/'
@@ -29,6 +26,7 @@
         else location.hash = '#/'
       }
     }
+    session.refresh()
     ready = true
   }
 
@@ -43,7 +41,7 @@
 
   async function signOut() {
     await bskyOAuth.signOut()
-    userHandle = ''
+    session.refresh()
   }
 </script>
 
@@ -62,6 +60,6 @@
       </form>
     </section>
   {:else}
-    <Router {userHandle} on:logout={signOut} />
+    <Router on:logout={signOut} />
   {/if}
 {/if}

@@ -1,5 +1,6 @@
 <script>
   import { bskyOAuth } from '../../libs/bsky-oauth.js'
+  import { session } from '../state/session.js'
   let working = false
   async function managePermissions() {
     try {
@@ -16,7 +17,6 @@
 
 <h2>Settings</h2>
 <div>
-  <div>Logged in as: {bskyOAuth.session?.handle || bskyOAuth.session?.did}</div>
+  <div>Logged in as: {$session?.handle || $session?.did}</div>
   <button disabled={working} on:click={managePermissions}>Manage permissions</button>
 </div>
-

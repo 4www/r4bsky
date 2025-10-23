@@ -1,6 +1,6 @@
 <script>
   import { updateTrackByUri, resolveHandle, getTrackByUri } from '../../libs/r4-service.js'
-  import { bskyOAuth } from '../../libs/bsky-oauth.js'
+  import { session } from '../state/session.js'
   import { AtUri } from '@atproto/api'
   import Modal from '../components/Modal.svelte'
   import TrackEditForm from '../components/TrackEditForm.svelte'
@@ -31,7 +31,7 @@
 
   // Prefill form from URL query params (optional) or leave empty; in a full app we'd fetch the record
   function close() {
-    const h = handle || bskyOAuth.session?.handle || ''
+    const h = handle || $session?.handle || ''
     const back = h ? `#/@${encodeURIComponent(h)}` : '#/'
     location.hash = back
   }

@@ -4,8 +4,9 @@
   import Player from './components/Player.svelte'
   import { routes } from './routes.js'
   import { resolve } from './routing/match.js'
-  export let userHandle = ''
+  import { session } from './state/session.js'
   let current = '/'
+  $: userHandle = $session.handle || ''
   $: myPath = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/'
   let links = []
   $: links = [
