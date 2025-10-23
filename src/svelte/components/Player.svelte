@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import { player, toggle, next, prev } from '../player/store.js'
   import { parseTrackUrl, buildEmbedUrl } from '../../libs/url-patterns.js'
   let state = { playlist: [], index: -1, playing: false }
@@ -57,9 +57,23 @@
     return vimeoApiReady
   }
 
+  let lastIndex = -1
+  function cleanupProviders() {
+    try { if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy() } catch {}
+    ytPlayer = null
+    try { if (vimeoPlayer && vimeoPlayer.unload) vimeoPlayer.unload() } catch {}
+    vimeoPlayer = null
+    // SoundCloud widget has no explicit destroy; clear ref
+    scWidget = null
+  }
+
   const unsub = player.subscribe((s) => {
     state = s
     current = s.playlist?.[s.index] || null
+    if (s.index !== lastIndex) {
+      cleanupProviders()
+      lastIndex = s.index
+    }
     if (current) {
       const meta = parseTrackUrl(current.url)
       if (meta?.provider === 'file') {
@@ -76,7 +90,11 @@
           audio.removeAttribute('src')
         }
         iframeProvider = meta?.provider || ''
-        iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || ''
+        iframeSrc = ''
+        // Force re-create iframe element by resetting then setting src in next microtask
+        Promise.resolve().then(() => {
+          iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || ''
+        })
       }
     }
   })
@@ -91,6 +109,9 @@
   onMount(() => {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  })
+  onDestroy(() => {
+    cleanupProviders()
   })
   function opened() {
     // noop placeholder for future
