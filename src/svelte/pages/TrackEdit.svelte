@@ -1,12 +1,9 @@
 <script>
   import { updateTrackByUri, resolveHandle, getTrackByUri } from '../../libs/r4-service.js'
   import { session } from '../state/session.js'
-  import { AtUri } from '@atproto/api'
   import Modal from '../components/Modal.svelte'
   import TrackEditForm from '../components/TrackEditForm.svelte'
-  export let repo
-  export let rkey
-  export let handle
+  const { repo, rkey, handle } = $props()
   let initial = { url: '', title: '', description: '', discogs_url: '' }
   let uri = ''
 

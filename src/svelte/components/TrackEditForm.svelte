@@ -1,7 +1,7 @@
 <script>
   import { updateTrackByUri } from '../../libs/r4-service.js'
-  export let uri = ''
-  export let initial = { url: '', title: '', description: '', discogs_url: '' }
+  const { uri = '', initial: _initial = { url: '', title: '', description: '', discogs_url: '' } } = $props()
+  let initial = _initial
   let url = initial.url || ''
   let title = initial.title || ''
   let description = initial.description || ''

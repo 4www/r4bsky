@@ -1,7 +1,6 @@
 <script>
   import Button from '../ui/Button.svelte'
-  export let links = [] // [ [href, title], ... ]
-  export let current = '/'
+  const { links = [], current = '/' } = $props()
   let open = false
   function toggle() { open = !open }
   function close() { open = false }

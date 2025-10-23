@@ -3,7 +3,8 @@
   import FollowButton from '../components/FollowButton.svelte'
   import TrackList from '../components/TrackList.svelte'
   import { session } from '../state/session.js'
-  export let handle = ''
+  const { handle: _handle } = $props()
+  let handle = _handle || ''
   let did = ''
   let items = []
   let cursor = undefined

@@ -1,9 +1,7 @@
 <script>
-  import { AtUri } from '@atproto/api'
   import { parseTrackUrl } from '../../libs/url-patterns.js'
   import { setPlaylist } from '../player/store.js'
-  export let repo
-  export let rkey
+  const { repo, rkey } = $props()
   const item = $derived({ url: `at://${repo}/${rkey}`, title: rkey })
   function play() { setPlaylist([item], 0) }
 </script>

@@ -1,8 +1,7 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte'
   const dispatch = createEventDispatcher()
-  export let title = ''
-  export let onClose = () => {}
+  const { title = '', onClose = () => {} } = $props()
   function close() { onClose(); dispatch('close') }
   function onBackdrop(e) { if (e.target === e.currentTarget) close() }
   function onKey(e) { if (e.key === 'Escape') close() }
@@ -24,4 +23,3 @@
     </section>
   </div>
 </div>
-

@@ -5,11 +5,7 @@
   import { session } from '../state/session.js'
   import { buildEditHash } from '../../libs/track-uri.js'
   import { createEventDispatcher } from 'svelte'
-  export let item // { uri, title, url, description }
-  export let index = 0
-  export let items = [] // full context list, used for playlist
-  export let context = null // { type: 'author'|'timeline'|..., key }
-  export let editable = false
+  const { item, index = 0, items = [], context = null, editable = false } = $props()
   let message = ''
   const dispatch = createEventDispatcher()
 

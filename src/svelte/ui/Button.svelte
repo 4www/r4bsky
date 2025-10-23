@@ -1,6 +1,5 @@
 <script>
-  export let type = 'button'
-  export let href = ''
+  const { type = 'button', href = '' } = $props()
 </script>
 
 {#if href}

@@ -1,6 +1,6 @@
 <script>
   import { followActor, unfollowActor, findFollowUri } from '../../libs/r4-service.js'
-  export let actorDid = ''
+  const { actorDid = '' } = $props()
   let followUri = null
   let error = ''
 
