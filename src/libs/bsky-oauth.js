@@ -7,10 +7,24 @@ class BskyOAuthService {
 		this.agent = null
 		this.session = null
 		this.initialized = false
+		this._clientId = null
+	}
+
+	#preferredRedirectBase() {
+		try {
+			if (!this._clientId) return undefined
+			const u = new URL(this._clientId)
+			if (u.protocol !== 'https:') return undefined
+			return u.origin + '/'
+		} catch {
+			return undefined
+		}
 	}
 
 	#canonicalRedirectUri() {
 		try {
+			const preferred = this.#preferredRedirectBase()
+			if (preferred) return preferred
 			const {origin, pathname} = window.location
 			const path = pathname.endsWith('/') ? pathname : pathname + '/'
 			return origin + path
@@ -23,6 +37,7 @@ class BskyOAuthService {
 		if (this.initialized) return
 
 		try {
+			this._clientId = clientId
 			this.client = await BrowserOAuthClient.load({
 				clientId: clientId,
 				handleResolver: 'https://bsky.social', // Using default Bluesky resolver

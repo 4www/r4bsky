@@ -42,6 +42,6 @@
       <input type="url" bind:value={clientIdInput} placeholder="https://your.domain/client-metadata.json" />
     </label>
     <button type="submit">Save</button>
-    <div><small>Use this to force HTTPS client metadata in dev for proper repo scopes.</small></div>
+    <div><small>Forces login to use this domain for OAuth and callback, even when running on localhost.</small></div>
   </form>
 </div>
