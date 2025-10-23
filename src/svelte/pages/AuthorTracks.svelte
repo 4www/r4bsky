@@ -1,7 +1,8 @@
 <script>
-  import { resolveHandle, listTracksByDid, getMyDid } from '../../libs/r4-service.js'
+  import { resolveHandle, listTracksByDid } from '../../libs/r4-service.js'
   import FollowButton from '../components/FollowButton.svelte'
   import TrackList from '../components/TrackList.svelte'
+  import { session } from '../state/session.js'
   export let handle = ''
   let did = ''
   let items = []
@@ -51,13 +52,15 @@
 </script>
 
 <h2>Author Tracks</h2>
-<form on:submit={loadAuthor}>
-  <input type="text" bind:value={handle} placeholder="alice.bsky.social" required />
-  <button type="submit">Load</button>
-</form>
+{#if !handle}
+  <form on:submit={loadAuthor}>
+    <input type="text" bind:value={handle} placeholder="alice.bsky.social" required />
+    <button type="submit">Load</button>
+  </form>
+{/if}
 {#if status}<div>{status}</div>{/if}
 {#if items.length}
-  <svelte:component this={TrackList} {items} editable={did && myDid && did === myDid} />
+  <svelte:component this={TrackList} {items} editable={($session?.did && did && $session.did === did) || false} />
   {#if did}
     <FollowButton actorDid={did} />
   {/if}
