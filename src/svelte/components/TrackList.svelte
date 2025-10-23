@@ -14,7 +14,7 @@
 <ul>
   {#each items as t, i}
     <li>
-      <svelte:component this={TrackListItem} item={t} index={i} editable={editable} on:remove={onRemove} />
+      <svelte:component this={TrackListItem} item={t} index={i} items={items} editable={editable} on:remove={onRemove} />
     </li>
   {/each}
   {#if !items?.length}

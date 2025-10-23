@@ -7,11 +7,12 @@
   import { createEventDispatcher } from 'svelte'
   export let item // { uri, title, url, description }
   export let index = 0
+  export let items = [] // full context list, used for playlist
   export let editable = false
   let message = ''
   const dispatch = createEventDispatcher()
 
-  function play() { setPlaylist([item], 0) }
+  function play() { setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0) }
 
   async function remove() {
     message = ''

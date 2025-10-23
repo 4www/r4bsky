@@ -130,6 +130,15 @@ export async function listTracksByDid(did, {cursor, limit = 30} = {}) {
   const items = (res.data?.records || []).map((r) => ({uri: r.uri, cid: r.cid, rkey: r.uri?.split('/').pop(), ...r.value}))
   // Only keep items that have a parsable URL
   const tracks = items.filter((it) => parseTrackUrl(it.url))
+  // Ensure latest-first ordering (by createdAt, fallback to rkey/TID)
+  tracks.sort((a, b) => {
+    const ad = Date.parse(a.createdAt || a.created_at || '')
+    const bd = Date.parse(b.createdAt || b.created_at || '')
+    if (!Number.isNaN(ad) && !Number.isNaN(bd)) return bd - ad
+    const ar = a.rkey || ''
+    const br = b.rkey || ''
+    return String(br).localeCompare(String(ar))
+  })
   return {tracks, cursor: res.data?.cursor}
 }
 
@@ -200,11 +209,14 @@ export async function timelineTracks({limitPerActor = 10} = {}) {
     })
   )
   const merged = chunks.flat()
-  // Sort by createdAt if present, else leave order
+  // Sort by createdAt if present, else by rkey/TID (latest first)
   merged.sort((a, b) => {
-    const ad = Date.parse(a.createdAt || a.created_at || 0)
-    const bd = Date.parse(b.createdAt || b.created_at || 0)
-    return bd - ad
+    const ad = Date.parse(a.createdAt || a.created_at || '')
+    const bd = Date.parse(b.createdAt || b.created_at || '')
+    if (!Number.isNaN(ad) && !Number.isNaN(bd)) return bd - ad
+    const ar = a.rkey || ''
+    const br = b.rkey || ''
+    return String(br).localeCompare(String(ar))
   })
   return merged
 }
