@@ -9,15 +9,26 @@
   $: userHandle = $session.handle || ''
   $: myPath = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/'
   let links = []
-  $: links = [
-    ['/', 'Home'],
-    ['/add', 'Add'],
-    [myPath, userHandle ? `@${userHandle}` : '@me'],
-    ['/search', 'Search'],
-    ['/following', 'Following'],
-    ['/followers', 'Followers'],
-    ['/settings', 'Settings'],
-  ]
+  $: links = (() => {
+    const authed = !!$session?.did
+    if (authed) {
+      const arr = [
+        ['/', 'Home'],
+        ['/add', 'Add'],
+        ['/search', 'Search'],
+        ['/following', 'Following'],
+        ['/followers', 'Followers'],
+        ['/settings', 'Settings'],
+      ]
+      if (userHandle) arr.splice(2, 0, [myPath, `@${userHandle}`])
+      return arr
+    }
+    return [
+      ['/', 'Home'],
+      ['/search', 'Search'],
+      ['/settings', 'Settings'],
+    ]
+  })()
 
   onMount(() => {
     initRouter()
@@ -30,7 +41,6 @@
   {#each links as [href, title]}
     <a href={'#' + href} aria-current={current === href ? 'page' : undefined}>{title}</a>
   {/each}
-  <span>Logged in as <strong>{userHandle}</strong></span>
   <hr />
   </nav>
 
