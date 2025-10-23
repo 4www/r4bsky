@@ -1,22 +1,24 @@
 <script>
   import { followActor, unfollowActor, findFollowUri } from '../../libs/r4-service.js'
   const { actorDid = '' } = $props()
-  let followUri = null
-  let error = ''
+  let followUri = $state(null)
+  let error = $state('')
+  let pending = $state(false)
 
-  $effect(() => {
-    if (!actorDid) return
-    ;(async () => {
-      try {
-        followUri = await findFollowUri(actorDid)
-      } catch (e) {
-        error = e?.message || String(e)
-      }
-    })()
-  })
+  async function refreshState() {
+    if (!actorDid) { followUri = null; return }
+    try {
+      followUri = await findFollowUri(actorDid)
+    } catch (e) {
+      error = e?.message || String(e)
+    }
+  }
+
+  $effect(() => { refreshState() })
 
   async function toggle() {
     error = ''
+    pending = true
     try {
       if (followUri) {
         await unfollowActor(followUri)
@@ -25,11 +27,14 @@
         const res = await followActor(actorDid)
         followUri = res?.uri || null
       }
+      await refreshState()
     } catch (e) {
       error = e?.message || String(e)
+    } finally {
+      pending = false
     }
   }
 </script>
 
-<button on:click={toggle}>{followUri ? 'Unfollow' : 'Follow'}</button>
+<button onclick={toggle} disabled={pending}>{followUri ? 'Unfollow' : 'Follow'}</button>
 {#if error}<div>{error}</div>{/if}

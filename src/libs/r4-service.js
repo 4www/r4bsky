@@ -273,12 +273,52 @@ export async function updateTrackByUri(uri, changes) {
 }
 
 export async function getTrackByUri(uri) {
-  const agent = assertAgent()
   const at = new AtUri(uri)
   const repo = at.hostname
   const collection = at.collection || R4_COLLECTION
   const rkey = at.rkey
-  const res = await withDpopRetry(() => agent.com.atproto.repo.getRecord({ repo, collection, rkey }))
-  const value = res.data?.value || {}
-  return { uri, ...value }
+  async function fetchWith(agent) {
+    return agent.com.atproto.repo.getRecord({ repo, collection, rkey })
+  }
+  // Try public appview first
+  try {
+    const res = await withDpopRetry(() => fetchWith(getPublicAgent()))
+    const value = res.data?.value || {}
+    return { uri, ...value }
+  } catch (e) {
+    // Fallbacks: direct PDS via PLC, then authenticated agent if available
+    try {
+      const pds = await getPdsForDid(repo)
+      const remote = new Agent({ service: pds })
+      const res = await withDpopRetry(() => fetchWith(remote))
+      const value = res.data?.value || {}
+      return { uri, ...value }
+    } catch (e2) {
+      try {
+        const auth = assertAgent()
+        const res = await withDpopRetry(() => fetchWith(auth))
+        const value = res.data?.value || {}
+        return { uri, ...value }
+      } catch (_) {
+        throw e2
+      }
+    }
+  }
+}
+
+export async function getHandleByDid(did) {
+  // Try public appview first
+  try {
+    const res = await getPublicAgent().app.bsky.actor.getProfile({ actor: did })
+    return res.data?.handle || null
+  } catch (e) {
+    // Try authenticated agent as fallback
+    try {
+      const auth = assertAgent()
+      const res = await auth.app.bsky.actor.getProfile({ actor: did })
+      return res.data?.handle || null
+    } catch (_) {
+      return null
+    }
+  }
 }

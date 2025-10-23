@@ -3,9 +3,9 @@
   import { getMyDid, listTracksByDid } from '../libs/r4-service.js'
   import { parseTrackUrl } from '../libs/url-patterns.js'
   import TrackList from './components/TrackList.svelte'
-  let items = []
-  let cursor = undefined
-  let error = ''
+  let items = $state([])
+  let cursor = $state(undefined)
+  let error = $state('')
 
   async function load() {
     try {
@@ -32,8 +32,8 @@
 {#if error}
   <div>Failed to load tracks: {error}</div>
 {:else}
-  <svelte:component this={TrackList} {items} editable={true} />
+  <TrackList {items} editable={true} onremoved={(e) => { items = items.filter((t) => t.uri !== e.detail.uri) }} />
   {#if cursor}
-    <button on:click={more}>Load more</button>
+    <button onclick={more}>Load more</button>
   {/if}
 {/if}

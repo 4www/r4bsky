@@ -3,8 +3,9 @@
   import { timelineTracks, isScopeMissing } from '../../libs/r4-service.js'
   import { setPlaylist } from '../player/store.js'
   import TrackList from '../components/TrackList.svelte'
-  let items = []
-  let error = ''
+  let items = $state([])
+  let error = $state('')
+  let loading = $state(true)
   const context = { type: 'timeline', key: 'following' }
   onMount(async () => {
     try {
@@ -12,14 +13,18 @@
     } catch (e) {
       error = e?.message || String(e)
       if (isScopeMissing(e)) error = 'Missing permission to read followings. Visit Settings to manage permissions.'
+    } finally {
+      loading = false
     }
   })
   function playAll(fromIdx) { setPlaylist(items, fromIdx) }
 </script>
 
 <h2>Timeline</h2>
-{#if error}
-  <div>Failed to load: {error} <button on:click={() => (location.hash = '#/settings')}>Open Settings</button></div>
+{#if loading}
+  <div>Loading…</div>
+{:else if error}
+  <div>Failed to load: {error} <button onclick={() => (location.hash = '#/settings')}>Open Settings</button></div>
 {:else}
-  <svelte:component this={TrackList} {items} {context} />
+  <TrackList {items} {context} onremoved={(e) => { items = items.filter((t) => t.uri !== e.detail.uri) }} />
 {/if}

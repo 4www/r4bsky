@@ -53,19 +53,28 @@
   })
 </script>
 
-<h2>Author Tracks</h2>
+{#if handle}
+  <header>
+    <div><strong>@{handle}</strong></div>
+    {#if did}
+      <FollowButton actorDid={did} />
+    {/if}
+  </header>
+{/if}
 {#if !handle}
   <form onsubmit={loadAuthor}>
-    <input type="text" bind:value={handle} placeholder="alice.bsky.social" required />
-    <button type="submit">Load</button>
+    <fieldset>
+      <legend><label for="author-handle">Handle</label></legend>
+      <input id="author-handle" name="handle" type="text" bind:value={handle} placeholder="alice.bsky.social" required />
+    </fieldset>
+    <fieldset>
+      <button type="submit">Load</button>
+    </fieldset>
   </form>
 {/if}
 {#if status}<div>{status}</div>{/if}
 {#if items.length}
-  <TrackList {items} {context} editable={($session?.did && did && $session.did === did) || false} />
-  {#if did}
-    <FollowButton actorDid={did} />
-  {/if}
+  <TrackList {items} {context} editable={($session?.did && did && $session.did === did) || false} onremoved={(e) => { items = items.filter((t) => t.uri !== e.detail.uri) }} />
   {#if cursor}
     <button onclick={more}>Load more</button>
   {/if}

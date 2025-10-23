@@ -9,26 +9,14 @@
   let current = $state('/')
   const userHandle = $derived(($session && $session.handle) || '')
   const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/')
-  const links = $derived(() => {
-    const authed = !!($session && $session.did)
-    if (authed) {
-      const arr = [
-        ['/', 'Home'],
-        ['/add', 'Add'],
-        ['/search', 'Search'],
-        ['/following', 'Following'],
-        ['/followers', 'Followers'],
-        ['/settings', 'Settings'],
-      ]
-      if (userHandle) arr.splice(2, 0, [myPath, `@${userHandle}`])
-      return arr
-    }
-    return [
-      ['/', 'Home'],
-      ['/search', 'Search'],
-      ['/settings', 'Settings'],
-    ]
-  })
+  const links = $derived(
+    ($session && $session.did)
+      ? (userHandle
+          ? [['/', 'Home'], ['/add', 'Add'], [myPath, `@${userHandle}`], ['/search', 'Search'], ['/following', 'Following'], ['/followers', 'Followers'], ['/settings', 'Settings']]
+          : [['/', 'Home'], ['/add', 'Add'], ['/search', 'Search'], ['/following', 'Following'], ['/followers', 'Followers'], ['/settings', 'Settings']]
+        )
+      : [['/', 'Home'], ['/search', 'Search'], ['/settings', 'Settings']]
+  )
 
   onMount(() => {
     initRouter()

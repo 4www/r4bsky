@@ -68,6 +68,9 @@
     scWidget = null
   }
 
+  let lastUrl = $state('')
+  let lastProvider = $state('')
+
   const unsub = player.subscribe((s) => {
     state = s
     current = s.playlist?.[s.index] || null
@@ -86,16 +89,30 @@
         iframeSrc = ''
         iframeProvider = ''
       } else {
-        if (audio) {
-          audio.pause()
-          audio.removeAttribute('src')
+        if (audio) { audio.pause(); audio.removeAttribute('src') }
+        const provider = meta?.provider || ''
+        const url = meta?.url || ''
+        // If track changed or provider changed, rebuild iframe
+        if (provider !== lastProvider || url !== lastUrl) {
+          iframeProvider = provider
+          iframeSrc = ''
+          Promise.resolve().then(() => {
+            iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || ''
+          })
+          lastProvider = provider
+          lastUrl = url
+        } else {
+          // Same track: control via provider SDKs
+          if (!s.playing) {
+            if (provider === 'youtube' && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo()
+            if (provider === 'soundcloud' && scWidget && scWidget.pause) scWidget.pause()
+            if (provider === 'vimeo' && vimeoPlayer && vimeoPlayer.pause) vimeoPlayer.pause().catch(() => {})
+          } else {
+            if (provider === 'youtube' && ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo()
+            if (provider === 'soundcloud' && scWidget && scWidget.play) scWidget.play()
+            if (provider === 'vimeo' && vimeoPlayer && vimeoPlayer.play) vimeoPlayer.play().catch(() => {})
+          }
         }
-        iframeProvider = meta?.provider || ''
-        iframeSrc = ''
-        // Force re-create iframe element by resetting then setting src in next microtask
-        Promise.resolve().then(() => {
-          iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || ''
-        })
       }
     }
   })
@@ -172,10 +189,10 @@
       <strong>{current.title}</strong>
     </div>
     <div>
-      <Button on:click={prev}>Prev</Button>
-      <Button on:click={toggle}>{state.playing ? 'Pause' : 'Play'}</Button>
-      <Button on:click={next}>Next</Button>
-      <a href={parseTrackUrl(current.url).url} target="_blank">Open</a>
+      <Button onclick={prev}>Prev</Button>
+      <Button onclick={toggle}>{state.playing ? 'Pause' : 'Play'}</Button>
+      <Button onclick={next}>Next</Button>
+      <a href={(parseTrackUrl(current?.url || '')?.url) || (current?.url || '#')} target="_blank">Open</a>
     </div>
     {#if parseTrackUrl(current.url)?.provider === 'file'}
       <audio bind:this={audio} onended={next} onplay={opened} controls></audio>

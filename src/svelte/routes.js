@@ -17,8 +17,10 @@ export const routes = [
   { pattern: '/followers', component: Followers, props: { mode: 'followers' } },
   { pattern: '/following', component: Followers, props: { mode: 'following' } },
   { pattern: '/settings', component: Settings },
+  { pattern: '/@:handle/:rkey', component: TrackView },
   { pattern: '/@:handle', component: AuthorTracks },
-  { pattern: '/t/:repo/:rkey', component: TrackView },
-  { pattern: '/t/:repo/:rkey/edit', component: TrackEdit },
   { pattern: '/@:handle/:rkey/edit', component: TrackEdit },
+  { pattern: '/@:handle/:rkey', component: TrackView },
+  { pattern: '/:repo/:rkey/edit', component: TrackEdit },
+  { pattern: '/:repo/:rkey', component: TrackView },
 ].map((r) => ({ ...r, match: compile(r.pattern) }))

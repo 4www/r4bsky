@@ -2,9 +2,10 @@
   import { onMount } from 'svelte'
   import { getMyDid, getFollowers, getFollows } from '../../libs/r4-service.js'
   const { mode = 'followers' } = $props() // or 'following'
-  let items = []
-  let cursor = undefined
-  let error = ''
+  let items = $state([])
+  let cursor = $state(undefined)
+  let error = $state('')
+  let loading = $state(true)
 
   async function load() {
     try {
@@ -29,7 +30,7 @@
       if (msg.includes('Missing required scope')) {
         error = 'Missing permission to read social graph. Visit Settings to manage permissions.'
       }
-    })
+    }).finally(() => { loading = false })
   })
 
   async function more() {
@@ -48,7 +49,9 @@
 </script>
 
 <h2>{mode === 'followers' ? 'Followers' : 'Following'}</h2>
-{#if error}
+{#if loading}
+  <div>Loading…</div>
+{:else if error}
   <div>{error}</div>
 {:else}
   <ul>
@@ -64,9 +67,9 @@
     {/if}
   </ul>
   {#if cursor}
-    <button on:click={more}>Load more</button>
+    <button onclick={more}>Load more</button>
   {/if}
   {#if error?.includes('Missing permission')}
-    <button on:click={() => (location.hash = '#/settings')}>Open Settings</button>
+    <button onclick={() => (location.hash = '#/settings')}>Open Settings</button>
   {/if}
 {/if}

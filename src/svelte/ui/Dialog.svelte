@@ -1,7 +1,7 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from 'svelte'
   const dispatch = createEventDispatcher()
-  const { open = true, onClose = null, title = '' } = $props()
+  const { open = true, onClose = null, title = '', children, footer } = $props()
   let visible = $state(open)
   $effect(() => { visible = open })
   function close() {
@@ -16,11 +16,11 @@
 </script>
 
 {#if visible}
-  <div role="dialog" aria-modal="true" on:click={onBackdrop}>
+  <div role="dialog" aria-modal="true" tabindex="0" onclick={onBackdrop} onkeydown={onKey}>
     <div>
       {#if title}<header><h3>{title}</h3></header>{/if}
-      <section><slot /></section>
-      <footer><slot name="footer" /></footer>
+      <section>{@render children?.()}</section>
+      <footer>{@render footer?.()}</footer>
     </div>
   </div>
 {/if}

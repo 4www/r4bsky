@@ -3,7 +3,7 @@
   import { deleteTrackByUri } from '../../libs/r4-service.js'
   import { setPlaylist } from '../player/store.js'
   import { session } from '../state/session.js'
-  import { buildEditHash } from '../../libs/track-uri.js'
+  import { buildEditHash, buildViewHash } from '../../libs/track-uri.js'
   import { createEventDispatcher } from 'svelte'
   import Button from '../ui/Button.svelte'
   import Card from '../ui/Card.svelte'
@@ -28,27 +28,36 @@
     const handle = $session?.handle
     return buildEditHash(handle, item.uri)
   }
+  const safeOpenUrl = $derived.by(() => {
+    try {
+      const m = parseTrackUrl(item?.url || '')
+      return (m && m.url) || item?.url || '#'
+    } catch { return '#' }
+  })
+
+  function viewHref() {
+    const authorHandle = (context && context.handle) ? context.handle : null
+    return buildViewHash(authorHandle, item.uri)
+  }
 </script>
 
-{#if parseTrackUrl(item.url)}
-  <Card>
-    <div>
-      <a href={parseTrackUrl(item.url).url} target="_blank">{item.title || parseTrackUrl(item.url).url}</a>
-      <Button onclick={play}>Play</Button>
-      {#if editable}
-        <DropdownMenu label="Actions">
-          {#if editHref()}
-            <a href={editHref()}>Edit</a>
-          {/if}
-          <button onclick={remove}>Delete</button>
-        </DropdownMenu>
-      {/if}
-    </div>
-    {#if item.description}
-      <div>{item.description}</div>
+<Card>
+  <div>
+    <a href={viewHref()}>{item.title || safeOpenUrl}</a>
+    <Button onclick={play}>Play</Button>
+    {#if editable}
+      <DropdownMenu label="Actions">
+        {#if editHref()}
+          <a href={editHref()}>Edit</a>
+        {/if}
+        <button onclick={remove}>Delete</button>
+      </DropdownMenu>
     {/if}
-    {#if message}
-      <div>{message}</div>
-    {/if}
-  </Card>
-{/if}
+  </div>
+  {#if item.description}
+    <div>{item.description}</div>
+  {/if}
+  {#if message}
+    <div>{message}</div>
+  {/if}
+</Card>

@@ -1,6 +1,8 @@
 <script>
   import Button from '../ui/Button.svelte'
-  const { links = [], current = '/' } = $props()
+  const props = $props()
+  const linksVal = $derived(props.links || [])
+  const currentVal = $derived(props.current ?? '/')
   let open = $state(false)
   function toggle() { open = !open }
   function close() { open = false }
@@ -10,16 +12,11 @@
   <div>
     <a href="#/">R4Bsky</a>
     <button onclick={toggle} aria-label="Menu">Menu</button>
-    <nav>
-      {#each links as [href, title]}
-        <a href={'#'+href} aria-current={current===href? 'page': undefined}>{title}</a>
-      {/each}
-    </nav>
   </div>
   {#if open}
     <nav>
-      {#each links as [href, title]}
-        <a href={'#'+href} onclick={close} aria-current={current===href? 'page': undefined}>{title}</a>
+      {#each linksVal as [href, title]}
+        <a href={'#'+href} onclick={close} aria-current={currentVal===href? 'page': undefined}>{title}</a>
       {/each}
     </nav>
   {/if}

@@ -21,6 +21,13 @@ export function buildEditHash(sessionHandle, uri) {
   if (!parsed) return null
   const { repo, rkey } = parsed
   if (sessionHandle) return `#/@${encodeURIComponent(sessionHandle)}/${encodeURIComponent(rkey)}/edit`
-  return `#/t/${encodeURIComponent(repo)}/${encodeURIComponent(rkey)}/edit`
+  return `#/${encodeURIComponent(repo)}/${encodeURIComponent(rkey)}/edit`
 }
 
+export function buildViewHash(sessionHandle, uri) {
+  const parsed = parseAtUri(uri)
+  if (!parsed) return null
+  const { repo, rkey } = parsed
+  if (sessionHandle) return `#/@${encodeURIComponent(sessionHandle)}/${encodeURIComponent(rkey)}`
+  return `#/${encodeURIComponent(repo)}/${encodeURIComponent(rkey)}`
+}

@@ -38,7 +38,7 @@
         hashPath === '/following' ||
         hashPath === '/settings' ||
         hashPath.startsWith('/@') ||
-        hashPath.startsWith('/t/')
+        /[^/]+\/.+/.test(hashPath)
       )
       if (!isAllowed) {
         const me = bskyOAuth.session?.handle || bskyOAuth.session?.did

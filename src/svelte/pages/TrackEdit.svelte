@@ -4,8 +4,8 @@
   import Dialog from '../ui/Dialog.svelte'
   import TrackEditForm from '../components/TrackEditForm.svelte'
   const { repo, rkey, handle } = $props()
-  let initial = { url: '', title: '', description: '', discogs_url: '' }
-  let uri = ''
+  let initial = $state({ url: '', title: '', description: '', discogs_url: '' })
+  let uri = $state('')
 
   $effect(() => {
     ;(async () => {
@@ -38,6 +38,6 @@
   }
 </script>
 
-<svelte:component this={Dialog} title="Edit Track" onClose={close}>
-  <svelte:component this={TrackEditForm} uri={uri} initial={initial} />
-</svelte:component>
+<Dialog title="Edit Track" onClose={close}>
+  <TrackEditForm uri={uri} initial={initial} />
+</Dialog>

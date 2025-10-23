@@ -33,18 +33,20 @@
 <h2>Settings</h2>
 <div>
   <div>Logged in as: {$session?.handle || $session?.did}</div>
-  <svelte:component this={Button} disabled={working} on:click={managePermissions}>Manage permissions</svelte:component>
+  <Button disabled={working} onclick={managePermissions}>Manage permissions</Button>
   {#if $session?.did}
-    <svelte:component this={Button} disabled={working} on:click={signOut}>Logout</svelte:component>
+    <Button disabled={working} onclick={signOut}>Logout</Button>
   {/if}
   {#if !$session?.did}
     <h3>Sign in</h3>
-    <form on:submit|preventDefault={async () => { if (handle) { await bskyOAuth.signIn(handle); session.refresh() } }}>
-      <label>
-        Handle
-        <input type="text" bind:value={handle} placeholder="your-handle.bsky.social" />
-      </label>
-      <svelte:component this={Button} type="submit">Sign in</svelte:component>
+    <form onsubmit={async (e) => { e.preventDefault(); if (handle) { await bskyOAuth.signIn(handle); session.refresh() } }}>
+      <fieldset>
+        <legend><label for="signin-handle">Handle</label></legend>
+        <input id="signin-handle" name="handle" type="text" bind:value={handle} placeholder="your-handle.bsky.social" />
+      </fieldset>
+      <fieldset>
+        <Button type="submit">Sign in</Button>
+      </fieldset>
     </form>
   {/if}
 </div>
