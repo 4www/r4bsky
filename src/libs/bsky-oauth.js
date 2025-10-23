@@ -149,11 +149,14 @@ class BskyOAuthService {
 
 	/** Resolve handle lazily and update session */
 	async resolveHandle() {
-		if (!this.agent || !this.session?.did) return this.session?.handle
+		if (!this.session?.did) return this.session?.handle
 		try {
-			const profile = await this.agent.getProfile({ actor: this.session.did })
+			const publicAgent = new Agent({ service: 'https://api.bsky.app' })
+			const profile = await publicAgent.getProfile({ actor: this.session.did })
 			const handle = profile.data?.handle || this.session.handle
-			this.session = { ...this.session, handle }
+			if (handle && handle !== this.session.handle) {
+				this.session = { ...this.session, handle }
+			}
 			return handle
 		} catch {
 			return this.session.handle

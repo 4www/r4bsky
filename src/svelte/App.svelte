@@ -13,6 +13,8 @@
       ? new URL('client-metadata.json', window.location.href).href
       : buildLoopbackClientId(window.location)
     await bskyOAuth.init(clientId)
+    // Ensure OAuth callback is processed (in case client.init didn't hydrate)
+    try { await bskyOAuth.handleCallback() } catch {}
     // handleCallback not needed if client.init() already processed
     // Lazy resolve human handle (avoid eager network on hydration)
     if (bskyOAuth.isAuthenticated()) {
