@@ -37,12 +37,7 @@
   })
 </script>
 
-  <nav>
-  {#each links as [href, title]}
-    <a href={'#' + href} aria-current={current === href ? 'page' : undefined}>{title}</a>
-  {/each}
-  <hr />
-  </nav>
+  <svelte:component this={ (await import('./components/NavBar.svelte')).default } {links} {current} />
 
   {#key current}
     {#await Promise.resolve(resolve(routes, current)) then m}
