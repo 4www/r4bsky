@@ -59,8 +59,9 @@ Custom record (com.radio4000.track)
 - Create/List/Update/Delete implemented in `src/libs/r4-service.js` via atproto repo APIs.
 
 Permissions & scopes
-- Some operations require extra scopes (e.g., create custom repo records, follow/unfollow, reading graph).
-- The app tries to request fine-grained scopes via `authorization_details`; if not supported, it falls back to default scope.
+- Custom records only: `com.radio4000.track` (create, update, delete).
+- Social (optional): `app.bsky.graph.follow` (create, delete) for follow/unfollow.
+- No feed posting is attempted or requested.
 - If reads or writes fail due to missing scope, you’ll see a clear message and an “Open Settings” button.
 
 Troubleshooting
