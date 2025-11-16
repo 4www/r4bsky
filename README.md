@@ -49,11 +49,16 @@ Architecture (modular)
   - oEmbed/Discogs helpers: `src/libs/oembed.js`, `src/libs/discogs.js`
 
 OAuth setup (prod vs dev)
-- Dev (loopback): handled automatically using loopback client id.
+- Dev (HTTP loopback): handled automatically using loopback client id. Note: Bluesky OAuth requires HTTPS, so HTTP localhost may not work for actual login.
+- Dev (HTTPS with Tailscale Funnel): Expose your local dev server publicly via Tailscale funnel:
+  1. Start your dev server: `npm run dev`
+  2. Run `tailscale funnel --bg 443:https+insecure://localhost:5174` (adjust port if needed)
+  3. Update `public/client-metadata.json` with your Tailscale domain (e.g., `https://yourname.tailnet.ts.net`)
+  4. Access your app via the Tailscale funnel URL and OAuth will work
 - Prod (HTTPS): expose `public/client-metadata.json` at a stable URL.
   - If deploying on GitHub Pages under `/r4bsky`, include both with and without trailing slash in `redirect_uris`.
   - The app passes a canonical `redirect_uri` (with trailing slash) for both authorization and callback handling to avoid mismatches.
-  - Some servers don’t support `authorization_details` yet; the app falls back to default atproto scope.
+  - Some servers don't support `authorization_details` yet; the app falls back to default atproto scope.
  - Optional (force HTTPS client metadata in dev): set `VITE_CLIENT_ID` in your env to the full URL of a hosted `client-metadata.json` to request fine-grained scopes even when running locally.
 
 Custom record (com.radio4000.track)
@@ -68,8 +73,10 @@ Permissions & scopes
 
 Troubleshooting
 - Login redirect mismatch on GitHub Pages: ensure your `public/client-metadata.json` includes both `https://user.github.io/r4bsky` and `https://user.github.io/r4bsky/` in `redirect_uris`.
-- DPoP nonce 401 seen in devtools: we avoid eager profile fetch on hydration; it’s harmless if seen intermittently.
-- Scope errors on Timeline/Followers: open Settings and re-consent; if the server doesn’t support fine-grained scopes, it will fall back.
+- "Invalid hostname" error during OAuth: if using Tailscale, make sure you're using `tailscale funnel` (public) not `tailscale serve` (private). Bluesky's OAuth server needs public access to fetch your client metadata.
+- OAuth callback not completing login: check browser console for errors. Ensure your `client-metadata.json` redirect_uris match exactly (with and without trailing slash).
+- DPoP nonce 401 seen in devtools: we avoid eager profile fetch on hydration; it's harmless if seen intermittently.
+- Scope errors on Timeline/Followers: open Settings and re-consent; if the server doesn't support fine-grained scopes, it will fall back.
 
 License
 MIT
