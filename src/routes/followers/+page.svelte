@@ -105,9 +105,18 @@
           <a href={resolve(`/@${encodeURIComponent(actor.handle || actor.did)}`)} class="block">
             <CardHeader class="pb-3">
               <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                  <User class="h-5 w-5 text-muted-foreground" />
-                </div>
+                {#if actor.avatar}
+                  <img
+                    src={actor.avatar}
+                    alt={actor.displayName || actor.handle || t('common.unknown')}
+                    class="h-10 w-10 rounded-full object-cover border"
+                    loading="lazy"
+                  />
+                {:else}
+                  <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <User class="h-5 w-5 text-muted-foreground" />
+                  </div>
+                {/if}
                 <div class="flex-1 min-w-0">
                   <CardTitle class="text-base">
                     {actor.displayName || actor.handle || t('common.unknown')}
