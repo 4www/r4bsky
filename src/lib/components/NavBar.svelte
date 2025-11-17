@@ -1,0 +1,61 @@
+<script lang="ts">
+  import { Button } from '$lib/components/ui/button';
+  import { Menu } from 'lucide-svelte';
+
+  const props = $props();
+  const linksVal = $derived(props.links || []);
+  const currentVal = $derived(props.current ?? '/');
+  let open = $state(false);
+
+  function toggle() { open = !open; }
+  function close() { open = false; }
+</script>
+
+<header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <div class="container flex h-14 items-center justify-between">
+    <div class="flex items-center gap-6">
+      <a href="/" class="flex items-center space-x-2">
+        <span class="font-bold text-xl">R4 AT Protocol</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center gap-6">
+        {#each linksVal as [href, title]}
+          <a
+            {href}
+            class="text-sm font-medium transition-colors hover:text-primary"
+            class:text-primary={currentVal === href}
+            class:text-muted-foreground={currentVal !== href}
+          >
+            {title}
+          </a>
+        {/each}
+      </nav>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <Button variant="ghost" size="sm" class="md:hidden" onclick={toggle}>
+      <Menu class="h-5 w-5" />
+      <span class="sr-only">Toggle menu</span>
+    </Button>
+  </div>
+
+  <!-- Mobile Navigation -->
+  {#if open}
+    <div class="md:hidden border-t">
+      <nav class="container grid gap-2 py-4">
+        {#each linksVal as [href, title]}
+          <a
+            {href}
+            onclick={close}
+            class="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+            class:bg-accent={currentVal === href}
+            class:text-accent-foreground={currentVal === href}
+          >
+            {title}
+          </a>
+        {/each}
+      </nav>
+    </div>
+  {/if}
+</header>
