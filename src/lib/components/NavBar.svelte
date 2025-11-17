@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Menu } from 'lucide-svelte';
+  import { locale, translate } from '$lib/i18n';
 
   const props = $props();
   const linksVal = $derived(props.links || []);
@@ -9,13 +10,15 @@
 
   function toggle() { open = !open; }
   function close() { open = false; }
+
+  const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
 
 <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
   <div class="container flex h-14 items-center justify-between">
     <div class="flex items-center gap-6">
       <a href="/" class="flex items-center space-x-2">
-        <span class="font-bold text-xl">R4 AT Protocol</span>
+        <span class="font-bold text-xl">{t('nav.brand')}</span>
       </a>
 
       <!-- Desktop Navigation -->
@@ -36,7 +39,7 @@
     <!-- Mobile Menu Button -->
     <Button variant="ghost" size="sm" class="md:hidden" onclick={toggle}>
       <Menu class="h-5 w-5" />
-      <span class="sr-only">Toggle menu</span>
+      <span class="sr-only">{t('nav.toggle')}</span>
     </Button>
   </div>
 

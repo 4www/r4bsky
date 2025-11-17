@@ -10,10 +10,15 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink } from 'lucide-svelte';
   import { cn } from '$lib/utils';
+  import { resolve } from '$app/paths';
+  import { goto } from '$app/navigation';
+  import { locale, translate } from '$lib/i18n';
 
   const { item, index = 0, items = [], context = null, editable = false } = $props();
   let message = $state('');
   const dispatch = createEventDispatcher();
+
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   function play() {
     setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
@@ -47,6 +52,27 @@
     const authorHandle = (context && context.handle) ? context.handle : null;
     return buildViewHash(authorHandle, item.uri);
   }
+
+  function openEdit() {
+    const href = editHref();
+    if (href) {
+      goto(resolve(href));
+    }
+  }
+
+  function openDetail(event?: Event) {
+    event?.preventDefault?.();
+    const href = viewHref();
+    if (href) {
+      goto(resolve(href));
+    }
+  }
+
+  function openExternalUrl() {
+    const url = safeOpenUrl;
+    if (!url || url === '#') return;
+    window.open(url, '_blank', 'noopener');
+  }
 </script>
 
 <Card class="hover:shadow-md transition-shadow">
@@ -54,13 +80,13 @@
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1 min-w-0">
         <CardTitle class="text-lg">
-          <a href={viewHref()} class="hover:text-primary transition-colors">
-            {item.title || 'Untitled Track'}
+          <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors" onclick={openDetail}>
+            {item.title || t('trackItem.untitled')}
           </a>
         </CardTitle>
         {#if context?.handle}
           <CardDescription class="mt-1">
-            by @{context.handle}
+            {t('trackItem.by', { handle: context.handle })}
           </CardDescription>
         {/if}
       </div>
@@ -68,7 +94,7 @@
       <div class="flex items-center gap-2">
         <Button size="sm" onclick={play}>
           <Play class="h-4 w-4 mr-1" />
-          Play
+          {t('trackItem.play')}
         </Button>
 
         {#if editable}
@@ -80,35 +106,33 @@
                   class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), props.class)}
                 >
                   <MoreVertical class="h-4 w-4" />
-                  <span class="sr-only">Actions</span>
+                  <span class="sr-only">{t('trackItem.actions')}</span>
                 </button>
               {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               <DropdownMenu.Group>
                 {#if editHref()}
-                  <DropdownMenu.Item href={editHref()}>
+                  <DropdownMenu.Item on:click={openEdit}>
                     <Pencil class="mr-2 h-4 w-4" />
-                    Edit
+                    {t('trackItem.edit')}
                   </DropdownMenu.Item>
                 {/if}
-                <DropdownMenu.Item href={safeOpenUrl} target="_blank">
+                <DropdownMenu.Item on:click={openExternalUrl}>
                   <ExternalLink class="mr-2 h-4 w-4" />
-                  Open URL
+                  {t('trackItem.openUrl')}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item on:click={remove} class="text-destructive focus:text-destructive">
                   <Trash2 class="mr-2 h-4 w-4" />
-                  Delete
+                  {t('trackItem.delete')}
                 </DropdownMenu.Item>
               </DropdownMenu.Group>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else}
-          <Button variant="ghost" size="icon" asChild>
-            <a href={safeOpenUrl} target="_blank">
-              <ExternalLink class="h-4 w-4" />
-            </a>
+          <Button variant="ghost" size="icon" onclick={openExternalUrl} aria-label={t('trackItem.openExternal')}>
+            <ExternalLink class="h-4 w-4" />
           </Button>
         {/if}
       </div>

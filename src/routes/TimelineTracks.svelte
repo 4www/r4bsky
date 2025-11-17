@@ -4,22 +4,39 @@
   import { setPlaylist } from '$lib/player/store';
   import TrackList from '$lib/components/TrackList.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { PlayCircle, AlertCircle } from 'lucide-svelte';
+  import {
+    Card,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+  } from '$lib/components/ui/card';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { PlayCircle, AlertCircle, Loader2, Music4 } from 'lucide-svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { locale, translate } from '$lib/i18n';
 
   let items = $state([]);
   let error = $state('');
   let loading = $state(true);
   const context = { type: 'timeline', key: 'following' };
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
-  onMount(async () => {
+  async function loadTimeline() {
+    loading = true;
+    error = '';
     try {
       items = await timelineTracks({ limitPerActor: 5 });
     } catch (e) {
-      error = (e as Error)?.message || String(e);
-      if (isScopeMissing(e)) error = 'Missing permission to read followings. Visit Settings to manage permissions.';
+      if (isScopeMissing(e)) error = t('timeline.errorMissingScope');
+      else error = (e as Error)?.message || String(e);
     } finally {
       loading = false;
     }
+  }
+
+  onMount(() => {
+    loadTimeline();
   });
 
   function playAll(fromIdx: number) {
@@ -27,38 +44,63 @@
   }
 </script>
 
-<div class="container max-w-4xl py-8">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Your Timeline</h1>
-    {#if items.length > 0}
-      <Button onclick={() => playAll(0)}>
-        <PlayCircle class="mr-2 h-4 w-4" />
-        Play All
-      </Button>
-    {/if}
-  </div>
+<div class="container max-w-4xl py-8 space-y-6">
+  <Card>
+    <CardHeader class="gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <CardTitle class="text-3xl">{t('timeline.title')}</CardTitle>
+        <CardDescription>
+          {t('timeline.description')}
+        </CardDescription>
+      </div>
+      {#if items.length > 0}
+        <Button onclick={() => playAll(0)}>
+          <PlayCircle class="mr-2 h-4 w-4" />
+          {t('timeline.playAll')}
+        </Button>
+      {/if}
+    </CardHeader>
+  </Card>
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-        <p class="mt-2 text-muted-foreground">Loading tracks...</p>
-      </div>
-    </div>
+    <StateCard
+      icon={Loader2}
+      title={t('timeline.loadingTitle')}
+      description={t('timeline.loadingDescription')}
+      class="border-dashed"
+    />
   {:else if error}
-    <div class="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-      <div class="flex items-start gap-3">
-        <AlertCircle class="h-5 w-5 text-destructive mt-0.5" />
-        <div class="flex-1">
-          <h3 class="font-semibold text-destructive mb-2">Failed to load timeline</h3>
-          <p class="text-sm text-destructive/90 mb-4">{error}</p>
-          <Button variant="outline" onclick={() => (location.hash = '#/settings')}>
-            Open Settings
-          </Button>
-        </div>
-      </div>
-    </div>
+    <StateCard
+      icon={AlertCircle}
+      title={t('timeline.errorTitle')}
+      description={error}
+    >
+      {#snippet actions()}
+        <Button variant="outline" onclick={loadTimeline}>
+          {t('buttons.tryAgain')}
+        </Button>
+        <Button variant="ghost" onclick={() => goto(resolve('/settings'))}>
+          {t('buttons.openSettings')}
+        </Button>
+      {/snippet}
+    </StateCard>
+  {:else if items.length === 0}
+    <StateCard
+      icon={Music4}
+      title={t('timeline.emptyTitle')}
+      description={t('timeline.emptyDescription')}
+    >
+      {#snippet actions()}
+        <Button variant="outline" onclick={() => goto(resolve('/search'))}>
+          {t('timeline.findPeople')}
+        </Button>
+      {/snippet}
+    </StateCard>
   {:else}
-    <TrackList tracks={items} {context} onremoved={(e) => { items = items.filter((t) => t.uri !== e.detail.uri); }} />
+    <TrackList
+      tracks={items}
+      {context}
+      onremoved={(e) => { items = items.filter((t) => t.uri !== e.detail.uri); }}
+    />
   {/if}
 </div>

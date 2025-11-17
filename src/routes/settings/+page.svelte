@@ -6,16 +6,20 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { LogOut, Shield, User, Loader2 } from 'lucide-svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { locale as localeStore, translate, availableLocales } from '$lib/i18n';
 
   let working = $state(false);
   let handle = $state('');
+  const t = (key, vars = {}) => translate($localeStore, key, vars);
 
   async function signOut() {
     try {
       working = true;
       await bskyOAuth.signOut();
       session.refresh();
-      location.hash = '#/';
+      goto(resolve('/'));
     } catch (e) {
       console.error(e);
     } finally {
@@ -52,8 +56,8 @@
 
 <div class="container max-w-2xl py-8">
   <div class="mb-6">
-    <h1 class="text-3xl font-bold">Settings</h1>
-    <p class="text-muted-foreground mt-1">Manage your account and permissions</p>
+    <h1 class="text-3xl font-bold">{t('settings.title')}</h1>
+    <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
   </div>
 
   {#if $session?.did}
@@ -62,19 +66,19 @@
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <User class="h-5 w-5" />
-            Account
+            {t('settings.accountTitle')}
           </CardTitle>
-          <CardDescription>Your Bluesky account information</CardDescription>
+          <CardDescription>{t('settings.accountDescription')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
-            <Label>Handle</Label>
+            <Label>{t('settings.handleLabel')}</Label>
             <div class="text-sm font-mono bg-muted px-3 py-2 rounded-md">
-              @{$session.handle || 'Loading...'}
+              @{$session.handle || '...'}
             </div>
           </div>
           <div class="space-y-2">
-            <Label>DID</Label>
+            <Label>{t('settings.didLabel')}</Label>
             <div class="text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
               {$session.did}
             </div>
@@ -86,25 +90,48 @@
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <Shield class="h-5 w-5" />
-            Permissions
+            {t('settings.permissionsTitle')}
           </CardTitle>
           <CardDescription>
-            Manage app permissions for accessing your Bluesky data
+            {t('settings.permissionsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button onclick={managePermissions} disabled={working} variant="outline" class="w-full">
             {#if working}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              Processing...
+              {t('settings.permissionsWorking')}
             {:else}
               <Shield class="mr-2 h-4 w-4" />
-              Manage Permissions
+              {t('settings.permissionsButton')}
             {/if}
           </Button>
           <p class="text-xs text-muted-foreground mt-3">
-            You'll be redirected to Bluesky to update your permissions
+            {t('settings.permissionsFootnote')}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            {t('settings.languageTitle')}
+          </CardTitle>
+          <CardDescription>
+            {t('settings.languageDescription')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-2">
+          <Label for="language-select">{t('settings.languageLabel')}</Label>
+          <select
+            id="language-select"
+            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            bind:value={$localeStore}
+          >
+            {#each availableLocales as option}
+              <option value={option.code}>{option.label}</option>
+            {/each}
+          </select>
         </CardContent>
       </Card>
 
@@ -112,20 +139,20 @@
         <CardHeader>
           <CardTitle class="text-destructive flex items-center gap-2">
             <LogOut class="h-5 w-5" />
-            Sign Out
+            {t('settings.signOutTitle')}
           </CardTitle>
           <CardDescription>
-            Sign out from your Bluesky account
+            {t('settings.signOutDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
             {#if working}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              Signing out...
+              {t('settings.signOutWorking')}
             {:else}
               <LogOut class="mr-2 h-4 w-4" />
-              Sign Out
+              {t('settings.signOutButton')}
             {/if}
           </Button>
         </CardContent>
@@ -134,30 +161,30 @@
   {:else}
     <Card>
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>{t('settings.signInTitle')}</CardTitle>
         <CardDescription>
-          Sign in with your Bluesky account to start sharing music
+          {t('settings.signInDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onsubmit={handleSignIn} class="space-y-4">
           <div class="space-y-2">
-            <Label for="signin-handle">Bluesky Handle</Label>
+            <Label for="signin-handle">{t('home.handleLabel')}</Label>
             <Input
               id="signin-handle"
               name="handle"
               type="text"
               bind:value={handle}
-              placeholder="your-handle.bsky.social"
+              placeholder={t('home.handlePlaceholder')}
               disabled={working}
             />
           </div>
           <Button type="submit" class="w-full" disabled={working || !handle.trim()}>
             {#if working}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
+              {t('settings.signInWorking')}
             {:else}
-              Sign In with Bluesky
+              {t('settings.signInButton')}
             {/if}
           </Button>
         </form>

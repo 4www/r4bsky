@@ -7,9 +7,15 @@
   import NavBar from '$lib/components/NavBar.svelte';
   import Player from '$lib/components/Player.svelte';
   import '../app.css';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { Loader2 } from 'lucide-svelte';
+  import { player } from '$lib/player/store';
+  import { locale, translate } from '$lib/i18n';
+  import { cn } from '$lib/utils';
 
   let { children } = $props();
   let ready = $state(false);
+  let hasDesktopPlayer = $state(false);
 
   async function initOAuth() {
     try {
@@ -47,6 +53,10 @@
 
   onMount(() => {
     initOAuth().catch(console.error);
+    const unsubscribe = player.subscribe((state) => {
+      hasDesktopPlayer = state.playlist?.length > 0 && state.index >= 0;
+    });
+    return () => unsubscribe();
   });
 
   const userHandle = $derived(($session && $session.handle) || '');
@@ -56,26 +66,28 @@
   const links = $derived(
     ($session && $session.did)
       ? (userHandle
-          ? [['/', 'Home'], ['/add', 'Add'], [myPath, `@${userHandle}`], ['/search', 'Search'], ['/following', 'Following'], ['/followers', 'Followers'], ['/settings', 'Settings']]
-          : [['/', 'Home'], ['/add', 'Add'], ['/search', 'Search'], ['/following', 'Following'], ['/followers', 'Followers'], ['/settings', 'Settings']]
+          ? [['/', t('nav.links.home')], ['/add', t('nav.links.add')], [myPath, `@${userHandle}`], ['/search', t('nav.links.search')], ['/following', t('nav.links.following')], ['/followers', t('nav.links.followers')], ['/settings', t('nav.links.settings')]]
+          : [['/', t('nav.links.home')], ['/add', t('nav.links.add')], ['/search', t('nav.links.search')], ['/following', t('nav.links.following')], ['/followers', t('nav.links.followers')], ['/settings', t('nav.links.settings')]]
         )
-      : [['/', 'Home'], ['/search', 'Search'], ['/settings', 'Settings']]
+      : [['/', t('nav.links.home')], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
   );
+  const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
 
 {#if !ready}
-  <div class="flex items-center justify-center min-h-screen">
-    <div class="text-center">
-      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-      <p class="mt-2 text-muted-foreground">Loading...</p>
-    </div>
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <StateCard
+      icon={Loader2}
+      title={t('app.loadingTitle')}
+      description={t('app.loadingDescription')}
+    />
   </div>
 {:else}
   <div class="flex flex-col min-h-screen">
     <NavBar {links} {current} />
-    <main class="flex-1 pb-32">
+    <Player />
+    <main class={cn("flex-1 pb-12 transition-[padding]", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
       {@render children()}
     </main>
-    <Player />
   </div>
 {/if}

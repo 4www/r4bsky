@@ -1,4 +1,5 @@
-import { BrowserOAuthClient, OAuthCallbackError, OAuthSession } from '@atproto/oauth-client-browser'
+import { BrowserOAuthClient } from '@atproto/oauth-client-browser'
+import type { OAuthSession } from '@atproto/oauth-client-browser'
 import { Agent } from '@atproto/api'
 
 interface Session {
@@ -35,12 +36,16 @@ class BskyOAuthService {
 	agent: Agent | null
 	session: Session | null
 	initialized: boolean
+	initPromise: Promise<void> | null
+	lastClientId: string | null
 
 	constructor() {
 		this.client = null
 		this.agent = null
 		this.session = null
 		this.initialized = false
+		this.initPromise = null
+		this.lastClientId = null
 	}
 
 	#canonicalRedirectUri(): string | undefined {
@@ -62,6 +67,17 @@ class BskyOAuthService {
 	}
 
 	async init(clientId: string): Promise<void> {
+		this.lastClientId = clientId
+		if (this.initialized) return
+		if (!this.initPromise) {
+			this.initPromise = this.#initInternal(clientId).finally(() => {
+				this.initPromise = null
+			})
+		}
+		return this.initPromise
+	}
+
+	async #initInternal(clientId: string): Promise<void> {
 		if (this.initialized) return
 
 		try {
@@ -98,16 +114,26 @@ class BskyOAuthService {
 		}
 	}
 
+	private async ensureInitialized(): Promise<void> {
+		if (this.initialized) return
+		if (this.initPromise) {
+			await this.initPromise
+			return
+		}
+		if (this.lastClientId) {
+			await this.init(this.lastClientId)
+			return
+		}
+		throw new Error('OAuth client not initialized')
+	}
+
 	/**
 	 * Start the OAuth login flow
 	 * This will redirect the user to their Bluesky instance for authentication
 	 */
 	async signIn(handle: string): Promise<SignInResult> {
 		try {
-			if (!this.initialized) {
-				throw new Error('OAuth client not initialized')
-			}
-
+			await this.ensureInitialized()
 			if (!this.client) {
 				throw new Error('OAuth client not available')
 			}
@@ -161,7 +187,7 @@ class BskyOAuthService {
 	 * Request additional fine-grained permissions via re-consent.
 	 */
 	async requestScopes(): Promise<void> {
-		if (!this.initialized) throw new Error('OAuth client not initialized')
+		await this.ensureInitialized()
 		if (!this.client) throw new Error('OAuth client not available')
 		const handle = this.session?.handle || this.session?.did
 		if (!handle) throw new Error('No session')

@@ -1,5 +1,8 @@
 <script lang="ts">
   import TrackListItem from './TrackListItem.svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { Music4 } from 'lucide-svelte';
+  import { locale, translate } from '$lib/i18n';
 
   const { tracks = [], context = null, editable = false } = $props();
 
@@ -10,6 +13,7 @@
       if (idx !== -1) tracks.splice(idx, 1);
     }
   }
+  const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
 
 {#if tracks && tracks.length > 0}
@@ -26,7 +30,9 @@
     {/each}
   </div>
 {:else}
-  <div class="text-center py-12">
-    <p class="text-muted-foreground">No tracks found</p>
-  </div>
+  <StateCard
+    icon={Music4}
+    title={t('trackList.emptyTitle')}
+    description={t('trackList.emptyDescription')}
+  />
 {/if}

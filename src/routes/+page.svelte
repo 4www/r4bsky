@@ -6,14 +6,16 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import TimelineTracks from './TimelineTracks.svelte';
+  import { locale, translate } from '$lib/i18n';
 
   let handle = $state('');
   let error = $state('');
   let signingIn = $state(false);
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function handleSignIn() {
     if (!handle.trim()) {
-      error = 'Please enter your handle';
+      error = t('home.errorRequired');
       return;
     }
 
@@ -23,7 +25,7 @@
     try {
       await bskyOAuth.signIn(handle.trim());
     } catch (err) {
-      error = (err as Error)?.message || 'Sign in failed';
+      error = t('home.errorMessage', { message: (err as Error)?.message || 'Unknown error' });
       signingIn = false;
     }
   }
@@ -37,19 +39,19 @@
   <div class="container mx-auto max-w-md mt-16 px-4">
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to R4 AT Protocol</CardTitle>
+        <CardTitle>{t('home.title')}</CardTitle>
         <CardDescription>
-          Share and discover music tracks on Bluesky
+          {t('home.subtitle')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onsubmit={(e) => { e.preventDefault(); handleSignIn(); }} class="space-y-4">
           <div class="space-y-2">
-            <Label for="handle">Your Bluesky Handle</Label>
+            <Label for="handle">{t('home.handleLabel')}</Label>
             <Input
               id="handle"
               type="text"
-              placeholder="alice.bsky.social"
+              placeholder={t('home.handlePlaceholder')}
               bind:value={handle}
               disabled={signingIn}
             />
@@ -60,7 +62,7 @@
           {/if}
 
           <Button type="submit" class="w-full" disabled={signingIn}>
-            {signingIn ? 'Signing in...' : 'Sign in with Bluesky'}
+            {signingIn ? t('home.submitting') : t('home.submit')}
           </Button>
         </form>
       </CardContent>

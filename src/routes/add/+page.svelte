@@ -6,9 +6,14 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { parseAtUri } from '$lib/services/track-uri';
   import { CheckCircle2 } from 'lucide-svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { resolve } from '$app/paths';
+  import { locale, translate } from '$lib/i18n';
 
   let savedUri = $state('');
   const savedAt = $derived(savedUri ? parseAtUri(savedUri) : null);
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function onCreate({ url, title, description, discogs_url }) {
     let fullDescription = description;
@@ -29,34 +34,34 @@
 </script>
 
 <div class="container max-w-2xl py-8">
-  <Card>
-    <CardHeader>
-      <CardTitle>Add New Track</CardTitle>
-      <CardDescription>
-        Share a music track with your followers on Bluesky
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <TrackForm submitLabel="Publish Track" onSubmit={onCreate} />
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('add.title')}</CardTitle>
+        <CardDescription>
+          {t('add.description')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />
 
-      {#if savedAt}
-        <div class="mt-6 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-          <div class="flex items-start gap-3">
-            <CheckCircle2 class="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-            <div class="flex-1">
-              <h3 class="font-semibold text-green-900 dark:text-green-100">Track published successfully!</h3>
-              <p class="text-sm text-green-700 dark:text-green-300 mt-1">
-                <a
-                  href={`#/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`}
-                  class="underline hover:no-underline"
-                >
-                  View your track
-                </a>
-              </p>
-            </div>
+        {#if savedAt}
+          <div class="mt-6">
+            <StateCard
+              icon={CheckCircle2}
+              title={t('add.successTitle')}
+              description={t('add.successDescription')}
+            >
+              {#snippet actions()}
+              <Button
+                variant="outline"
+                href={resolve(`/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`)}
+              >
+                {t('add.viewTrack')}
+              </Button>
+            {/snippet}
+            </StateCard>
           </div>
-        </div>
-      {/if}
-    </CardContent>
-  </Card>
-</div>
+        {/if}
+      </CardContent>
+    </Card>
+  </div>

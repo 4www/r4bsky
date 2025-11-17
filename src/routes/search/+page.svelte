@@ -3,15 +3,18 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
-  import { Search, Loader2, User } from 'lucide-svelte';
+  import { Search, Loader2, User, AlertCircle } from 'lucide-svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { locale, translate } from '$lib/i18n';
+  import { resolve } from '$app/paths';
 
   let q = $state('');
   let results = $state([]);
   let status = $state('');
   let loading = $state(false);
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
-  async function search(e) {
-    e.preventDefault();
+  async function executeSearch() {
     if (!q.trim()) return;
 
     loading = true;
@@ -19,21 +22,22 @@
     try {
       results = await searchActors(q, { limit: 25 });
     } catch (err) {
-      status = 'Error: ' + (err?.message || err);
+      status = (err as Error)?.message || String(err);
     } finally {
       loading = false;
     }
   }
 
-  function authorHref(handle) {
-    return `#/@${encodeURIComponent(handle)}`;
+  async function search(e) {
+    e.preventDefault();
+    await executeSearch();
   }
 </script>
 
 <div class="container max-w-4xl py-8">
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">Search People</h1>
-    <p class="text-muted-foreground">Find people on Bluesky and discover their music tracks</p>
+    <h1 class="text-3xl font-bold mb-2">{t('search.title')}</h1>
+    <p class="text-muted-foreground">{t('search.description')}</p>
   </div>
 
   <Card class="mb-8">
@@ -46,7 +50,7 @@
             name="q"
             type="search"
             bind:value={q}
-            placeholder="Search handles... (e.g., hwww.org)"
+            placeholder={t('search.placeholder')}
             class="pl-9"
             disabled={loading}
           />
@@ -55,7 +59,7 @@
           {#if loading}
             <Loader2 class="h-4 w-4 animate-spin" />
           {:else}
-            Search
+            {t('search.submit')}
           {/if}
         </Button>
       </form>
@@ -63,23 +67,30 @@
   </Card>
 
   {#if status}
-    <div class="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
-      <p class="text-sm text-destructive">{status}</p>
-    </div>
+    <StateCard
+      icon={AlertCircle}
+      title={t('search.errorTitle')}
+      description={status}
+    >
+      {#snippet actions()}
+        <Button variant="outline" type="button" onclick={executeSearch} disabled={loading}>
+          {t('buttons.tryAgain')}
+        </Button>
+      {/snippet}
+    </StateCard>
   {/if}
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <Loader2 class="inline-block h-8 w-8 animate-spin" />
-        <p class="mt-2 text-muted-foreground">Searching...</p>
-      </div>
-    </div>
+    <StateCard
+      icon={Loader2}
+      title={t('search.loadingTitle')}
+      description={t('search.loadingDescription')}
+    />
   {:else if results.length > 0}
     <div class="space-y-3">
-      {#each results as actor}
+      {#each results as actor, idx (actor.did || actor.handle || idx)}
         <Card class="hover:shadow-md transition-shadow">
-          <a href={authorHref(actor.handle)} class="block">
+          <a href={resolve(`/@${encodeURIComponent(actor.handle)}`)} class="block">
             <CardHeader class="pb-3">
               <div class="flex items-center gap-3">
                 <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -105,9 +116,24 @@
       {/each}
     </div>
   {:else if q && !loading}
-    <div class="text-center py-12">
-      <User class="inline-block h-12 w-12 text-muted-foreground mb-3" />
-      <p class="text-muted-foreground">No people found for "{q}"</p>
-    </div>
+    <StateCard
+      icon={User}
+      title={t('search.emptyTitle')}
+      description={t('search.emptyDescription', { query: q })}
+    >
+      {#snippet actions()}
+        <Button
+          variant="outline"
+          type="button"
+          onclick={() => {
+            q = '';
+            results = [];
+            status = '';
+          }}
+        >
+          {t('search.clear')}
+        </Button>
+      {/snippet}
+    </StateCard>
   {/if}
 </div>

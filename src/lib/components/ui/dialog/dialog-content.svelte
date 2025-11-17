@@ -4,6 +4,7 @@
 	import type { Snippet } from "svelte";
 	import * as Dialog from "./index";
 	import { cn } from "$lib/utils";
+	import { locale, translate } from "$lib/i18n";
 
 	let {
 		ref = $bindable(null),
@@ -15,6 +16,7 @@
 		portalProps?: DialogPrimitive.PortalProps;
 		children: Snippet;
 	} = $props();
+	const t = (key: string) => translate($locale, key);
 </script>
 
 <Dialog.Portal {...portalProps}>
@@ -32,7 +34,7 @@
 			class="ring-offset-background focus:ring-ring absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none"
 		>
 			<X class="size-4" />
-			<span class="sr-only">Close</span>
+			<span class="sr-only">{t("dialog.close")}</span>
 		</DialogPrimitive.Close>
 	</DialogPrimitive.Content>
 </Dialog.Portal>

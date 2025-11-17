@@ -1,10 +1,15 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { getTrackByUri, resolveHandle, getHandleByDid } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import { session } from '$lib/state/session';
   import { Card, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Loader2 } from 'lucide-svelte';
+  import { Loader2, AlertCircle } from 'lucide-svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { resolve } from '$app/paths';
+  import { Button } from '$lib/components/ui/button';
+  import { locale, translate } from '$lib/i18n';
 
   const props = $props();
   const repo = $derived(props.repo || '');
@@ -20,44 +25,55 @@
   let displayHandle = $state('');
   const context = $derived({ type: 'detail', key: rkey, handle: displayHandle || undefined });
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
+  let loadRequestId = 0;
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
-  async function loadByUri(uri) {
+  function refreshTrack() {
+    loadTrack(repo, handle, rkey);
+  }
+
+  async function loadTrack(currentRepo: string, currentHandle: string, currentRkey: string) {
+    const requestId = ++loadRequestId;
+    loading = true;
+    status = '';
+    item = null;
+
     try {
-      const rec = await getTrackByUri(uri);
-      item = { ...rec };
-      status = '';
+      if (currentRepo) {
+        did = currentRepo;
+        try {
+          displayHandle = (await getHandleByDid(currentRepo)) || '';
+        } catch {
+          displayHandle = '';
+        }
+        const uri = `at://${currentRepo}/com.radio4000.track/${currentRkey}`;
+        const rec = await getTrackByUri(uri);
+        if (requestId === loadRequestId) item = { ...rec };
+        return;
+      }
+
+      if (currentHandle) {
+        const resolvedDid = await resolveHandle(currentHandle);
+        if (requestId !== loadRequestId) return;
+        did = resolvedDid;
+        displayHandle = currentHandle;
+        const uri = `at://${resolvedDid}/com.radio4000.track/${currentRkey}`;
+        const rec = await getTrackByUri(uri);
+        if (requestId === loadRequestId) item = { ...rec };
+        return;
+      }
+
+      if (requestId === loadRequestId) status = t('trackDetail.errorTitle');
     } catch (e) {
-      status = 'Error loading track';
+      if (requestId === loadRequestId) status = (e as Error)?.message || t('trackDetail.errorTitle');
     } finally {
-      loading = false;
+      if (requestId === loadRequestId) loading = false;
     }
   }
 
-  $effect(() => {
-    if (!rkey) return;
-    if (repo) {
-      did = repo;
-      (async () => {
-        try {
-          displayHandle = await getHandleByDid(did) || '';
-        } catch {}
-      })();
-      const uri = `at://${repo}/com.radio4000.track/${rkey}`;
-      loadByUri(uri);
-      return;
-    }
-    if (handle) {
-      (async () => {
-        try {
-          did = await resolveHandle(handle);
-          displayHandle = handle;
-          const uri = `at://${did}/com.radio4000.track/${rkey}`;
-          await loadByUri(uri);
-        } catch (e) {
-          status = 'Error resolving handle';
-          loading = false;
-        }
-      })();
+  onMount(() => {
+    if (rkey) {
+      loadTrack(repo, handle, rkey);
     }
   });
 </script>
@@ -68,7 +84,7 @@
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle>
-            <a href={`#/@${encodeURIComponent(displayHandle)}`} class="hover:text-primary transition-colors">
+            <a href={resolve(`/@${encodeURIComponent(displayHandle)}`)} class="hover:text-primary transition-colors">
               @{displayHandle}
             </a>
           </CardTitle>
@@ -81,16 +97,23 @@
   {/if}
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <Loader2 class="inline-block h-8 w-8 animate-spin" />
-        <p class="mt-2 text-muted-foreground">Loading track...</p>
-      </div>
-    </div>
+    <StateCard
+      icon={Loader2}
+      title={t('trackDetail.loadingTitle')}
+      description={t('trackDetail.loadingDescription')}
+    />
   {:else if status}
-    <div class="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-      <p class="text-sm text-destructive">{status}</p>
-    </div>
+    <StateCard
+      icon={AlertCircle}
+      title={t('trackDetail.errorTitle')}
+      description={status}
+    >
+      {#snippet actions()}
+        <Button variant="outline" onclick={refreshTrack}>
+          {t('buttons.tryAgain')}
+        </Button>
+      {/snippet}
+    </StateCard>
   {:else if item}
     <TrackListItem item={item} index={0} items={[item]} {context} {editable} />
   {/if}

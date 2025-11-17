@@ -4,12 +4,18 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Loader2, User, AlertCircle } from 'lucide-svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { locale, translate } from '$lib/i18n';
 
   let items = $state([]);
   let cursor = $state(undefined);
   let error = $state('');
   let loading = $state(true);
   let loadingMore = $state(false);
+  let needsPermission = $state(false);
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function load() {
     try {
@@ -20,15 +26,30 @@
     } catch (e) {
       const msg = String(e?.message || e);
       if (msg.includes('Missing required scope')) {
-        error = 'Missing permission to read social graph. Visit Settings to manage permissions.';
+        error = t('following.errorMissingScope');
+        needsPermission = true;
       } else {
         error = e?.message || String(e);
+        needsPermission = false;
       }
     }
   }
 
+  async function refresh() {
+    loading = true;
+    error = '';
+    cursor = undefined;
+    items = [];
+    needsPermission = false;
+    try {
+      await load();
+    } finally {
+      loading = false;
+    }
+  }
+
   onMount(() => {
-    load().finally(() => { loading = false; });
+    refresh();
   });
 
   async function more() {
@@ -41,6 +62,7 @@
       cursor = res.cursor;
     } catch (e) {
       error = e?.message || String(e);
+      needsPermission = false;
     } finally {
       loadingMore = false;
     }
@@ -49,37 +71,38 @@
 
 <div class="container max-w-4xl py-8">
   <div class="mb-6">
-    <h1 class="text-3xl font-bold">Following</h1>
-    <p class="text-muted-foreground mt-1">People you follow on Bluesky</p>
+    <h1 class="text-3xl font-bold">{t('following.title')}</h1>
+    <p class="text-muted-foreground mt-1">{t('following.description')}</p>
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <Loader2 class="inline-block h-8 w-8 animate-spin" />
-        <p class="mt-2 text-muted-foreground">Loading...</p>
-      </div>
-    </div>
+    <StateCard
+      icon={Loader2}
+      title={t('following.loading')}
+      description={t('following.description')}
+    />
   {:else if error}
-    <div class="rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-      <div class="flex items-start gap-3">
-        <AlertCircle class="h-5 w-5 text-destructive mt-0.5" />
-        <div class="flex-1">
-          <h3 class="font-semibold text-destructive mb-2">Error</h3>
-          <p class="text-sm text-destructive/90 mb-4">{error}</p>
-          {#if error.includes('Missing permission')}
-            <Button variant="outline" onclick={() => (location.hash = '#/settings')}>
-              Open Settings
-            </Button>
-          {/if}
-        </div>
-      </div>
-    </div>
+    <StateCard
+      icon={AlertCircle}
+      title={t('following.errorTitle')}
+      description={error}
+    >
+      {#snippet actions()}
+        <Button variant="outline" onclick={refresh}>
+          {t('buttons.tryAgain')}
+        </Button>
+        {#if needsPermission}
+          <Button variant="ghost" onclick={() => goto(resolve('/settings'))}>
+            {t('buttons.openSettings')}
+          </Button>
+        {/if}
+      {/snippet}
+    </StateCard>
   {:else if items.length > 0}
     <div class="space-y-3">
-      {#each items as actor}
+      {#each items as actor, idx (actor.did || actor.handle || idx)}
         <Card class="hover:shadow-md transition-shadow">
-          <a href={`#/@${encodeURIComponent(actor.handle || actor.did)}`} class="block">
+          <a href={resolve(`/@${encodeURIComponent(actor.handle || actor.did)}`)} class="block">
             <CardHeader class="pb-3">
               <div class="flex items-center gap-3">
                 <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -87,7 +110,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <CardTitle class="text-base">
-                    {actor.displayName || actor.handle || 'Unknown'}
+                    {actor.displayName || actor.handle || t('common.unknown')}
                   </CardTitle>
                   <p class="text-sm text-muted-foreground truncate">
                     @{actor.handle || actor.did}
@@ -105,17 +128,24 @@
         <Button variant="outline" onclick={more} disabled={loadingMore}>
           {#if loadingMore}
             <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-            Loading...
+            {t('following.loadingMore')}
           {:else}
-            Load More
+            {t('following.loadMore')}
           {/if}
         </Button>
       </div>
     {/if}
   {:else}
-    <div class="text-center py-12">
-      <User class="inline-block h-12 w-12 text-muted-foreground mb-3" />
-      <p class="text-muted-foreground">You're not following anyone yet</p>
-    </div>
+    <StateCard
+      icon={User}
+      title={t('following.emptyTitle')}
+      description={t('following.emptyDescription')}
+    >
+      {#snippet actions()}
+        <Button variant="outline" onclick={() => goto(resolve('/search'))}>
+          {t('following.findPeople')}
+        </Button>
+      {/snippet}
+    </StateCard>
   {/if}
 </div>

@@ -4,10 +4,12 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
+  import { locale, translate } from '$lib/i18n';
 
   const props = $props();
+  const t = (key, vars = {}) => translate($locale, key, vars);
   const initialProp = $derived(props.initial || { url: '', title: '', description: '', discogs_url: '' });
-  const submitText = $derived(props.submitLabel || 'Save');
+  const submitText = $derived(props.submitLabel || t('forms.save'));
   const onSubmit = $derived(props.onSubmit || null);
 
   let url = $state('');
@@ -47,55 +49,55 @@
       const res = await onSubmit?.({ url, title, description, discogs_url });
       return res;
     } catch (err) {
-      status = err?.message || String(err);
+      status = t('forms.errorMessage', { message: err?.message || String(err) });
     }
   }
 </script>
 
 <form onsubmit={submit} class="space-y-6">
   <div class="space-y-2">
-    <Label for="url">Track URL</Label>
+    <Label for="url">{t('forms.trackUrl')}</Label>
     <Input
       id="url"
       name="url"
       type="url"
       bind:value={url}
-      placeholder="https://youtube.com/watch?v=..."
+      placeholder={t('forms.trackUrlPlaceholder')}
       required
     />
   </div>
 
   <div class="space-y-2">
-    <Label for="title">Title</Label>
+    <Label for="title">{t('forms.title')}</Label>
     <Input
       id="title"
       name="title"
       type="text"
       bind:value={title}
-      placeholder="Track title"
+      placeholder={t('forms.titlePlaceholder')}
       required
     />
   </div>
 
   <div class="space-y-2">
-    <Label for="description">Description (optional)</Label>
+    <Label for="description">{t('forms.description')}</Label>
     <Textarea
       id="description"
       name="description"
       bind:value={description}
-      placeholder="Add a description..."
+      placeholder={t('forms.descriptionPlaceholder')}
       rows={3}
     />
   </div>
 
   <div class="space-y-2">
-    <Label for="discogs_url">Discogs URL (optional)</Label>
+    <Label for="discogs_url">{t('forms.discogs')}</Label>
     <Input
       id="discogs_url"
       name="discogs_url"
       type="url"
       bind:value={discogs_url}
-      placeholder="https://discogs.com/release/..."
+      placeholder={t('forms.discogsPlaceholder')}
     />
   </div>
 

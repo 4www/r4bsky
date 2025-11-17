@@ -1,9 +1,12 @@
 <script lang="ts">
   import { followActor, unfollowActor, findFollowUri } from '$lib/services/r4-service'
+  import { Button } from '$lib/components/ui/button'
+  import { locale, translate } from '$lib/i18n'
   const { actorDid = '' } = $props()
   let followUri = $state(null)
   let error = $state('')
   let pending = $state(false)
+  const t = (key, vars = {}) => translate($locale, key, vars)
 
   async function refreshState() {
     if (!actorDid) { followUri = null; return }
@@ -36,5 +39,7 @@
   }
 </script>
 
-<button onclick={toggle} disabled={pending}>{followUri ? 'Unfollow' : 'Follow'}</button>
-{#if error}<div>{error}</div>{/if}
+<Button onclick={toggle} disabled={pending} variant={followUri ? 'outline' : 'default'} size="sm">
+  {followUri ? t('follow.unfollow') : t('follow.follow')}
+</Button>
+{#if error}<div class="mt-2 text-sm text-destructive">{t('follow.error', { message: error })}</div>{/if}

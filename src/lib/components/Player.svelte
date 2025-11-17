@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { player, toggle, next, prev } from '$lib/player/store';
+  import { player, toggle, next, prev, playIndex } from '$lib/player/store';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
-  import { Card } from '$lib/components/ui/card';
   import { Play, Pause, SkipForward, SkipBack, ExternalLink } from 'lucide-svelte';
+  import { locale, translate } from '$lib/i18n';
+  import { cn } from '$lib/utils';
 
   let state = $state({ playlist: [], index: -1, playing: false });
   let current = $state(null);
@@ -135,10 +136,6 @@
     cleanupProviders();
   });
 
-  function opened() {
-    // noop placeholder for future
-  }
-
   async function onIframeLoad() {
     try {
       if (!iframeEl) return;
@@ -183,48 +180,55 @@
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   });
+
+  const t = (key, vars = {}) => translate($locale, key, vars);
+
+  function openCurrentUrl() {
+    if (!current) return;
+    const url = parseTrackUrl(current?.url || '')?.url || current?.url || '';
+    if (!url) return;
+    window.open(url, '_blank', 'noopener');
+  }
 </script>
 
 {#if current}
-  <div class="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-40">
-    <div class="container py-4">
-      <div class="flex flex-col gap-4">
-        <!-- Track Info and Controls -->
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-sm truncate">{current.title}</h3>
-            {#if current.description}
-              <p class="text-xs text-muted-foreground truncate">{current.description}</p>
-            {/if}
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Button variant="outline" size="icon" onclick={prev}>
-              <SkipBack class="h-4 w-4" />
-            </Button>
-            <Button size="icon" onclick={toggle}>
-              {#if state.playing}
-                <Pause class="h-4 w-4" />
-              {:else}
-                <Play class="h-4 w-4" />
-              {/if}
-            </Button>
-            <Button variant="outline" size="icon" onclick={next}>
-              <SkipForward class="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <a href={(parseTrackUrl(current?.url || '')?.url) || (current?.url || '#')} target="_blank">
-                <ExternalLink class="h-4 w-4" />
-              </a>
-            </Button>
-          </div>
+  <section
+    class="z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 shadow-sm sticky top-14 transition-all lg:fixed lg:right-0 lg:top-14 lg:bottom-0 lg:w-[26rem] lg:border-b-0 lg:border-l lg:shadow-lg"
+  >
+    <div class="p-4 space-y-4 lg:h-full lg:flex lg:flex-col">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <p class="text-xs uppercase tracking-wide text-muted-foreground">{t('player.nowPlaying')}</p>
+          <h3 class="font-semibold text-sm truncate">{current.title || t('trackItem.untitled')}</h3>
+          {#if current.description}
+            <p class="text-xs text-muted-foreground truncate">{current.description}</p>
+          {/if}
         </div>
+        <div class="flex items-center gap-2">
+          <Button variant="outline" size="icon" onclick={prev} aria-label={t('player.previous')}>
+            <SkipBack class="h-4 w-4" />
+          </Button>
+          <Button size="icon" onclick={toggle} aria-label={t('player.toggle')}>
+            {#if state.playing}
+              <Pause class="h-4 w-4" />
+            {:else}
+              <Play class="h-4 w-4" />
+            {/if}
+          </Button>
+          <Button variant="outline" size="icon" onclick={next} aria-label={t('player.next')}>
+            <SkipForward class="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" aria-label={t('player.openTrack')} onclick={openCurrentUrl}>
+            <ExternalLink class="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
-        <!-- Player Embed -->
+      <div class="lg:flex-1 lg:flex lg:flex-col gap-3">
         {#if parseTrackUrl(current.url)?.provider === 'file'}
-          <audio bind:this={audio} onended={next} onplay={opened} controls class="w-full"></audio>
+          <audio bind:this={audio} onended={next} controls class="w-full"></audio>
         {:else if iframeSrc}
-          <div class="aspect-video w-full max-w-2xl mx-auto rounded-lg overflow-hidden bg-muted">
+          <div class="aspect-video w-full rounded-lg overflow-hidden bg-muted">
             <iframe
               bind:this={iframeEl}
               src={iframeSrc}
@@ -236,7 +240,32 @@
             ></iframe>
           </div>
         {/if}
+
+        {#if state.playlist?.length}
+          <div class="flex flex-col gap-2 lg:flex-1">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('player.queue')}</p>
+            <div class="max-h-48 overflow-auto lg:flex-1 lg:max-h-none lg:overflow-y-auto">
+              {#each state.playlist as track, idx}
+                <button
+                  class={cn(
+                    "w-full rounded-md border px-3 py-2 text-left text-sm transition",
+                    idx === state.index
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-muted hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  type="button"
+                  onclick={() => playIndex(idx)}
+                >
+                  <p class="truncate">{track.title || t('trackItem.untitled')}</p>
+                  {#if track.description}
+                    <p class="text-xs text-muted-foreground truncate">{track.description}</p>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
-  </div>
+  </section>
 {/if}
