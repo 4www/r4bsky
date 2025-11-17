@@ -14,7 +14,13 @@
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
 
-  const { item, index = 0, items = [], context = null, editable = false } = $props();
+  const {
+    item,
+    index = 0,
+    items = [],
+    context = null,
+    editable = false,
+  } = $props();
   let message = $state('');
   const dispatch = createEventDispatcher();
 
@@ -48,8 +54,9 @@
     }
   });
 
+  const authorHandle = $derived(() => context?.handle ?? item.authorHandle ?? null);
+
   function viewHref() {
-    const authorHandle = (context && context.handle) ? context.handle : null;
     return buildViewHash(authorHandle, item.uri);
   }
 
@@ -84,9 +91,9 @@
             {item.title || t('trackItem.untitled')}
           </a>
         </CardTitle>
-        {#if context?.handle}
+        {#if authorHandle}
           <CardDescription class="mt-1">
-            {t('trackItem.by', { handle: context.handle })}
+            {t('trackItem.by', { handle: authorHandle })}
           </CardDescription>
         {/if}
       </div>
@@ -113,17 +120,33 @@
             <DropdownMenu.Content>
               <DropdownMenu.Group>
                 {#if editHref()}
-                  <DropdownMenu.Item on:click={openEdit}>
+                  <DropdownMenu.Item
+                    on:select={(event) => {
+                      event.preventDefault();
+                      openEdit();
+                    }}
+                  >
                     <Pencil class="mr-2 h-4 w-4" />
                     {t('trackItem.edit')}
                   </DropdownMenu.Item>
                 {/if}
-                <DropdownMenu.Item on:click={openExternalUrl}>
+                <DropdownMenu.Item
+                  on:select={(event) => {
+                    event.preventDefault();
+                    openExternalUrl();
+                  }}
+                >
                   <ExternalLink class="mr-2 h-4 w-4" />
                   {t('trackItem.openUrl')}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
-                <DropdownMenu.Item on:click={remove} class="text-destructive focus:text-destructive">
+                <DropdownMenu.Item
+                  on:select={(event) => {
+                    event.preventDefault();
+                    remove();
+                  }}
+                  class="text-destructive focus:text-destructive"
+                >
                   <Trash2 class="mr-2 h-4 w-4" />
                   {t('trackItem.delete')}
                 </DropdownMenu.Item>

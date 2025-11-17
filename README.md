@@ -1,12 +1,12 @@
 # R4Bsky — Radio4000 for Bluesky/atproto (Svelte 5)
 
-Radio4000 x Bluesky. Save your favorite music links (YouTube, SoundCloud, Vimeo, files) on atproto as custom records, play them in the app, browse timelines, and follow others.
+Radio4000 x Bluesky. Save your favorite music links (YouTube, SoundCloud, Vimeo, files) on atproto as custom records, play them in the app, and follow others. (Shared timeline will return later.)
 
 Key features
 - Bluesky OAuth login (no passwords) with robust fallback.
 - Custom atproto collection `com.radio4000.track` for tracks.
 - Player for direct files; embedded players for YouTube/Vimeo/SoundCloud; auto-next.
-- Routes inspired by Radio4000: `/` timeline, `/#/@handle` author/my tracks, search, followers, following, track view/edit.
+- Routes inspired by Radio4000: `/` home hub, `/#/@handle` author/my tracks, search, followers, following, track view/edit.
 - Permissions re-consent flow (when server supports fine-grained scopes).
 
 Quick start
@@ -28,7 +28,7 @@ npm test
 ```
 
 Routing
-- `/` — Timeline (followed users’ tracks)
+- `/` — Home hub (timeline temporarily offline; quick actions)
 - `/#/add` — Add a track
 - `/#/@alice.bsky.social` — Author/My tracks
 - `/#/search` — Search actors
@@ -41,7 +41,7 @@ Architecture (modular)
 - Svelte 5 components (no styles in templates):
   - Router: `src/svelte/Router.svelte`, routes: `src/svelte/routes.js`, matcher: `src/svelte/routing/match.js`
   - Player: `src/svelte/components/Player.svelte`, store: `src/svelte/player/store.js`
-- Pages: `src/svelte/pages/…` (Timeline, Author, Followers/Following, Search, TrackView/Edit, Settings)
+- Pages: `src/svelte/pages/…` (Author, Followers/Following, Search, TrackView/Edit, Settings)
 - Services:
   - OAuth/session: `src/libs/bsky-oauth.js`
   - R4 data and social: `src/libs/r4-service.js`
@@ -76,7 +76,7 @@ Troubleshooting
 - "Invalid hostname" error during OAuth: if using Tailscale, make sure you're using `tailscale funnel` (public) not `tailscale serve` (private). Bluesky's OAuth server needs public access to fetch your client metadata.
 - OAuth callback not completing login: check browser console for errors. Ensure your `client-metadata.json` redirect_uris match exactly (with and without trailing slash).
 - DPoP nonce 401 seen in devtools: we avoid eager profile fetch on hydration; it's harmless if seen intermittently.
-- Scope errors on Timeline/Followers: open Settings and re-consent; if the server doesn't support fine-grained scopes, it will fall back.
+- Scope errors on Followers/Following: open Settings and re-consent; if the server doesn't support fine-grained scopes, it will fall back.
 
 License
 MIT

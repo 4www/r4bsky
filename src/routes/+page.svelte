@@ -5,7 +5,8 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import TimelineTracks from './TimelineTracks.svelte';
+  import StateCard from '$lib/components/ui/state-card.svelte';
+  import { Music4 } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
   let handle = $state('');
@@ -34,7 +35,22 @@
 </script>
 
 {#if isAuthenticated}
-  <TimelineTracks />
+  <div class="container max-w-3xl py-16 px-4">
+    <StateCard
+      icon={Music4}
+      title={t('home.timelineDisabledTitle')}
+      description={t('home.timelineDisabledDescription')}
+    >
+      {#snippet actions()}
+        <Button variant="outline" href="/search">
+          {t('home.exploreProfiles')}
+        </Button>
+        <Button href="/following">
+          {t('home.visitFollowing')}
+        </Button>
+      {/snippet}
+    </StateCard>
+  </div>
 {:else}
   <div class="container mx-auto max-w-md mt-16 px-4">
     <Card>

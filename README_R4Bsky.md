@@ -2,7 +2,7 @@ R4Bsky (Svelte) – Radio4000 on Bluesky/atproto
 
 Overview
 - Login with Bluesky (OAuth) and manage a personal collection of music links stored on atproto as custom records (`com.radio4000.track`).
-- Browse your saved tracks, search users, follow/unfollow, and see a timeline mix of followed users’ R4 tracks.
+- Browse your saved tracks, search users, follow/unfollow, and enjoy the built-in player. (Shared timeline to return soon.)
 
 Run
 - Dev: `npm run dev` (use HTTPS or loopback client id is handled automatically)
@@ -20,7 +20,7 @@ OAuth
   - Ensure `redirect_uris` match your deployed path exactly (add both with and without trailing slash for GitHub Pages like `/r4bsky` and `/r4bsky/`).
 
 Routes
-- `/` timeline
+- `/` home hub (timeline currently offline)
 - `/#/add` add a track
 - `/#/@handle` author/my tracks
 - `/#/search` search actors
@@ -34,12 +34,12 @@ Data Model
 
 Key Files
 - Auth: `src/libs/bsky-oauth.js`
-- R4 Service: `src/libs/r4-service.js` (create/list tracks, search, follow, timeline)
+- R4 Service: `src/libs/r4-service.js` (create/list tracks, search, follow)
 - URL Parsing: `src/libs/url-patterns.js` (YouTube, SoundCloud, Vimeo, Bandcamp, files)
 - Svelte UI:
   - App: `src/svelte/App.svelte`
   - Router: `src/svelte/Router.svelte` + `src/svelte/router.js`
-  - Pages: `src/svelte/pages` (MyTracks, AuthorTracks, TimelineTracks, SearchActors)
+  - Pages: `src/svelte/pages` (MyTracks, AuthorTracks, SearchActors)
   - Components: `src/svelte/components/FollowButton.svelte`
 
 Testing
@@ -54,4 +54,4 @@ Notes
 Troubleshooting
 - GitHub Pages callback: include both `/r4bsky` and `/r4bsky/` in `redirect_uris`.
 - invalid_request on Permissions: your AS may not support authorization_details yet; the app falls back automatically.
-- Missing scopes on Timeline/Followers: open Settings to re-consent.
+- Missing scopes on Followers: open Settings to re-consent.

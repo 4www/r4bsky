@@ -166,21 +166,6 @@
     } catch {}
   }
 
-  function onMessage(e) {
-    try {
-      const origin = e.origin || '';
-      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      if ((/youtube\.com$/i.test(new URL(iframeSrc || 'about:blank').hostname) || origin.includes('youtube')) && data?.event === 'onStateChange' && (data?.info === 0 || data?.data === 0)) return next();
-      if (origin.includes('vimeo.com') && (data?.event === 'finish' || data?.event === 'ended')) return next();
-      if (origin.includes('soundcloud.com')) { if (data?.event === 'finish' || data?.method === 'finish') return next(); }
-    } catch {}
-  }
-
-  onMount(() => {
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  });
-
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   function openCurrentUrl() {

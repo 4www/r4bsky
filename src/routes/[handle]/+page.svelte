@@ -95,7 +95,7 @@
                 {t('profile.playAll')}
               </Button>
             {/if}
-            {#if did}
+            {#if did && $session?.did !== did}
               <FollowButton actorDid={did} />
             {/if}
           </div>

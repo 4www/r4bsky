@@ -51,10 +51,6 @@ interface FollowsResult {
 	cursor?: string
 }
 
-interface TimelineOptions {
-	limitPerActor?: number
-}
-
 function assertAgent(): Agent {
   if (!bskyOAuth.agent) throw new Error('Not authenticated')
   return bskyOAuth.agent
@@ -233,6 +229,18 @@ export async function unfollowActor(followUri: string): Promise<any> {
 // Find existing follow record for subjectDid, returns uri or null
 export async function findFollowUri(subjectDid: string): Promise<string | null> {
   const agent = assertAgent()
+  try {
+    const rel = await agent.app.bsky.graph.getRelationships({
+      actor: agent.accountDid!,
+      others: [subjectDid],
+    })
+    const entry = rel.data?.relationships?.find((r: any) => r.did === subjectDid && typeof r.following === 'string')
+    if (entry && typeof (entry as any).following === 'string') {
+      return entry.following as string
+    }
+  } catch {
+    // fall through to repo scan
+  }
   const me = agent.accountDid!
   const res = await agent.com.atproto.repo.listRecords({
     repo: me,
@@ -244,34 +252,6 @@ export async function findFollowUri(subjectDid: string): Promise<string | null> 
   return rec?.uri || null
 }
 
-// Timeline mix: gather latest tracks from followed accounts
-export async function timelineTracks({limitPerActor = 10}: TimelineOptions = {}): Promise<Track[]> {
-  const did = assertAgent().accountDid!
-  const {follows} = await getFollows(did, {limit: 100})
-  const actorDids = follows.map((f) => f.did)
-  const chunks = await Promise.all(
-    actorDids.map(async (aDid) => {
-      try {
-        const {tracks} = await listTracksByDid(aDid, {limit: limitPerActor})
-        return tracks.map((t) => ({...t, authorDid: aDid}))
-      } catch {
-        return []
-      }
-    })
-  )
-  const merged = chunks.flat()
-  // Sort by createdAt if present, else by rkey/TID (latest first)
-  merged.sort((a, b) => {
-    const ad = Date.parse(a.createdAt || a.created_at || '')
-    const bd = Date.parse(b.createdAt || b.created_at || '')
-    if (!Number.isNaN(ad) && !Number.isNaN(bd)) return bd - ad
-    const ar = a.rkey || ''
-    const br = b.rkey || ''
-    return String(br).localeCompare(String(ar))
-  })
-  return merged
-}
-
 function scopeError(e: any): Error {
   const msg = String((e as Error)?.message || e)
   if (msg.includes('ScopeMissingError') || msg.includes('Missing required scope')) {
@@ -280,10 +260,6 @@ function scopeError(e: any): Error {
     return err
   }
   return e
-}
-
-export function isScopeMissing(err: any): boolean {
-  return err?.code === 'scope-missing'
 }
 
 export async function deleteTrackByUri(uri: string): Promise<any> {
