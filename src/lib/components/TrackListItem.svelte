@@ -54,7 +54,7 @@
     }
   });
 
-  const authorHandle = $derived(() => context?.handle ?? item.authorHandle ?? null);
+  const authorHandle = $derived(context?.handle ?? item.authorHandle ?? null);
 
   function viewHref() {
     return buildViewHash(authorHandle, item.uri);
