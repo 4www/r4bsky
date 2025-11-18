@@ -2,13 +2,13 @@
 
 ## Quick Answer
 
-**Yes!** You can avoid entering passwords by using OAuth authentication. Users are redirected to their Bluesky instance to authorize your app.
+**Yes!** You can avoid entering passwords by using OAuth authentication. Users are redirected to their AT Protocol service (PDS) to authorize your app.
 
 ## Password-Based (Current Implementation)
 
 ### How It Works
 ```
-User → Enter handle + password → Your App → Bluesky API → Session Token
+User → Enter handle + password → Your App → AT Protocol API → Session Token
 ```
 
 ### Pros
@@ -38,14 +38,14 @@ await bsky.login({
 
 ### How It Works
 ```
-User → Enter handle → Redirect to Bluesky → User Authorizes →
+User → Enter handle → Redirect to their PDS → User Authorizes →
 Redirect Back → Your App → Access Token (no password needed!)
 ```
 
 ### Pros
 - **More Secure**: Password never touches your app
-- **Better UX**: Users trust Bluesky's login page
-- **Revokable**: Users can revoke access from Bluesky settings
+- **Better UX**: Users trust their PDS login page
+- **Revokable**: Users can revoke access from their PDS settings
 - **Standard**: Industry-standard OAuth 2.0
 
 ### Cons
@@ -63,7 +63,7 @@ await bskyOAuth.init('https://yourdomain.com/client-metadata.json')
 
 // User only enters handle - no password!
 await bskyOAuth.signIn('alice.bsky.social')
-// → User is redirected to Bluesky
+// → User is redirected to their PDS
 // → User approves
 // → User is redirected back
 // → You have access!
@@ -74,11 +74,11 @@ await bskyOAuth.signIn('alice.bsky.social')
 | Feature | Password-Based | OAuth |
 |---------|---------------|-------|
 | **Security** | Medium (password in app) | High (no password in app) |
-| **User Trust** | Lower (entering password) | Higher (official Bluesky page) |
+| **User Trust** | Lower (entering password) | Higher (official PDS page) |
 | **Setup Complexity** | Simple | Moderate |
 | **Localhost Support** | ✅ Yes | ❌ No (needs HTTPS) |
 | **Production Ready** | ⚠️ Use app passwords | ✅ Recommended |
-| **User Revocation** | Manual password change | ✅ Easy from Bluesky settings |
+| **User Revocation** | Manual password change | ✅ Easy from PDS settings |
 | **Token Refresh** | Manual | ✅ Automatic |
 | **Requires Hosting** | ❌ No | ✅ Yes |
 
@@ -187,7 +187,7 @@ Update `client-metadata.json` with your ngrok URL and you're ready!
 
 ## Recommendations
 
-### For This Project (R4Bsky)
+### For This Project
 
 **Short Term** (now):
 - ✅ Keep password-based for easy local development
@@ -205,7 +205,7 @@ Update `client-metadata.json` with your ngrok URL and you're ready!
 - Fast and simple
 
 **Production Users**:
-- "Click to authorize with Bluesky"
+- "Click to authorize with your AT Protocol service"
 - No password entry needed
 - Professional OAuth flow
 

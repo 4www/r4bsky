@@ -1,0 +1,15 @@
+<script lang="ts">
+  import { updateTrackByUri } from '$lib/services/r4-service'
+  import TrackForm from './TrackForm.svelte'
+  const props = $props()
+  const uri = $derived(props.uri || '')
+  const initial = $derived(props.initial || { url: '', title: '', description: '', discogs_url: '' })
+
+  async function onSave({ url, title, description, discogs_url }) {
+    await updateTrackByUri(uri, { url, title, description, discogsUrl: discogs_url || undefined })
+    const ev = new CustomEvent('saved', { detail: { uri } })
+    dispatchEvent(ev)
+  }
+</script>
+
+<TrackForm {initial} submitLabel="Save" onSubmit={onSave} />

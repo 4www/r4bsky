@@ -1,12 +1,12 @@
-# OAuth Setup Guide for R4Bsky
+# OAuth Setup Guide for the Radio4000 AT Protocol client
 
 ## Why OAuth?
 
 OAuth provides a more secure authentication flow where:
 - Users never enter their password in your app
-- Users are redirected to their Bluesky instance to authorize
+- Users are redirected to their AT Protocol service (PDS) to authorize
 - Your app receives a token, not the password
-- Users can revoke access at any time from their Bluesky settings
+- Users can revoke access at any time from their PDS settings
 
 ## Setup Requirements
 
@@ -33,7 +33,7 @@ Edit `public/client-metadata.json` with your actual domain:
 ```json
 {
   "client_id": "https://yourdomain.com/client-metadata.json",
-  "client_name": "R4Bsky - Radio4000 for Bluesky",
+  "client_name": "Radio4000 for AT Protocol",
   "client_uri": "https://yourdomain.com",
   "redirect_uris": [
     "https://yourdomain.com/oauth/callback"
@@ -46,9 +46,7 @@ Edit `public/client-metadata.json` with your actual domain:
 - `client_id` must be the exact URL where this JSON file is hosted
 - The file must be publicly accessible
 - The redirect URI must match your app's URL exactly (path and trailing slash).
-  - For GitHub Pages under `/r4bsky`, include both:
-    - `https://user.github.io/r4bsky`
-    - `https://user.github.io/r4bsky/`
+  - For GitHub Pages under a subpath, include both trailing slash variants.
 
 
 ### 3. Initialize OAuth in the app
@@ -82,7 +80,7 @@ await bskyOAuth.handleCallback()
 // Restore existing session
 await bskyOAuth.restoreSession(did)
 
-// Post to Bluesky
+// Post to AT Protocol
 await bskyOAuth.post(text)
 
 // Sign out
@@ -199,5 +197,5 @@ Once OAuth is working:
 ## Resources
 
 - [AT Protocol OAuth Spec](https://atproto.com/specs/oauth)
-- [Bluesky OAuth Guide](https://docs.bsky.app/docs/advanced-guides/oauth-client)
+- [AT Protocol OAuth Guide](https://docs.bsky.app/docs/advanced-guides/oauth-client)
 - [@atproto/oauth-client-browser docs](https://www.npmjs.com/package/@atproto/oauth-client-browser)

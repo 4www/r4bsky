@@ -1,8 +1,8 @@
-# R4Bsky Architecture
+# Radio4000 AT Protocol Architecture
 
 ## Overview
 
-R4Bsky is built with vanilla Web Components following the Radio4000 components pattern. It provides a minimal interface for posting music tracks to Bluesky.
+This client is built with vanilla Web Components following the Radio4000 components pattern. It provides a minimal interface for posting music tracks to the AT Protocol.
 
 ## Core Principles
 
@@ -24,7 +24,7 @@ index.html
 ## File Structure
 
 ```
-r4bsky/
+r4atproto/
 ├── index.html              # Main HTML entry point
 ├── main.js                 # App initialization & component registration
 ├── package.json            # Dependencies & scripts
@@ -42,7 +42,7 @@ r4bsky/
     │   └── bsky-track-post.test.js   # Track posting tests
     │
     └── libs/
-        ├── bsky.js         # Bluesky service wrapper
+        ├── bsky.js         # AT Protocol service wrapper
         └── bsky.test.js    # Service tests
 ```
 
@@ -71,10 +71,10 @@ Base class for all form components. Provides:
 
 **File**: `src/components/bsky-sign-in.js`
 
-Handles Bluesky authentication.
+Handles AT Protocol authentication.
 
 **Fields**:
-- `handle` (text) - Bluesky handle or email
+- `handle` (text) - AT Protocol handle or email
 - `password` (password) - Password or app password
 
 **Flow**:
@@ -91,7 +91,7 @@ Handles Bluesky authentication.
 
 **File**: `src/components/bsky-track-post.js`
 
-Handles posting music tracks to Bluesky.
+Handles posting music tracks to the AT Protocol.
 
 **Fields**:
 - `url` (url) - Track URL (YouTube, SoundCloud, etc.)
@@ -121,7 +121,7 @@ Handles posting music tracks to Bluesky.
 
 **File**: `src/libs/bsky.js`
 
-Wrapper around the AT Protocol API for Bluesky integration.
+Wrapper around the AT Protocol API for record integration.
 
 **Methods**:
 
@@ -134,7 +134,7 @@ async login({identifier, password})
 async resumeSession(session)
 // Returns: {session, error}
 
-// Post to Bluesky
+// Post to the AT Protocol
 async post(text)
 // Returns: {data, error}
 
@@ -315,11 +315,11 @@ Errors are shown in `<output>` elements within fieldsets, styled with red text.
 
 ## Security Considerations
 
-1. **Passwords**: Never stored, only sent to Bluesky API
+1. **Passwords**: Never stored, only sent to the user's PDS API
 2. **Sessions**: Stored in localStorage, cleared on logout
 3. **App Passwords**: Recommended over main password
 4. **HTTPS**: All API calls over HTTPS
-5. **No third-party tracking**: Credentials only go to Bluesky
+5. **No third-party tracking**: Credentials only go to the user's PDS
 
 ## Future Enhancements
 
