@@ -4,6 +4,7 @@
   import { cn } from '$lib/utils';
   import { locale, translate } from '$lib/i18n';
   import { Music, Users } from 'lucide-svelte';
+  import { base } from '$app/paths';
 
   const { handle } = $props();
   const t = (key, vars = {}) => translate($locale, key, vars);
@@ -12,8 +13,8 @@
   const profilePath = `/@${handle}`;
   const followingPath = `/@${handle}/following`;
 
-  const isTracksActive = $derived(currentPath === profilePath);
-  const isFollowingActive = $derived(currentPath === followingPath);
+  const isTracksActive = $derived(currentPath === (base + profilePath) || currentPath === profilePath);
+  const isFollowingActive = $derived(currentPath === (base + followingPath) || currentPath === followingPath);
 
   const linkClass = (active: boolean) => cn(
     'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',

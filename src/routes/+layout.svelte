@@ -8,18 +8,21 @@
   import Player from '$lib/components/Player.svelte';
   import '../app.css';
   import StateCard from '$lib/components/ui/state-card.svelte';
-  import { Loader2, Menu, X, Home, Plus, User, Search, Settings } from 'lucide-svelte';
-  import { player } from '$lib/player/store';
+  import { Loader2, Menu, X, Home, Plus, User, Search, Settings, AtSign, Play, Pause, LayoutList } from 'lucide-svelte';
+  import { player, toggle } from '$lib/player/store';
   import { locale, translate } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
   import { Dialog } from '$lib/components/ui/dialog/index';
   import { resolveHandle, getTrackByUri } from '$lib/services/r4-service';
   import Link from '$lib/components/Link.svelte';
+  import { base } from '$app/paths';
 
   let { children } = $props();
   let ready = $state(false);
   let hasDesktopPlayer = $state(false);
+  let playerVisible = $state(true);
+  let playerState = $state({ playing: false, playlist: [] });
   let editModal = $state({
     open: false,
     handle: '',
@@ -138,6 +141,7 @@
     initOAuth().catch(console.error);
     const unsubscribe = player.subscribe((state) => {
       hasDesktopPlayer = state.playlist?.length > 0 && state.index >= 0;
+      playerState = state;
     });
 
     // beforeNavigate returns a cleanup function that removes the navigation listener
@@ -182,10 +186,10 @@
   const links = $derived(
     ($session && $session.did)
       ? (userHandle
-          ? [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], [myPath, `@${userHandle}`, User], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
-          : [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
+          ? [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], [myPath, userHandle, AtSign], ['/settings', t('nav.links.settings'), Settings]]
+          : [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], ['/settings', t('nav.links.settings'), Settings]]
         )
-      : [['/', t('nav.links.home'), Home], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
+      : [['/', t('nav.links.home'), Home], ['/settings', t('nav.links.settings'), Settings]]
   );
   const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
@@ -199,33 +203,72 @@
     />
   </div>
 {:else}
-  <Player />
+  <Player visible={playerVisible} />
   <div class="min-h-screen bg-background">
     <!-- Bottom navigation for all screen sizes -->
     <nav class="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-4 px-4 pointer-events-none">
-      <div class="pointer-events-auto inline-flex gap-1.5 p-1.5 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl">
-        {#each links as [href, title, icon]}
-          {#key href}
-            {@const isActive = $page.url.pathname === href}
-            <Link
-              href={href}
+      <div class="pointer-events-auto inline-flex items-center justify-between gap-3 p-1.5 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl max-w-3xl w-full">
+        <!-- Navigation links -->
+        <div class="inline-flex gap-1.5">
+          {#each links as [href, title, icon]}
+            {#key href}
+              {@const isActive = $page.url.pathname === (base + href) || $page.url.pathname === href}
+              <Link
+                href={href}
+                class={cn(
+                  "flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                aria-label={title}
+              >
+                <svelte:component this={icon} class="h-4 w-4" />
+                <span class="hidden sm:inline">{title}</span>
+              </Link>
+            {/key}
+          {/each}
+        </div>
+
+        <!-- Player mini controls -->
+        {#if playerState.playlist?.length > 0}
+          <div class="inline-flex gap-1.5 border-l-2 border-primary/20 pl-3">
+            <button
+              type="button"
+              onclick={toggle}
               class={cn(
-                "flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
-                isActive
+                "flex items-center justify-center px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                playerState.playing
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-              aria-label={title}
+              aria-label={playerState.playing ? 'Pause' : 'Play'}
             >
-              <svelte:component this={icon} class="h-4 w-4" />
-              <span class="hidden sm:inline">{title}</span>
-            </Link>
-          {/key}
-        {/each}
+              {#if playerState.playing}
+                <Pause class="h-4 w-4" />
+              {:else}
+                <Play class="h-4 w-4" />
+              {/if}
+            </button>
+            <button
+              type="button"
+              onclick={() => { playerVisible = !playerVisible; }}
+              class={cn(
+                "flex items-center justify-center px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                playerVisible
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+              aria-label="Toggle player"
+            >
+              <LayoutList class="h-4 w-4" />
+            </button>
+          </div>
+        {/if}
       </div>
     </nav>
     <div class="flex-1 flex flex-col min-h-screen relative">
-      <main class={cn("flex-1 pb-40 transition-[padding] px-4 sm:px-6 lg:px-8", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
+      <main class={cn("flex-1 pb-20 transition-[padding] px-4 sm:px-6 lg:px-8", (hasDesktopPlayer && playerVisible) ? "lg:pr-[28rem]" : "")}>
         {@render children()}
       </main>
       {#if viewModal.open}
@@ -240,14 +283,14 @@
           {:else if viewModal.track}
             <div class="space-y-4">
               <div>
-                <h3 class="text-sm font-semibold mb-2">{t('trackForm.url')}</h3>
+                <h3 class="text-sm font-semibold mb-2">{t('forms.trackUrl')}</h3>
                 <a href={viewModal.track.url} target="_blank" rel="noopener" class="text-sm text-primary hover:underline break-all">
                   {viewModal.track.url}
                 </a>
               </div>
               {#if viewModal.track.description}
                 <div>
-                  <h3 class="text-sm font-semibold mb-2">{t('trackForm.description')}</h3>
+                  <h3 class="text-sm font-semibold mb-2">{t('forms.description')}</h3>
                   <p class="text-sm text-muted-foreground whitespace-pre-wrap">{viewModal.track.description}</p>
                 </div>
               {/if}

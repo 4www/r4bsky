@@ -141,6 +141,17 @@
             </Link>
           </CardTitle>
           <div class="flex items-center gap-1 shrink-0">
+            {#if discogsLink}
+              <a
+                href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                aria-label="Open Discogs"
+              >
+                <DiscIcon class="h-3.5 w-3.5" />
+              </a>
+            {/if}
             <a
               href={
                 safeOpenUrl && safeOpenUrl !== '#'
@@ -154,17 +165,6 @@
             >
               <ExternalLink class="h-3.5 w-3.5" />
             </a>
-            {#if discogsLink}
-              <a
-                href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
-                target="_blank"
-                rel="noopener"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                aria-label="Open Discogs"
-              >
-                <DiscIcon class="h-3.5 w-3.5" />
-              </a>
-            {/if}
           </div>
         </div>
         {#if authorHandle}

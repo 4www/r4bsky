@@ -9,10 +9,18 @@
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { Button } from '$lib/components/ui/button';
   import { locale, translate } from '$lib/i18n';
+  import { session } from '$lib/state/session';
+  import { goto } from '$app/navigation';
 
   let savedUri = $state('');
   const savedAt = $derived(savedUri ? parseAtUri(savedUri) : null);
   const t = (key, vars = {}) => translate($locale, key, vars);
+  const userHandle = $derived($session?.handle || '');
+
+  function viewTrack() {
+    if (!savedAt || !userHandle) return;
+    goto(`/@${encodeURIComponent(userHandle)}/${encodeURIComponent(savedAt.rkey)}`);
+  }
 
   async function onCreate({ url, title, description, discogs_url }) {
     let fullDescription = description;
@@ -53,7 +61,7 @@
               {#snippet actions()}
               <Button
                 variant="outline"
-                href={`/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`}
+                onclick={viewTrack}
               >
                 {t('add.viewTrack')}
               </Button>

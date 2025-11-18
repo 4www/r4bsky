@@ -11,6 +11,7 @@
   import { getProfile } from '$lib/services/r4-service';
   const props = $props();
   const extraClass = $derived(props.class || '');
+  const visible = $derived(props.visible !== undefined ? props.visible : true);
 
   let state = $state({ playlist: [], index: -1, playing: false });
   let current = $state(null);
@@ -180,6 +181,11 @@
 
   function onKey(e) {
     if (!current) return;
+    // Don't handle keyboard shortcuts if user is typing in an input/textarea
+    const target = e.target as HTMLElement;
+    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+      return;
+    }
     if (e.key === ' ') { e.preventDefault(); toggle(); }
     if (e.key === 'ArrowRight') next();
     if (e.key === 'ArrowLeft') prev();
@@ -311,22 +317,6 @@
 </script>
 
 {#if current}
-  <!-- Hidden shared player elements -->
-  <div class="fixed -left-[9999px] -top-[9999px]">
-    {#if parseTrackUrl(current.url)?.provider === 'file'}
-      <audio bind:this={playerAudio} onended={next} controls></audio>
-    {:else if iframeSrc}
-      <iframe
-        bind:this={playerIframe}
-        src={iframeSrc}
-        title="Embedded player"
-        allow="autoplay; encrypted-media"
-        allowfullscreen
-        onload={onIframeLoad}
-      ></iframe>
-    {/if}
-  </div>
-
   <div class={cn("pointer-events-none", extraClass)}>
     <div
       class={cn(
@@ -339,21 +329,75 @@
     <aside
       class={cn(
         "pointer-events-auto flex flex-col gap-4 border-2 border-primary/20 bg-card/98 shadow-2xl backdrop-blur-xl rounded-3xl p-5 transition-all duration-300",
-        "fixed inset-y-20 right-4 z-40 w-[24rem] hidden lg:flex animate-in"
+        "fixed inset-y-4 z-40 w-[24rem] hidden lg:flex animate-in",
+        visible ? "right-4" : "-right-96"
       )}
     >
+      <!-- Current track info -->
+      <div class="flex items-center gap-3 min-w-0">
+        <Avatar
+          src={profileData?.avatar || ''}
+          alt={profileData?.displayName || currentHandle || 'Profile'}
+          size="md"
+          class="shadow-lg shrink-0"
+        />
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-bold truncate">{current.title || t('trackItem.untitled')}</p>
+          {#if currentHandle}
+            <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-primary transition-colors truncate block">
+              @{currentHandle}
+            </Link>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Player iframe/audio -->
       {#if parseTrackUrl(current.url)?.provider === 'file'}
         <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
-          <div class="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-            Audio Player (see controls at bottom)
-          </div>
+          <audio bind:this={playerAudio} onended={next} controls class="w-full"></audio>
         </div>
       {:else if iframeSrc}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg pointer-events-none">
-          <div class="w-full h-full bg-muted/20"></div>
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
+          <iframe
+            bind:this={playerIframe}
+            src={iframeSrc}
+            title="Embedded player"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+            onload={onIframeLoad}
+            class="w-full h-full"
+          ></iframe>
         </div>
       {/if}
-      <div class="space-y-4 flex-1 flex flex-col">
+
+      <!-- Player controls -->
+      <div class="flex items-center justify-center gap-2">
+        <Button
+          variant={state.isShuffled ? "default" : "outline"}
+          size="icon"
+          class="h-9 w-9"
+          onclick={toggleShuffle}
+          aria-label="Shuffle"
+        >
+          <Shuffle class="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" class="h-9 w-9" onclick={prev} aria-label={t('player.previous')}>
+          <SkipBack class="h-4 w-4" />
+        </Button>
+        <Button size="icon" class="h-11 w-11 shadow-lg bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" onclick={toggle} aria-label={t('player.toggle')}>
+          {#if state.playing}
+            <Pause class="h-5 w-5" />
+          {:else}
+            <Play class="h-5 w-5" />
+          {/if}
+        </Button>
+        <Button variant="outline" size="icon" class="h-9 w-9" onclick={next} aria-label={t('player.next')}>
+          <SkipForward class="h-4 w-4" />
+        </Button>
+      </div>
+
+      <!-- Queue -->
+      <div class="space-y-3 flex-1 flex flex-col min-h-0">
         <div class="px-1">
           <p class="text-xs uppercase tracking-wider font-semibold text-primary flex items-center gap-2">
             <ListMusic class="h-4 w-4" />
@@ -436,93 +480,6 @@
             {/if}
           </button>
         {/each}
-      </div>
-    </div>
-
-    <div class="fixed bottom-20 left-0 right-0 z-40 pointer-events-none">
-      <div class="pointer-events-auto border-t-2 border-primary/20 bg-gradient-to-t from-background via-background/98 to-background/95 backdrop-blur-xl px-6 py-4 shadow-2xl">
-        <div class="flex flex-col gap-4 md:flex-row items-center md:justify-between">
-          <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="hidden sm:block shrink-0">
-              <Avatar
-                src={profileData?.avatar || ''}
-                alt={profileData?.displayName || currentHandle || 'Profile'}
-                size="md"
-                class="shadow-lg"
-              />
-            </div>
-            <div class="min-w-0 flex-1">
-              {#snippet trackLinks()}
-                {@const url = parseTrackUrl(current?.url || '')?.url || current?.url || ''}
-                <div class="flex items-center gap-1.5">
-                  <p class="text-base font-bold truncate">{current.title || t('trackItem.untitled')}</p>
-                  {#if url}
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener"
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
-                      aria-label={t('player.openExternal')}
-                    >
-                      <ExternalLink class="h-3.5 w-3.5" />
-                    </a>
-                  {/if}
-                  {#if discogsUrl}
-                    <a
-                      href={discogsUrl}
-                      target="_blank"
-                      rel="noopener"
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
-                      aria-label="Open Discogs"
-                    >
-                      <DiscIcon class="h-3.5 w-3.5" />
-                    </a>
-                  {/if}
-                </div>
-              {/snippet}
-              {@render trackLinks()}
-              <div class="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                {#if currentHandle}
-                  <Link href={`/@${currentHandle}`} class="hover:underline hover:text-primary transition-colors">
-                    @{currentHandle}
-                  </Link>
-                {/if}
-                <span>•</span>
-                <span>{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center justify-center gap-3 flex-wrap">
-            <div class="flex items-center justify-center gap-2">
-              <Button
-                variant={state.isShuffled ? "default" : "outline"}
-                size="icon"
-                class="h-10 w-10"
-                onclick={toggleShuffle}
-                aria-label="Shuffle"
-              >
-                <Shuffle class="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" class="h-10 w-10" onclick={prev} aria-label={t('player.previous')}>
-                <SkipBack class="h-4 w-4" />
-              </Button>
-              <Button size="icon" class="h-12 w-12 shadow-lg bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" onclick={toggle} aria-label={t('player.toggle')}>
-                {#if state.playing}
-                  <Pause class="h-5 w-5" />
-                {:else}
-                  <Play class="h-5 w-5" />
-                {/if}
-              </Button>
-              <Button variant="outline" size="icon" class="h-10 w-10" onclick={next} aria-label={t('player.next')}>
-                <SkipForward class="h-4 w-4" />
-              </Button>
-            </div>
-            <Button class="lg:hidden shadow-md" size="sm" onclick={() => { mobilePanelOpen = true; }}>
-              <LayoutList class="h-4 w-4 mr-2" />
-              {t('player.queue')}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
