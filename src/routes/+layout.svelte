@@ -15,6 +15,7 @@
   import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
   import { Dialog } from '$lib/components/ui/dialog/index';
   import { resolveHandle, getTrackByUri } from '$lib/services/r4-service';
+  import Link from '$lib/components/Link.svelte';
 
   let { children } = $props();
   let ready = $state(false);
@@ -153,8 +154,8 @@
         {#each links as [href, title]}
           {#key href}
             {@const isActive = $page.url.pathname === href}
-            <a
-              {href}
+            <Link
+              href={href}
               class={cn(
                 "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
                 isActive
@@ -163,7 +164,7 @@
               )}
             >
               {title}
-            </a>
+            </Link>
           {/key}
         {/each}
       </nav>
@@ -215,8 +216,8 @@
         {#each links as [href, title]}
           {#key href}
             {@const isActive = $page.url.pathname === href}
-            <a
-              {href}
+            <Link
+              href={href}
               onclick={closeNav}
               class={cn(
                 "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
@@ -226,7 +227,7 @@
               )}
             >
               {title}
-            </a>
+            </Link>
           {/key}
         {/each}
       </nav>

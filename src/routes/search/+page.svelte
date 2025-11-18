@@ -7,7 +7,7 @@
   import StateCard from '$lib/components/ui/state-card.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { locale, translate } from '$lib/i18n';
-  import { resolve } from '$app/paths';
+  import Link from '$lib/components/Link.svelte';
 
   let q = $state('');
   let results = $state([]);
@@ -93,7 +93,7 @@
     <div class="space-y-4">
       {#each results as actor, idx (actor.did || actor.handle || idx)}
         <Card class="border-2">
-          <a href={resolve(`/@${actor.handle}`)} class="block">
+          <Link href={`/@${actor.handle}`} class="block">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-4">
                 <Avatar
@@ -119,7 +119,7 @@
                 </p>
               {/if}
             </CardHeader>
-          </a>
+          </Link>
         </Card>
       {/each}
     </div>

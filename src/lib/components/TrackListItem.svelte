@@ -13,6 +13,7 @@
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
+  import Link from '$lib/components/Link.svelte';
 
   const {
     item,
@@ -135,9 +136,9 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-2">
           <CardTitle class="text-xl flex-1 min-w-0">
-            <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors font-bold" onclick={openDetail}>
+            <Link href={viewHref() || '/'} class="hover:text-primary transition-colors font-bold" onclick={openDetail}>
               {item.title || t('trackItem.untitled')}
-            </a>
+            </Link>
           </CardTitle>
           <div class="flex items-center gap-1 shrink-0">
             <a
@@ -171,9 +172,9 @@
             <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               @
             </span>
-            <a href={resolve(`/@${encodeURIComponent(authorHandle)}`)} class="hover:text-primary transition-colors">
+            <Link href={`/@${encodeURIComponent(authorHandle)}`} class="hover:text-primary transition-colors">
               {authorHandle}
-            </a>
+            </Link>
           </CardDescription>
         {/if}
       </div>

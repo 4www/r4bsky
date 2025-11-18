@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
+  import Link from '$lib/components/Link.svelte';
   import { Menu } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
@@ -17,21 +18,21 @@
 <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
   <div class="container flex h-14 items-center justify-between">
     <div class="flex items-center gap-6">
-      <a href="/" class="flex items-center space-x-2">
+      <Link href="/" class="flex items-center space-x-2">
         <span class="font-bold text-xl">{t('nav.brand')}</span>
-      </a>
+      </Link>
 
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex items-center gap-6">
         {#each linksVal as [href, title]}
-          <a
-            {href}
+          <Link
+            href={href}
             class="text-sm font-medium transition-colors hover:text-primary"
             class:text-primary={currentVal === href}
             class:text-muted-foreground={currentVal !== href}
           >
             {title}
-          </a>
+          </Link>
         {/each}
       </nav>
     </div>
@@ -48,15 +49,15 @@
     <div class="md:hidden border-t">
       <nav class="container grid gap-2 py-4">
         {#each linksVal as [href, title]}
-          <a
-            {href}
+          <Link
+            href={href}
             onclick={close}
             class="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
             class:bg-accent={currentVal === href}
             class:text-accent-foreground={currentVal === href}
           >
             {title}
-          </a>
+          </Link>
         {/each}
       </nav>
     </div>

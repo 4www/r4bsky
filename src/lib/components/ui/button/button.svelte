@@ -39,6 +39,7 @@
 </script>
 
 <script lang="ts">
+	import { resolve } from "$app/paths";
 	import { cn } from "$lib/utils";
 
 	let {
@@ -51,13 +52,23 @@
 		children,
 		...restProps
 	}: ButtonProps = $props();
+
+	const isExternalHref = (value: string) => {
+		return /^(?:[a-z+.-]+:|\/\/)/i.test(value) || value.startsWith("mailto:") || value.startsWith("tel:") || value.startsWith("#");
+	};
+
+	const finalHref = $derived.by(() => {
+		if (!href) return href;
+		if (isExternalHref(href)) return href;
+		return resolve(href);
+	});
 </script>
 
 {#if href}
 	<a
 		bind:this={ref}
 		class={cn(buttonVariants({ variant, size }), className)}
-		{href}
+		href={finalHref}
 		{...restProps}
 	>
 		{@render children?.()}

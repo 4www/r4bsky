@@ -8,7 +8,6 @@
   import { CheckCircle2 } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { resolve } from '$app/paths';
   import { locale, translate } from '$lib/i18n';
 
   let savedUri = $state('');
@@ -54,7 +53,7 @@
               {#snippet actions()}
               <Button
                 variant="outline"
-                href={resolve(`/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`)}
+                href={`/${encodeURIComponent(savedAt.repo)}/${encodeURIComponent(savedAt.rkey)}`}
               >
                 {t('add.viewTrack')}
               </Button>

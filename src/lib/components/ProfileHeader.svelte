@@ -1,8 +1,8 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
-  import { resolve } from '$app/paths';
   import { cn } from '$lib/utils';
+  import Link from '$lib/components/Link.svelte';
 
   const {
     profile,
@@ -26,8 +26,8 @@
   <CardHeader class="pb-4">
     <div class="flex items-start justify-between gap-4 flex-wrap">
       {#if clickable}
-        <a
-          href={resolve(`/@${handle}`)}
+        <Link
+          href={`/@${handle}`}
           class="flex items-center gap-4 hover:opacity-80 transition-opacity min-w-0"
         >
           <Avatar
@@ -48,7 +48,7 @@
               </p>
             {/if}
           </div>
-        </a>
+        </Link>
       {:else}
         <div class="flex items-center gap-4 min-w-0">
           <Avatar
