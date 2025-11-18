@@ -82,7 +82,7 @@ class BskyService {
 			const rt = new RichText({ text })
 			await rt.detectFacets(this.agent)
 
-			// Post to Bluesky
+			// Post to the AT Protocol feed
 			const result = await this.agent.post({
 				text: rt.text,
 				facets: rt.facets,

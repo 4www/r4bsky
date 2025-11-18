@@ -1,7 +1,7 @@
 {
   "name": "r4atproto",
   "version": "1.0.0",
-  "description": "Radio4000 for AT Protocol - Share music tracks on Bluesky",
+  "description": "Radio4000 for AT Protocol - Share music tracks on the atproto network",
   "type": "module",
   "scripts": {
     "dev": "vite",

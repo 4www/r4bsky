@@ -60,8 +60,8 @@
     <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
   </div>
 
-  {#if $session?.did}
-    <div class="space-y-4">
+  <div class="space-y-4">
+    {#if $session?.did}
       <Card>
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
@@ -114,27 +114,26 @@
 
       <Card>
         <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            {t('settings.languageTitle')}
+          <CardTitle class="text-destructive flex items-center gap-2">
+            <LogOut class="h-5 w-5" />
+            {t('settings.signOutTitle')}
           </CardTitle>
           <CardDescription>
-            {t('settings.languageDescription')}
+            {t('settings.signOutDescription')}
           </CardDescription>
         </CardHeader>
-        <CardContent class="space-y-2">
-          <Label for="language-select">{t('settings.languageLabel')}</Label>
-          <select
-            id="language-select"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            bind:value={$localeStore}
-          >
-            {#each availableLocales as option}
-              <option value={option.code}>{option.label}</option>
-            {/each}
-          </select>
+        <CardContent>
+          <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
+            {#if working}
+              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+              {t('settings.signOutWorking')}
+            {:else}
+              <LogOut class="mr-2 h-4 w-4" />
+              {t('settings.signOutButton')}
+            {/if}
+          </Button>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle class="text-destructive flex items-center gap-2">
@@ -157,38 +156,61 @@
           </Button>
         </CardContent>
       </Card>
-    </div>
-  {:else}
+    {:else}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settings.signInTitle')}</CardTitle>
+          <CardDescription>
+            {t('settings.signInDescription')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onsubmit={handleSignIn} class="space-y-4">
+            <div class="space-y-2">
+              <Label for="signin-handle">{t('home.handleLabel')}</Label>
+              <Input
+                id="signin-handle"
+                name="handle"
+                type="text"
+                bind:value={handle}
+                placeholder={t('home.handlePlaceholder')}
+                disabled={working}
+              />
+            </div>
+            <Button type="submit" class="w-full" disabled={working || !handle.trim()}>
+              {#if working}
+                <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {t('settings.signInWorking')}
+              {:else}
+                {t('settings.signInButton')}
+              {/if}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    {/if}
+
     <Card>
       <CardHeader>
-        <CardTitle>{t('settings.signInTitle')}</CardTitle>
+        <CardTitle class="flex items-center gap-2">
+          {t('settings.languageTitle')}
+        </CardTitle>
         <CardDescription>
-          {t('settings.signInDescription')}
+          {t('settings.languageDescription')}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onsubmit={handleSignIn} class="space-y-4">
-          <div class="space-y-2">
-            <Label for="signin-handle">{t('home.handleLabel')}</Label>
-            <Input
-              id="signin-handle"
-              name="handle"
-              type="text"
-              bind:value={handle}
-              placeholder={t('home.handlePlaceholder')}
-              disabled={working}
-            />
-          </div>
-          <Button type="submit" class="w-full" disabled={working || !handle.trim()}>
-            {#if working}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              {t('settings.signInWorking')}
-            {:else}
-              {t('settings.signInButton')}
-            {/if}
-          </Button>
-        </form>
+      <CardContent class="space-y-2">
+        <Label for="language-select">{t('settings.languageLabel')}</Label>
+        <select
+          id="language-select"
+          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          bind:value={$localeStore}
+        >
+          {#each availableLocales as option}
+            <option value={option.code}>{option.label}</option>
+          {/each}
+        </select>
       </CardContent>
     </Card>
-  {/if}
+  </div>
 </div>

@@ -1,7 +1,7 @@
-R4Bsky (Svelte) – Radio4000 on Bluesky/atproto
+Radio4000 AT Protocol Client (Svelte)
 
 Overview
-- Login with Bluesky (OAuth) and manage a personal collection of music links stored on atproto as custom records (`com.radio4000.track`).
+- Login with the AT Protocol (OAuth) and manage a personal collection of music links stored as custom records (`com.radio4000.track`).
 - Browse your saved tracks, search users, follow/unfollow, and enjoy the built-in player. (Shared timeline to return soon.)
 
 Run
@@ -17,7 +17,7 @@ OAuth
   - `app.bsky.graph.follow` actions: create, delete (follow/unfollow)
 - Update `public/client-metadata.json` to set `authorization_details_types: ["atproto_repo"]` and correct `redirect_uris`.
   - Do not include `authorization_details_types` if your AS does not support it.
-  - Ensure `redirect_uris` match your deployed path exactly (add both with and without trailing slash for GitHub Pages like `/r4bsky` and `/r4bsky/`).
+  - Ensure `redirect_uris` match your deployed path exactly (add both with and without trailing slash for GitHub Pages if you deploy under a subpath).
 
 Routes
 - `/` home hub (timeline currently offline)
@@ -52,6 +52,6 @@ Notes
 - The player auto-advances for files; embedded providers (YouTube/Vimeo/SoundCloud) autoplay.
 
 Troubleshooting
-- GitHub Pages callback: include both `/r4bsky` and `/r4bsky/` in `redirect_uris`.
+- GitHub Pages callback: include both your base path with and without a trailing slash in `redirect_uris` if deploying under a subpath.
 - invalid_request on Permissions: your AS may not support authorization_details yet; the app falls back automatically.
 - Missing scopes on Followers: open Settings to re-consent.

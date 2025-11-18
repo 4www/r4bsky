@@ -1,0 +1,18 @@
+{
+  "client_id": "https://4000.radio/client-metadata.production.json",
+  "client_name": "Radio4000 for AT Protocol",
+  "client_uri": "https://4000.radio",
+  "logo_uri": "https://4000.radio/logo.png",
+  "tos_uri": "https://4000.radio/tos",
+  "policy_uri": "https://4000.radio/privacy",
+  "redirect_uris": [
+    "https://4000.radio",
+    "https://4000.radio/"
+  ],
+  "scope": "atproto transition:generic",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "application_type": "web",
+  "token_endpoint_auth_method": "none",
+  "dpop_bound_access_tokens": true
+}

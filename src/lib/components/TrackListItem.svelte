@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { parseTrackUrl } from '$lib/services/url-patterns';
   import { deleteTrackByUri } from '$lib/services/r4-service';
   import { setPlaylist } from '$lib/player/store';
@@ -7,8 +8,7 @@
   import { createEventDispatcher } from 'svelte';
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Play, MoreVertical, Pencil, Trash2, ExternalLink } from 'lucide-svelte';
+  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon } from 'lucide-svelte';
   import { cn } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
@@ -25,6 +25,9 @@
   const dispatch = createEventDispatcher();
 
   const t = (key, vars = {}) => translate($locale, key, vars);
+  let menuOpen = $state(false);
+  let menuRef = $state<HTMLElement | null>(null);
+  let triggerRef = $state<HTMLElement | null>(null);
 
   function play() {
     setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
@@ -55,6 +58,7 @@
   });
 
   const authorHandle = $derived(context?.handle ?? item.authorHandle ?? null);
+  const discogsLink = $derived(item?.discogsUrl ?? item?.discogs_url ?? '');
 
   function viewHref() {
     return buildViewHash(authorHandle, item.uri);
@@ -63,7 +67,19 @@
   function openEdit() {
     const href = editHref();
     if (href) {
-      goto(resolve(href));
+      const payload = {
+        uri: item.uri,
+        url: item.url,
+        title: item.title,
+        description: item.description,
+        discogsUrl: item.discogsUrl || item.discogs_url || '',
+      };
+      goto(resolve(href), {
+        state: { track: payload, modal: true },
+        replaceState: false,
+        noScroll: false,
+        keepFocus: false,
+      });
     }
   }
 
@@ -80,6 +96,37 @@
     if (!url || url === '#') return;
     window.open(url, '_blank', 'noopener');
   }
+
+  function openDiscogs() {
+    const link = discogsLink;
+    if (!link) return;
+    window.open(link, '_blank', 'noopener');
+  }
+
+  function toggleMenu() {
+    menuOpen = !menuOpen;
+  }
+
+  function closeMenu() { menuOpen = false; }
+
+  onMount(() => {
+    function handleClick(event: MouseEvent) {
+      if (!menuOpen) return;
+      const target = event.target as Node;
+      if (menuRef && menuRef.contains(target)) return;
+      if (triggerRef && triggerRef.contains(target)) return;
+      menuOpen = false;
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') menuOpen = false;
+    }
+    window.addEventListener('click', handleClick);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('click', handleClick);
+      window.removeEventListener('keydown', handleKey);
+    };
+  });
 </script>
 
 <Card class="hover:shadow-md transition-shadow">
@@ -105,54 +152,64 @@
         </Button>
 
         {#if editable}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <button
-                  {...props}
-                  class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), props.class)}
-                >
-                  <MoreVertical class="h-4 w-4" />
-                  <span class="sr-only">{t('trackItem.actions')}</span>
-                </button>
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Group>
+          <div class="relative">
+            <button
+              bind:this={triggerRef}
+              type="button"
+              class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+              onclick={() => toggleMenu()}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical class="h-4 w-4" />
+              <span class="sr-only">{t('trackItem.actions')}</span>
+            </button>
+            {#if menuOpen}
+              <div
+                bind:this={menuRef}
+                class="absolute right-0 z-40 mt-2 w-44 rounded-md border bg-popover text-popover-foreground shadow-lg"
+                role="menu"
+              >
                 {#if editHref()}
-                  <DropdownMenu.Item
-                    on:select={(event) => {
-                      event.preventDefault();
-                      openEdit();
-                    }}
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                    onclick={() => { closeMenu(); openEdit(); }}
                   >
-                    <Pencil class="mr-2 h-4 w-4" />
+                    <Pencil class="h-4 w-4" />
                     {t('trackItem.edit')}
-                  </DropdownMenu.Item>
+                  </button>
                 {/if}
-                <DropdownMenu.Item
-                  on:select={(event) => {
-                    event.preventDefault();
-                    openExternalUrl();
-                  }}
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  onclick={() => { closeMenu(); openExternalUrl(); }}
                 >
-                  <ExternalLink class="mr-2 h-4 w-4" />
+                  <ExternalLink class="h-4 w-4" />
                   {t('trackItem.openUrl')}
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item
-                  on:select={(event) => {
-                    event.preventDefault();
-                    remove();
-                  }}
-                  class="text-destructive focus:text-destructive"
+                </button>
+                {#if discogsLink}
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                    onclick={() => { closeMenu(); openDiscogs(); }}
+                  >
+                    <DiscIcon class="h-4 w-4" />
+                    Discogs
+                  </button>
+                {/if}
+                <div class="my-1 border-t" />
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                  onclick={() => { closeMenu(); remove(); }}
                 >
-                  <Trash2 class="mr-2 h-4 w-4" />
+                  <Trash2 class="h-4 w-4" />
                   {t('trackItem.delete')}
-                </DropdownMenu.Item>
-              </DropdownMenu.Group>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+                </button>
+              </div>
+            {/if}
+          </div>
         {:else}
           <Button variant="ghost" size="icon" onclick={openExternalUrl} aria-label={t('trackItem.openExternal')}>
             <ExternalLink class="h-4 w-4" />

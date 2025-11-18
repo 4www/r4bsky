@@ -1,0 +1,68 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { resolveHandle, getTrackByUri } from '$lib/services/r4-service';
+  import TrackEditForm from '$lib/components/TrackEditForm.svelte';
+
+  const {
+    handle = '',
+    repo = '',
+    rkey = '',
+    track = null,
+  } = $props();
+
+  const sanitizedHandle = $derived(handle ? handle.replace(/^@/, '') : '');
+  const resolvedRepo = $derived(repo || '');
+  const rkeyValue = $derived(rkey || '');
+  let initial = $state({
+    url: track?.url || '',
+    title: track?.title || '',
+    description: track?.description || '',
+    discogs_url: track?.discogsUrl || track?.discogs_url || '',
+  });
+  let uri = $state(track?.uri || '');
+  let seeded = $state(Boolean(track));
+
+  function seedFrom(data: any, fallbackUri?: string) {
+    if (!data) return;
+    initial = {
+      url: data.url || '',
+      title: data.title || '',
+      description: data.description || '',
+      discogs_url: data.discogsUrl || data.discogs_url || '',
+    };
+    uri = data.uri || fallbackUri || uri;
+    seeded = true;
+  }
+
+  $effect(() => {
+    if (!seeded && track) {
+      seedFrom(track);
+    }
+  });
+
+  onMount(() => {
+    (async () => {
+      if (seeded) return;
+      let didOrRepo = resolvedRepo;
+      if (!didOrRepo && sanitizedHandle) {
+        try {
+          didOrRepo = await resolveHandle(sanitizedHandle) || '';
+        } catch {
+          didOrRepo = '';
+        }
+      }
+      if (didOrRepo && rkeyValue) {
+        const nextUri = `at://${didOrRepo}/com.radio4000.track/${rkeyValue}`;
+        uri = nextUri;
+        try {
+          const rec = await getTrackByUri(nextUri);
+          seedFrom({ ...rec, uri: nextUri });
+        } catch {
+          // ignore fetch failures; form remains blank
+        }
+      }
+    })();
+  });
+</script>
+
+<TrackEditForm {initial} {uri} />

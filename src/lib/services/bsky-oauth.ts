@@ -83,7 +83,7 @@ class BskyOAuthService {
 		try {
 			this.client = await BrowserOAuthClient.load({
 				clientId: clientId,
-				handleResolver: 'https://bsky.social', // Using default Bluesky resolver
+				handleResolver: 'https://bsky.social', // Default AT Protocol handle resolver
 			})
 
 			// Process OAuth callback explicitly with persisted redirect if present
@@ -129,7 +129,7 @@ class BskyOAuthService {
 
 	/**
 	 * Start the OAuth login flow
-	 * This will redirect the user to their Bluesky instance for authentication
+	 * This will redirect the user to their AT Protocol service (PDS) for authentication
 	 */
 	async signIn(handle: string): Promise<SignInResult> {
 		try {
@@ -233,7 +233,7 @@ class BskyOAuthService {
 	}
 
 	/**
-	 * Handle the OAuth callback after user returns from Bluesky
+	 * Handle the OAuth callback after the user returns from their PDS
 	 */
 	async handleCallback(): Promise<SessionResult> {
 		try {
@@ -308,7 +308,7 @@ class BskyOAuthService {
 	}
 
 	/**
-	 * Post to Bluesky using the OAuth session
+	 * Post to the AT Protocol using the OAuth session
 	 */
 	async post(text: string): Promise<PostResult> {
 		try {
