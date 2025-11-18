@@ -104,6 +104,32 @@
     el.removeAttribute('src');
     try { el.load(); } catch {}
   }
+  function clearIframeSource(el?: HTMLIFrameElement | null) {
+    if (!el) return;
+    try { el.contentWindow?.postMessage?.({ method: 'pause' }, '*'); } catch {}
+    el.removeAttribute('src');
+  }
+  function applyIframeSource() {
+    const src = iframeSrc;
+    const desktop = desktopIframe;
+    const mobile = mobileIframe;
+    if (!src) {
+      clearIframeSource(desktop);
+      clearIframeSource(mobile);
+      return;
+    }
+    let target = getActiveIframe(true);
+    if (!target) target = desktop || mobile;
+    const standby = target === desktop ? mobile : desktop;
+    if (standby) clearIframeSource(standby);
+    if (target && target.getAttribute('src') !== src) {
+      target.setAttribute('src', src);
+    }
+  }
+  function setIframeSource(value: string) {
+    iframeSrc = value;
+    Promise.resolve().then(() => applyIframeSource());
+  }
   function syncFileAudio(url: string, playing: boolean, preserveProgress = false) {
     const target = getActiveAudio();
     if (!target) return;
@@ -135,7 +161,7 @@
       const meta = parseTrackUrl(current.url);
       if (meta?.provider === 'file') {
         syncFileAudio(meta.url, s.playing);
-        iframeSrc = '';
+        setIframeSource('');
         iframeProvider = '';
       } else {
         resetAudioElement(desktopAudio);
@@ -144,9 +170,9 @@
         const url = meta?.url || '';
         if (provider !== lastProvider || url !== lastUrl) {
           iframeProvider = provider;
-          iframeSrc = '';
+          setIframeSource('');
           Promise.resolve().then(() => {
-            iframeSrc = buildEmbedUrl(meta, { autoplay: s.playing }) || '';
+            setIframeSource(buildEmbedUrl(meta, { autoplay: s.playing }) || '');
           });
           lastProvider = provider;
           lastUrl = url;
@@ -293,6 +319,16 @@
 
   let previousLayout: boolean | null = null;
   $effect(() => {
+    const el = desktopIframe;
+    if (el) applyIframeSource();
+  });
+
+  $effect(() => {
+    const el = mobileIframe;
+    if (el) applyIframeSource();
+  });
+
+  $effect(() => {
     const layout = isDesktopView;
     if (previousLayout === null) {
       previousLayout = layout;
@@ -300,6 +336,7 @@
     }
     if (layout === previousLayout) return;
     previousLayout = layout;
+    applyIframeSource();
     if (iframeProvider && iframeSrc) {
       cleanupProviders();
       const iframe = getActiveIframe(true);
@@ -378,7 +415,6 @@
         <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
           <iframe
             bind:this={desktopIframe}
-            src={iframeSrc}
             title="Embedded player"
             allow="autoplay; encrypted-media"
             allowfullscreen
@@ -444,7 +480,6 @@
         {:else if iframeSrc}
           <iframe
             bind:this={mobileIframe}
-            src={iframeSrc}
             title="Embedded player"
             allow="autoplay; encrypted-media"
             allowfullscreen
