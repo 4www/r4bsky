@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v4
       - run: npm install
       - name: Use production client metadata
-        run: cp -f public/client-metadata.prod.json public/client-metadata.json
+        run: cp -f static/client-metadata.prod.json static/client-metadata.json
       - run: npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
