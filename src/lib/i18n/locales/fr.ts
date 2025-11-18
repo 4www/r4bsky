@@ -120,6 +120,10 @@ const fr = {
 		loadMore: "Voir plus de morceaux",
 		playAll: "Tout lire",
 	},
+	profileNav: {
+		tracks: "Morceaux",
+		following: "Abonnements",
+	},
 	trackDetail: {
 		loadingTitle: "Chargement du morceau",
 		loadingDescription: "Récupération du morceau depuis le protocole AT.",
@@ -142,6 +146,16 @@ const fr = {
 		follow: "Suivre",
 		unfollow: "Ne plus suivre",
 		error: "Impossible de mettre à jour l’abonnement : {message}",
+	},
+	following: {
+		title: "Abonnements de {handle}",
+		description: "Profils Radio4000 suivis par cet utilisateur",
+		loadingTitle: "Chargement des abonnements",
+		loadingDescription: "Récupération des profils suivis par cet utilisateur.",
+		errorTitle: "Impossible de charger les abonnements",
+		emptyTitle: "Aucun abonnement",
+		emptyDescription: "Cet utilisateur ne suit aucun profil Radio4000 pour le moment.",
+		loadMore: "Voir plus",
 	},
 };
 

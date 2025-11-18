@@ -120,6 +120,10 @@ const en = {
 		loadMore: "Load more tracks",
 		playAll: "Play all",
 	},
+	profileNav: {
+		tracks: "Tracks",
+		following: "Following",
+	},
 	trackDetail: {
 		loadingTitle: "Loading track",
 		loadingDescription: "Fetching this track from the AT Protocol.",
@@ -142,6 +146,16 @@ const en = {
 		follow: "Follow",
 		unfollow: "Unfollow",
 		error: "Unable to update follow: {message}",
+	},
+	following: {
+		title: "Following {handle}",
+		description: "Radio4000 profiles followed by this user",
+		loadingTitle: "Loading following",
+		loadingDescription: "Fetching the profiles this user follows.",
+		errorTitle: "Unable to load following",
+		emptyTitle: "Not following anyone yet",
+		emptyDescription: "This user hasn't followed any Radio4000 profiles yet.",
+		loadMore: "Load more",
 	},
 };
 

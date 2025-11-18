@@ -27,11 +27,8 @@
   let ytPlayerReady = $state(false);
   let scWidgetReady = $state(false);
   let vimeoPlayerReady = $state(false);
-  let desktopIframe = $state<HTMLIFrameElement | null>(null);
-  let mobileIframe = $state<HTMLIFrameElement | null>(null);
-  let desktopAudio = $state<HTMLAudioElement | null>(null);
-  let mobileAudio = $state<HTMLAudioElement | null>(null);
-  let isDesktopView = $state(isBrowser ? window.matchMedia('(min-width: 1024px)').matches : false);
+  let playerIframe = $state<HTMLIFrameElement | null>(null);
+  let playerAudio = $state<HTMLAudioElement | null>(null);
 
   function loadScriptOnce(src, check) {
     return new Promise((resolve, reject) => {
@@ -90,64 +87,32 @@
   let lastUrl = $state('');
   let lastProvider = $state('');
   let syncingWithIframe = $state(false);
-  function getActiveIframe(strict = false) {
-    if (isDesktopView) return desktopIframe || (strict ? null : mobileIframe);
-    return mobileIframe || (strict ? null : desktopIframe);
-  }
-  function getActiveAudio(strict = false) {
-    if (isDesktopView) return desktopAudio || (strict ? null : mobileAudio);
-    return mobileAudio || (strict ? null : desktopAudio);
-  }
+
   function resetAudioElement(el?: HTMLAudioElement | null) {
     if (!el) return;
     try { el.pause(); } catch {}
     el.removeAttribute('src');
     try { el.load(); } catch {}
   }
+
   function clearIframeSource(el?: HTMLIFrameElement | null) {
     if (!el) return;
     try { el.contentWindow?.postMessage?.({ method: 'pause' }, '*'); } catch {}
     el.removeAttribute('src');
   }
-  function applyIframeSource() {
-    const src = iframeSrc;
-    const desktop = desktopIframe;
-    const mobile = mobileIframe;
-    if (!src) {
-      clearIframeSource(desktop);
-      clearIframeSource(mobile);
-      return;
-    }
-    let target = getActiveIframe(true);
-    if (!target) target = desktop || mobile;
-    const standby = target === desktop ? mobile : desktop;
-    if (standby) clearIframeSource(standby);
-    if (target && target.getAttribute('src') !== src) {
-      target.setAttribute('src', src);
-    }
-  }
+
   function setIframeSource(value: string) {
     iframeSrc = value;
-    Promise.resolve().then(() => applyIframeSource());
   }
-  function syncFileAudio(url: string, playing: boolean, preserveProgress = false) {
-    const target = getActiveAudio();
-    if (!target) return;
-    const other = target === desktopAudio ? mobileAudio : desktopAudio;
-    let currentTime = 0;
-    if (preserveProgress && other && other.currentTime) {
-      currentTime = other.currentTime;
+
+  function syncFileAudio(url: string, playing: boolean) {
+    if (!playerAudio) return;
+    if (playerAudio.src !== url) {
+      playerAudio.src = url;
+      try { playerAudio.load(); } catch {}
     }
-    if (target.src !== url) {
-      target.src = url;
-      try { target.load(); } catch {}
-    }
-    if (currentTime) {
-      try { target.currentTime = currentTime; } catch {}
-    }
-    if (playing) target.play().catch(() => {});
-    else target.pause();
-    resetAudioElement(other);
+    if (playing) playerAudio.play().catch(() => {});
+    else playerAudio.pause();
   }
 
   const unsub = player.subscribe((s) => {
@@ -164,8 +129,7 @@
         setIframeSource('');
         iframeProvider = '';
       } else {
-        resetAudioElement(desktopAudio);
-        resetAudioElement(mobileAudio);
+        resetAudioElement(playerAudio);
         const provider = meta?.provider || '';
         const url = meta?.url || '';
         if (provider !== lastProvider || url !== lastUrl) {
@@ -224,14 +188,6 @@
   onMount(() => {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
-  onMount(() => {
-    const mq = typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)') : null;
-    if (!mq) return;
-    const apply = () => { isDesktopView = mq.matches; };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
   });
 
   onDestroy(() => {
@@ -310,47 +266,10 @@
   async function onIframeLoad(event: Event) {
     try {
       const target = event?.currentTarget as HTMLIFrameElement | null;
-      if (!target) return;
-      const expected = getActiveIframe(true);
-      if (expected && target !== expected) return;
+      if (!target || target !== playerIframe) return;
       await setupIframePlayer(target);
     } catch {}
   }
-
-  let previousLayout: boolean | null = null;
-  $effect(() => {
-    const el = desktopIframe;
-    if (el) applyIframeSource();
-  });
-
-  $effect(() => {
-    const el = mobileIframe;
-    if (el) applyIframeSource();
-  });
-
-  $effect(() => {
-    const layout = isDesktopView;
-    if (previousLayout === null) {
-      previousLayout = layout;
-      return;
-    }
-    if (layout === previousLayout) return;
-    previousLayout = layout;
-    applyIframeSource();
-    if (iframeProvider && iframeSrc) {
-      cleanupProviders();
-      const iframe = getActiveIframe(true);
-      if (iframe) {
-        setupIframePlayer(iframe).catch(() => {});
-      }
-    }
-    if (current) {
-      const meta = parseTrackUrl(current.url);
-      if (meta?.provider === 'file') {
-        syncFileAudio(meta.url, state.playing, true);
-      }
-    }
-  });
 
   const t = (key, vars = {}) => translate($locale, key, vars);
 
@@ -392,6 +311,22 @@
 </script>
 
 {#if current}
+  <!-- Hidden shared player elements -->
+  <div class="fixed -left-[9999px] -top-[9999px]">
+    {#if parseTrackUrl(current.url)?.provider === 'file'}
+      <audio bind:this={playerAudio} onended={next} controls></audio>
+    {:else if iframeSrc}
+      <iframe
+        bind:this={playerIframe}
+        src={iframeSrc}
+        title="Embedded player"
+        allow="autoplay; encrypted-media"
+        allowfullscreen
+        onload={onIframeLoad}
+      ></iframe>
+    {/if}
+  </div>
+
   <div class={cn("pointer-events-none", extraClass)}>
     <div
       class={cn(
@@ -409,18 +344,13 @@
     >
       {#if parseTrackUrl(current.url)?.provider === 'file'}
         <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
-          <audio bind:this={desktopAudio} onended={next} controls class="w-full h-full"></audio>
+          <div class="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+            Audio Player (see controls at bottom)
+          </div>
         </div>
       {:else if iframeSrc}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
-          <iframe
-            bind:this={desktopIframe}
-            title="Embedded player"
-            allow="autoplay; encrypted-media"
-            allowfullscreen
-            class="w-full h-full"
-            onload={onIframeLoad}
-          ></iframe>
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg pointer-events-none">
+          <div class="w-full h-full bg-muted/20"></div>
         </div>
       {/if}
       <div class="space-y-4 flex-1 flex flex-col">
@@ -474,20 +404,14 @@
           <X class="h-5 w-5" />
         </Button>
       </div>
-      <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0">
-        {#if parseTrackUrl(current.url)?.provider === 'file'}
-          <audio bind:this={mobileAudio} onended={next} controls class="w-full h-full"></audio>
-        {:else if iframeSrc}
-          <iframe
-            bind:this={mobileIframe}
-            title="Embedded player"
-            allow="autoplay; encrypted-media"
-            allowfullscreen
-            class="w-full h-full"
-            onload={onIframeLoad}
-          ></iframe>
-        {/if}
-      </div>
+      {#if parseTrackUrl(current.url)?.provider === 'file'}
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0 flex items-center justify-center">
+          <p class="text-sm text-muted-foreground px-4 text-center">Audio Player<br/>(controls at bottom)</p>
+        </div>
+      {:else if iframeSrc}
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0 bg-muted/20">
+        </div>
+      {/if}
       <div class="flex-1 min-h-0 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
         {#each state.playlist as track, idx}
           <button
@@ -515,7 +439,7 @@
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+    <div class="fixed bottom-20 left-0 right-0 z-40 pointer-events-none">
       <div class="pointer-events-auto border-t-2 border-primary/20 bg-gradient-to-t from-background via-background/98 to-background/95 backdrop-blur-xl px-6 py-4 shadow-2xl">
         <div class="flex flex-col gap-4 md:flex-row items-center md:justify-between">
           <div class="flex items-center gap-4 min-w-0 flex-1">

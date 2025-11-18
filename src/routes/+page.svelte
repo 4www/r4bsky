@@ -1,17 +1,24 @@
 <script lang="ts">
   import { bskyOAuth } from '$lib/services/bsky-oauth';
   import { session } from '$lib/state/session';
+  import { getProfile, listR4FollowsByDid, getProfiles } from '$lib/services/r4-service';
+  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import StateCard from '$lib/components/ui/state-card.svelte';
-  import { Music4 } from 'lucide-svelte';
+  import ProfileHeader from '$lib/components/ProfileHeader.svelte';
+  import { Music4, Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
   let handle = $state('');
   let error = $state('');
   let signingIn = $state(false);
+  let myProfile = $state(null);
+  let follows = $state([]);
+  let followProfiles = $state(new Map());
+  let loadingHome = $state(false);
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function handleSignIn() {
@@ -31,39 +38,92 @@
     }
   }
 
+  async function loadHomeData() {
+    if (!$session?.did || !$session?.handle) return;
+    loadingHome = true;
+    try {
+      const [profile, followsData] = await Promise.all([
+        getProfile($session.handle),
+        listR4FollowsByDid($session.did, { limit: 10 })
+      ]);
+      myProfile = profile;
+      follows = followsData.follows;
+
+      if (follows.length > 0) {
+        const dids = follows.map(f => f.subject).filter(Boolean);
+        followProfiles = await getProfiles(dids);
+      }
+    } catch (err) {
+      console.error('Failed to load home data:', err);
+    } finally {
+      loadingHome = false;
+    }
+  }
+
   const isAuthenticated = $derived($session && $session.did);
+
+  $effect(() => {
+    if (isAuthenticated) {
+      loadHomeData();
+    }
+  });
 </script>
 
 {#if isAuthenticated}
-  <div class="container max-w-4xl py-12 px-4">
-    <div class="mb-12 text-center space-y-4 animate-in">
-      <h1 class="text-5xl font-bold text-gradient">
-        {t('home.timelineDisabledTitle')}
-      </h1>
-      <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-        {t('home.timelineDisabledDescription')}
-      </p>
-    </div>
+  <div class="container max-w-4xl py-8 lg:py-12">
+    {#if loadingHome}
+      <StateCard
+        icon={Loader2}
+        title="Loading your profile"
+        description="Fetching your profile and favorite radios."
+      />
+    {:else}
+      {#if myProfile && $session?.handle}
+        <ProfileHeader
+          profile={myProfile}
+          handle={$session.handle}
+          size="lg"
+          class="mb-8"
+        />
+      {/if}
 
-    <div class="grid gap-6 max-w-xl mx-auto">
-      <Card class="card-hover border-2">
-        <CardHeader class="pb-4">
-          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Music4 class="h-6 w-6 text-primary" />
+      {#if follows.length > 0}
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Users class="h-6 w-6" />
+            Your Favorite Radios
+          </h2>
+          <div class="space-y-4">
+            {#each follows as follow (follow.uri)}
+              {@const profile = followProfiles.get(follow.subject)}
+              {@const profileHandle = profile?.handle || follow.subject}
+              <ProfileHeader
+                {profile}
+                handle={profileHandle}
+                size="sm"
+              />
+            {/each}
           </div>
-          <CardTitle class="text-xl">{t('home.exploreProfiles')}</CardTitle>
-          <CardDescription class="text-base">
-            Discover music creators and their collections on the network
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button href="/search" class="w-full" size="lg">
-            {t('home.exploreProfiles')}
-          </Button>
-        </CardContent>
-      </Card>
-
-    </div>
+        </div>
+      {:else}
+        <Card class="border-2">
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <Users class="h-5 w-5" />
+              No favorite radios yet
+            </CardTitle>
+            <CardDescription>
+              Start following other Radio4000 profiles to see them here.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button href="/search" class="w-full">
+              {t('home.exploreProfiles')}
+            </Button>
+          </CardContent>
+        </Card>
+      {/if}
+    {/if}
   </div>
 {:else}
   <div class="container mx-auto max-w-md mt-12 px-4">

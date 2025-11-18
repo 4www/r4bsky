@@ -1,8 +1,12 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
+  import { Button } from './ui/button';
   import { cn } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
+  import { PlayCircle, Loader2 } from 'lucide-svelte';
+  import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
+  import { setPlaylist } from '$lib/player/store';
 
   const {
     profile,
@@ -20,6 +24,29 @@
   };
 
   const sizes = sizeMap[size] || sizeMap.lg;
+
+  let loadingTracks = $state(false);
+
+  async function playAll(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (loadingTracks) return;
+    loadingTracks = true;
+
+    try {
+      const did = await resolveHandle(handle);
+      const { tracks } = await listTracksByDid(did);
+
+      if (tracks.length > 0) {
+        setPlaylist(tracks, 0);
+      }
+    } catch (err) {
+      console.error('Failed to load tracks:', err);
+    } finally {
+      loadingTracks = false;
+    }
+  }
 </script>
 
 <Card class={cn('border-2 shadow-lg animate-in', extraClass)}>
@@ -72,11 +99,25 @@
         </div>
       {/if}
 
-      {#if children}
-        <div class="shrink-0">
+      <div class="shrink-0 flex gap-3 flex-wrap items-center">
+        <Button
+          size={size === 'sm' ? 'sm' : 'lg'}
+          class="shadow-md"
+          onclick={playAll}
+          disabled={loadingTracks}
+        >
+          {#if loadingTracks}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <PlayCircle class="mr-2 h-4 w-4" />
+          {/if}
+          Play
+        </Button>
+
+        {#if children}
           {@render children()}
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
   </CardHeader>
 </Card>

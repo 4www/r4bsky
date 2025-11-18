@@ -8,7 +8,7 @@
   import Player from '$lib/components/Player.svelte';
   import '../app.css';
   import StateCard from '$lib/components/ui/state-card.svelte';
-  import { Loader2, Menu, X } from 'lucide-svelte';
+  import { Loader2, Menu, X, Home, Plus, User, Search, Settings } from 'lucide-svelte';
   import { player } from '$lib/player/store';
   import { locale, translate } from '$lib/i18n';
   import { cn } from '$lib/utils';
@@ -21,6 +21,15 @@
   let ready = $state(false);
   let hasDesktopPlayer = $state(false);
   let editModal = $state({
+    open: false,
+    handle: '',
+    repo: '',
+    rkey: '',
+    track: null,
+    loading: false,
+    error: '',
+  });
+  let viewModal = $state({
     open: false,
     handle: '',
     repo: '',
@@ -71,6 +80,35 @@
     editModal = { open: false, handle: '', repo: '', rkey: '', track: null, loading: false, error: '' };
   }
 
+  function closeViewModal() {
+    viewModal = { open: false, handle: '', repo: '', rkey: '', track: null, loading: false, error: '' };
+  }
+
+  async function openViewModal(params: { handle?: string; rkey?: string; track?: any }) {
+    const handleParam = params.handle || '';
+    const rkeyParam = params.rkey || '';
+    viewModal = { ...viewModal, open: true, loading: true, error: '', handle: handleParam, rkey: rkeyParam, track: null };
+    let repo = '';
+    try {
+      const normalized = handleParam?.replace(/^@/, '') || '';
+      if (normalized.startsWith('did:')) repo = normalized;
+      else if (normalized) repo = (await resolveHandle(normalized)) || '';
+    } catch (e) {
+      viewModal = { ...viewModal, open: true, loading: false, error: (e as Error)?.message || 'Unable to resolve handle', repo: '' };
+      return;
+    }
+    let track = params.track || null;
+    if (!track && repo && rkeyParam) {
+      try {
+        track = await getTrackByUri(`at://${repo}/com.radio4000.track/${rkeyParam}`);
+      } catch (e) {
+        viewModal = { ...viewModal, open: true, loading: false, error: (e as Error)?.message || 'Unable to load track', repo };
+        return;
+      }
+    }
+    viewModal = { open: true, loading: false, error: '', handle: handleParam, repo, rkey: rkeyParam, track };
+  }
+
   async function openEditModal(params: { handle?: string; rkey?: string; track?: any }) {
     const handleParam = params.handle || '';
     const rkeyParam = params.rkey || '';
@@ -104,13 +142,26 @@
 
     // beforeNavigate returns a cleanup function that removes the navigation listener
     beforeNavigate((nav) => {
-      if (!nav.to || nav.to.route?.id !== '/[handle]/[rkey]/edit' || !nav.to.state?.modal) return;
-      nav.cancel();
-      openEditModal({
-        handle: nav.to.params?.handle,
-        rkey: nav.to.params?.rkey,
-        track: nav.to.state?.track,
-      }).catch(console.error);
+      // Handle edit modal
+      if (nav.to?.route?.id === '/[handle]/[rkey]/edit' && nav.to.state?.modal) {
+        nav.cancel();
+        openEditModal({
+          handle: nav.to.params?.handle,
+          rkey: nav.to.params?.rkey,
+          track: nav.to.state?.track,
+        }).catch(console.error);
+        return;
+      }
+      // Handle view modal
+      if (nav.to?.route?.id === '/[handle]/[rkey]') {
+        nav.cancel();
+        openViewModal({
+          handle: nav.to.params?.handle,
+          rkey: nav.to.params?.rkey,
+          track: nav.to.state?.track,
+        }).catch(console.error);
+        return;
+      }
     });
 
     return () => {
@@ -121,17 +172,21 @@
   const userHandle = $derived(($session && $session.handle) || '');
   const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/');
 
+  const iconMap = {
+    '/': Home,
+    '/add': Plus,
+    '/search': Search,
+    '/settings': Settings,
+  };
+
   const links = $derived(
     ($session && $session.did)
       ? (userHandle
-          ? [['/', t('nav.links.home')], ['/add', t('nav.links.add')], [myPath, `@${userHandle}`], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
-          : [['/', t('nav.links.home')], ['/add', t('nav.links.add')], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
+          ? [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], [myPath, `@${userHandle}`, User], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
+          : [['/', t('nav.links.home'), Home], ['/add', t('nav.links.add'), Plus], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
         )
-      : [['/', t('nav.links.home')], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
+      : [['/', t('nav.links.home'), Home], ['/search', t('nav.links.search'), Search], ['/settings', t('nav.links.settings'), Settings]]
   );
-  let mobileNavOpen = $state(false);
-  function toggleNav() { mobileNavOpen = !mobileNavOpen; }
-  function closeNav() { mobileNavOpen = false; }
   const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
 
@@ -145,34 +200,77 @@
   </div>
 {:else}
   <Player />
-  <div class="flex min-h-screen bg-background">
-    <aside class="hidden lg:flex lg:flex-col lg:w-72 border-r-2 border-primary/10 bg-gradient-to-b from-background to-muted/20">
-      <div class="px-6 py-8">
-        <h1 class="text-3xl font-bold text-gradient">{t('nav.brand')}</h1>
-      </div>
-      <nav class="flex-1 px-4 pb-6 space-y-2">
-        {#each links as [href, title]}
+  <div class="min-h-screen bg-background">
+    <!-- Bottom navigation for all screen sizes -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-4 px-4 pointer-events-none">
+      <div class="pointer-events-auto inline-flex gap-1.5 p-1.5 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20 shadow-2xl">
+        {#each links as [href, title, icon]}
           {#key href}
             {@const isActive = $page.url.pathname === href}
             <Link
               href={href}
               class={cn(
-                "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
+                "flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "text-primary bg-gradient-to-r from-primary/20 to-purple-500/20 shadow-sm border-l-4 border-primary"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/5 hover:pl-5"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
+              aria-label={title}
             >
-              {title}
+              <svelte:component this={icon} class="h-4 w-4" />
+              <span class="hidden sm:inline">{title}</span>
             </Link>
           {/key}
         {/each}
-      </nav>
-    </aside>
+      </div>
+    </nav>
     <div class="flex-1 flex flex-col min-h-screen relative">
-      <main class={cn("flex-1 pb-32 transition-[padding] px-4 sm:px-6 lg:px-8", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
+      <main class={cn("flex-1 pb-40 transition-[padding] px-4 sm:px-6 lg:px-8", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
         {@render children()}
       </main>
+      {#if viewModal.open}
+        <Dialog title={viewModal.track?.title || t('trackItem.untitled')} onClose={closeViewModal}>
+          {#if viewModal.error}
+            <div class="text-sm text-destructive">{viewModal.error}</div>
+          {:else if viewModal.loading}
+            <div class="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 class="h-4 w-4 animate-spin" />
+              {t('profile.loadingDescription')}
+            </div>
+          {:else if viewModal.track}
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-semibold mb-2">{t('trackForm.url')}</h3>
+                <a href={viewModal.track.url} target="_blank" rel="noopener" class="text-sm text-primary hover:underline break-all">
+                  {viewModal.track.url}
+                </a>
+              </div>
+              {#if viewModal.track.description}
+                <div>
+                  <h3 class="text-sm font-semibold mb-2">{t('trackForm.description')}</h3>
+                  <p class="text-sm text-muted-foreground whitespace-pre-wrap">{viewModal.track.description}</p>
+                </div>
+              {/if}
+              {#if viewModal.track.discogsUrl || viewModal.track.discogs_url}
+                <div>
+                  <h3 class="text-sm font-semibold mb-2">Discogs</h3>
+                  <a href={viewModal.track.discogsUrl || viewModal.track.discogs_url} target="_blank" rel="noopener" class="text-sm text-primary hover:underline break-all">
+                    {viewModal.track.discogsUrl || viewModal.track.discogs_url}
+                  </a>
+                </div>
+              {/if}
+              {#if viewModal.handle}
+                <div>
+                  <h3 class="text-sm font-semibold mb-2">Channel</h3>
+                  <Link href={`/@${viewModal.handle}`} class="text-sm text-primary hover:underline">
+                    @{viewModal.handle}
+                  </Link>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </Dialog>
+      {/if}
       {#if editModal.open}
         <Dialog title={t('editTrack.title')} onClose={closeEditModal}>
           {#if editModal.error}
@@ -195,42 +293,4 @@
     </div>
   </div>
 
-  <button
-    class="lg:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center rounded-xl border-2 border-primary/20 bg-background/95 backdrop-blur-xl px-4 py-3 shadow-lg transition-transform hover:scale-105"
-    type="button"
-    onclick={toggleNav}
-    aria-label={t('nav.toggle')}
-  >
-    <Menu class="h-5 w-5 text-primary" />
-  </button>
-  {#if mobileNavOpen}
-    <div class="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in" onclick={closeNav}></div>
-    <div class="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-background to-muted/20 border-r-2 border-primary/20 shadow-2xl flex flex-col animate-in">
-      <div class="flex items-center justify-between px-6 py-6 border-b-2 border-primary/10">
-        <span class="text-xl font-bold text-gradient">{t('nav.brand')}</span>
-        <button class="p-2 rounded-lg hover:bg-primary/10 transition-colors" onclick={closeNav} aria-label="Close menu">
-          <X class="h-5 w-5 text-primary" />
-        </button>
-      </div>
-      <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-        {#each links as [href, title]}
-          {#key href}
-            {@const isActive = $page.url.pathname === href}
-            <Link
-              href={href}
-              onclick={closeNav}
-              class={cn(
-                "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
-                isActive
-                  ? "text-primary bg-gradient-to-r from-primary/20 to-purple-500/20 shadow-sm border-l-4 border-primary"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/5 hover:pl-5"
-              )}
-            >
-              {title}
-            </Link>
-          {/key}
-        {/each}
-      </nav>
-    </div>
-  {/if}
 {/if}
