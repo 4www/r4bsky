@@ -349,3 +349,18 @@ export async function getHandleByDid(did: string): Promise<string | null> {
     }
   }
 }
+
+export async function getProfile(actor: string): Promise<any> {
+  try {
+    const res = await getPublicAgent().app.bsky.actor.getProfile({ actor })
+    return res.data || null
+  } catch (e) {
+    try {
+      const auth = assertAgent()
+      const res = await auth.app.bsky.actor.getProfile({ actor })
+      return res.data || null
+    } catch (_) {
+      return null
+    }
+  }
+}

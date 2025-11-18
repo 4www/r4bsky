@@ -1,25 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getTrackByUri, resolveHandle, getHandleByDid } from '$lib/services/r4-service';
+  import { getTrackByUri, resolveHandle, getProfile } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
+  import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { session } from '$lib/state/session';
-  import { Card, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Loader2, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
-  import { resolve } from '$app/paths';
   import { Button } from '$lib/components/ui/button';
   import { locale, translate } from '$lib/i18n';
 
-  const props = $props();
-  const repo = $derived(props.repo || '');
-  const _handle = $derived(props.handle || '');
+  const { data } = $props();
+  const _handle = $derived(data?.handle || '');
   // Strip @ symbol if present (from URL like /@handle)
   const handle = $derived(_handle ? _handle.replace(/^@/, '') : '');
-  const rkey = $derived(props.rkey || '');
+  const rkey = $derived(data?.rkey || '');
 
   let item = $state(null);
   let did = $state('');
+  let profile = $state(null);
   let status = $state('');
   let loading = $state(true);
   let displayHandle = $state('');
@@ -29,41 +28,37 @@
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   function refreshTrack() {
-    loadTrack(repo, handle, rkey);
+    loadTrack(handle, rkey);
   }
 
-  async function loadTrack(currentRepo: string, currentHandle: string, currentRkey: string) {
+  async function loadTrack(currentHandle: string, currentRkey: string) {
     const requestId = ++loadRequestId;
     loading = true;
     status = '';
     item = null;
+    profile = null;
 
     try {
-      if (currentRepo) {
-        did = currentRepo;
-        try {
-          displayHandle = (await getHandleByDid(currentRepo)) || '';
-        } catch {
-          displayHandle = '';
-        }
-        const uri = `at://${currentRepo}/com.radio4000.track/${currentRkey}`;
-        const rec = await getTrackByUri(uri);
-        if (requestId === loadRequestId) item = { ...rec };
+      if (!currentHandle || !currentRkey) {
+        if (requestId === loadRequestId) status = t('trackDetail.errorTitle');
         return;
       }
 
-      if (currentHandle) {
-        const resolvedDid = await resolveHandle(currentHandle);
-        if (requestId !== loadRequestId) return;
-        did = resolvedDid;
-        displayHandle = currentHandle;
-        const uri = `at://${resolvedDid}/com.radio4000.track/${currentRkey}`;
-        const rec = await getTrackByUri(uri);
-        if (requestId === loadRequestId) item = { ...rec };
-        return;
-      }
+      const resolvedDid = await resolveHandle(currentHandle);
+      if (requestId !== loadRequestId) return;
+      did = resolvedDid;
+      displayHandle = currentHandle;
 
-      if (requestId === loadRequestId) status = t('trackDetail.errorTitle');
+      // Fetch profile and track in parallel
+      const [profileData, trackData] = await Promise.all([
+        getProfile(currentHandle),
+        getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`)
+      ]);
+
+      if (requestId === loadRequestId) {
+        profile = profileData;
+        item = { ...trackData };
+      }
     } catch (e) {
       if (requestId === loadRequestId) status = (e as Error)?.message || t('trackDetail.errorTitle');
     } finally {
@@ -72,28 +67,21 @@
   }
 
   onMount(() => {
-    if (rkey) {
-      loadTrack(repo, handle, rkey);
+    if (handle && rkey) {
+      loadTrack(handle, rkey);
     }
   });
 </script>
 
-<div class="container max-w-4xl py-8">
-  {#if displayHandle}
-    <Card class="mb-6">
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle>
-            <a href={resolve(`/@${encodeURIComponent(displayHandle)}`)} class="hover:text-primary transition-colors">
-              @{displayHandle}
-            </a>
-          </CardTitle>
-          {#if did}
-            <FollowButton actorDid={did} />
-          {/if}
-        </div>
-      </CardHeader>
-    </Card>
+<div class="container max-w-4xl py-8 lg:py-12">
+  {#if displayHandle && profile}
+    <ProfileHeader {profile} handle={displayHandle} size="md" class="mb-8">
+      {#snippet children()}
+        {#if did && $session?.did !== did}
+          <FollowButton actorDid={did} />
+        {/if}
+      {/snippet}
+    </ProfileHeader>
   {/if}
 
   {#if loading}

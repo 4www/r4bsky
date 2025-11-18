@@ -5,6 +5,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Search, Loader2, User, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
+  import Avatar from '$lib/components/Avatar.svelte';
   import { locale, translate } from '$lib/i18n';
   import { resolve } from '$app/paths';
 
@@ -34,30 +35,30 @@
   }
 </script>
 
-<div class="container max-w-4xl py-8">
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">{t('search.title')}</h1>
-    <p class="text-muted-foreground">{t('search.description')}</p>
+<div class="container max-w-4xl py-8 lg:py-12">
+  <div class="mb-10 text-center animate-in">
+    <h1 class="text-4xl lg:text-5xl font-bold mb-4 text-gradient">{t('search.title')}</h1>
+    <p class="text-lg text-muted-foreground max-w-2xl mx-auto">{t('search.description')}</p>
   </div>
 
-  <Card class="mb-8">
+  <Card class="mb-10 border-2 shadow-lg">
     <CardContent class="pt-6">
-      <form onsubmit={search} class="flex gap-2">
+      <form onsubmit={search} class="flex gap-3">
         <div class="relative flex-1">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
           <Input
             id="search-q"
             name="q"
             type="search"
             bind:value={q}
             placeholder={t('search.placeholder')}
-            class="pl-9"
+            class="pl-12 h-12 text-base border-2"
             disabled={loading}
           />
         </div>
-        <Button type="submit" disabled={loading || !q.trim()}>
+        <Button type="submit" size="lg" class="px-8 shadow-md" disabled={loading || !q.trim()}>
           {#if loading}
-            <Loader2 class="h-4 w-4 animate-spin" />
+            <Loader2 class="h-5 w-5 animate-spin" />
           {:else}
             {t('search.submit')}
           {/if}
@@ -87,26 +88,31 @@
       description={t('search.loadingDescription')}
     />
   {:else if results.length > 0}
-    <div class="space-y-3">
+    <div class="space-y-4">
       {#each results as actor, idx (actor.did || actor.handle || idx)}
-        <Card class="hover:shadow-md transition-shadow">
+        <Card class="card-hover border-2">
           <a href={resolve(`/@${encodeURIComponent(actor.handle)}`)} class="block">
-            <CardHeader class="pb-3">
-              <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                  <User class="h-5 w-5 text-muted-foreground" />
-                </div>
+            <CardHeader class="pb-4">
+              <div class="flex items-center gap-4">
+                <Avatar
+                  src={actor.avatar}
+                  alt={actor.displayName || actor.handle}
+                  size="lg"
+                />
                 <div class="flex-1 min-w-0">
-                  <CardTitle class="text-base">
+                  <CardTitle class="text-lg mb-1">
                     {actor.displayName || actor.handle}
                   </CardTitle>
-                  <p class="text-sm text-muted-foreground truncate">
-                    @{actor.handle}
+                  <p class="text-base text-muted-foreground truncate flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                      @
+                    </span>
+                    {actor.handle}
                   </p>
                 </div>
               </div>
               {#if actor.description}
-                <p class="text-sm text-muted-foreground mt-2 line-clamp-2">
+                <p class="text-sm text-muted-foreground mt-3 line-clamp-2 leading-relaxed">
                   {actor.description}
                 </p>
               {/if}

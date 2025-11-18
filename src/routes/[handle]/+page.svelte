@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
+  import { resolveHandle, listTracksByDid, getProfile } from '$lib/services/r4-service';
   import { onMount } from 'svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import TrackList from '$lib/components/TrackList.svelte';
+  import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -18,6 +19,7 @@
   const handle = $derived(data?.handle ? data.handle.replace(/^@/, '') : '');
 
   let did = $state('');
+  let profile = $state(null);
   let items = $state([]);
   let cursor = $state(undefined);
   let status = $state('');
@@ -37,6 +39,7 @@
     loading = true;
     status = '';
     did = '';
+    profile = null;
     items = [];
     cursor = undefined;
 
@@ -45,10 +48,17 @@
         const resolvedDid = await resolveHandle(currentHandle);
         if (requestId !== loadRequestId) return;
         did = resolvedDid;
-        const { tracks, cursor: c } = await listTracksByDid(resolvedDid);
+
+        // Fetch profile data in parallel with tracks
+        const [profileData, tracksData] = await Promise.all([
+          getProfile(currentHandle),
+          listTracksByDid(resolvedDid)
+        ]);
+
         if (requestId !== loadRequestId) return;
-        items = tracks;
-        cursor = c;
+        profile = profileData;
+        items = tracksData.tracks;
+        cursor = tracksData.cursor;
       } catch (err) {
         if (requestId === loadRequestId) status = (err as Error)?.message || String(err);
       } finally {
@@ -75,33 +85,23 @@
   }
 </script>
 
-<div class="container max-w-4xl py-8">
+<div class="container max-w-4xl py-8 lg:py-12">
   {#if handle}
-    <Card class="mb-6">
-      <CardHeader>
-        <div class="flex items-start justify-between">
-          <div>
-            <CardTitle class="text-2xl">@{handle}</CardTitle>
-            {#if did}
-              <CardDescription class="mt-1">
-                {did.slice(0, 20)}...
-              </CardDescription>
-            {/if}
-          </div>
-          <div class="flex gap-2">
-            {#if items.length > 0}
-              <Button onclick={() => playAll(0)}>
-                <PlayCircle class="mr-2 h-4 w-4" />
-                {t('profile.playAll')}
-              </Button>
-            {/if}
-            {#if did && $session?.did !== did}
-              <FollowButton actorDid={did} />
-            {/if}
-          </div>
+    <ProfileHeader {profile} {handle} size="lg" class="mb-8" clickable={false}>
+      {#snippet children()}
+        <div class="flex gap-3 flex-wrap">
+          {#if items.length > 0}
+            <Button size="lg" class="shadow-md" onclick={() => playAll(0)}>
+              <PlayCircle class="mr-2 h-5 w-5" />
+              {t('profile.playAll')}
+            </Button>
+          {/if}
+          {#if did && $session?.did !== did}
+            <FollowButton actorDid={did} />
+          {/if}
         </div>
-      </CardHeader>
-    </Card>
+      {/snippet}
+    </ProfileHeader>
   {:else}
     <Card>
       <CardHeader>

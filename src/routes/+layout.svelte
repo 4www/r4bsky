@@ -100,7 +100,9 @@
     const unsubscribe = player.subscribe((state) => {
       hasDesktopPlayer = state.playlist?.length > 0 && state.index >= 0;
     });
-    const stopNavigate = beforeNavigate((nav) => {
+
+    // beforeNavigate returns a cleanup function that removes the navigation listener
+    beforeNavigate((nav) => {
       if (!nav.to || nav.to.route?.id !== '/[handle]/[rkey]/edit' || !nav.to.state?.modal) return;
       nav.cancel();
       openEditModal({
@@ -109,9 +111,9 @@
         track: nav.to.state?.track,
       }).catch(console.error);
     });
+
     return () => {
       unsubscribe();
-      stopNavigate();
     };
   });
 
@@ -143,17 +145,21 @@
 {:else}
   <Player />
   <div class="flex min-h-screen bg-background">
-    <aside class="hidden lg:flex lg:flex-col lg:w-64 border-r bg-background">
-      <div class="px-6 py-6 text-2xl font-bold">{t('nav.brand')}</div>
-      <nav class="flex-1 px-4 pb-6 space-y-1">
+    <aside class="hidden lg:flex lg:flex-col lg:w-72 border-r-2 border-primary/10 bg-gradient-to-b from-background to-muted/20">
+      <div class="px-6 py-8">
+        <h1 class="text-3xl font-bold text-gradient">{t('nav.brand')}</h1>
+      </div>
+      <nav class="flex-1 px-4 pb-6 space-y-2">
         {#each links as [href, title]}
           {#key href}
             {@const isActive = $page.url.pathname === href}
             <a
               {href}
               class={cn(
-                "block rounded-md px-3 py-2 text-sm font-medium hover:text-primary hover:bg-primary/5",
-                isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
+                isActive
+                  ? "text-primary bg-gradient-to-r from-primary/20 to-purple-500/20 shadow-sm border-l-4 border-primary"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/5 hover:pl-5"
               )}
             >
               {title}
@@ -163,7 +169,7 @@
       </nav>
     </aside>
     <div class="flex-1 flex flex-col min-h-screen relative">
-      <main class={cn("flex-1 pb-32 transition-[padding] px-4 sm:px-6", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
+      <main class={cn("flex-1 pb-32 transition-[padding] px-4 sm:px-6 lg:px-8", hasDesktopPlayer ? "lg:pr-[28rem]" : "")}>
         {@render children()}
       </main>
       {#if editModal.open}
@@ -189,23 +195,23 @@
   </div>
 
   <button
-    class="lg:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center rounded-full border bg-background/95 backdrop-blur px-3 py-2 shadow"
+    class="lg:hidden fixed top-4 left-4 z-50 inline-flex items-center justify-center rounded-xl border-2 border-primary/20 bg-background/95 backdrop-blur-xl px-4 py-3 shadow-lg transition-transform hover:scale-105"
     type="button"
     onclick={toggleNav}
     aria-label={t('nav.toggle')}
   >
-    <Menu class="h-5 w-5" />
+    <Menu class="h-5 w-5 text-primary" />
   </button>
   {#if mobileNavOpen}
-    <div class="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onclick={closeNav}></div>
-    <div class="lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r shadow-xl flex flex-col">
-      <div class="flex items-center justify-between px-4 py-3 border-b">
-        <span class="font-semibold">{t('nav.brand')}</span>
-        <button class="p-2 rounded-md hover:bg-muted" onclick={closeNav} aria-label="Close menu">
-          <X class="h-4 w-4" />
+    <div class="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in" onclick={closeNav}></div>
+    <div class="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-background to-muted/20 border-r-2 border-primary/20 shadow-2xl flex flex-col animate-in">
+      <div class="flex items-center justify-between px-6 py-6 border-b-2 border-primary/10">
+        <span class="text-xl font-bold text-gradient">{t('nav.brand')}</span>
+        <button class="p-2 rounded-lg hover:bg-primary/10 transition-colors" onclick={closeNav} aria-label="Close menu">
+          <X class="h-5 w-5 text-primary" />
         </button>
       </div>
-      <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-2">
         {#each links as [href, title]}
           {#key href}
             {@const isActive = $page.url.pathname === href}
@@ -213,8 +219,10 @@
               {href}
               onclick={closeNav}
               class={cn(
-                "block rounded-md px-3 py-2 text-sm font-medium hover:text-primary hover:bg-primary/5",
-                isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                "block rounded-xl px-4 py-3 text-base font-medium transition-all duration-200",
+                isActive
+                  ? "text-primary bg-gradient-to-r from-primary/20 to-purple-500/20 shadow-sm border-l-4 border-primary"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/5 hover:pl-5"
               )}
             >
               {title}

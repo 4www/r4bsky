@@ -35,49 +35,81 @@
 </script>
 
 {#if isAuthenticated}
-  <div class="container max-w-3xl py-16 px-4">
-    <StateCard
-      icon={Music4}
-      title={t('home.timelineDisabledTitle')}
-      description={t('home.timelineDisabledDescription')}
-    >
-      {#snippet actions()}
-        <Button variant="outline" href="/search">
-          {t('home.exploreProfiles')}
-        </Button>
-        <Button href="/following">
-          {t('home.visitFollowing')}
-        </Button>
-      {/snippet}
-    </StateCard>
+  <div class="container max-w-4xl py-12 px-4">
+    <div class="mb-12 text-center space-y-4 animate-in">
+      <h1 class="text-5xl font-bold text-gradient">
+        {t('home.timelineDisabledTitle')}
+      </h1>
+      <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+        {t('home.timelineDisabledDescription')}
+      </p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+      <Card class="card-hover border-2">
+        <CardHeader class="pb-4">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Music4 class="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle class="text-xl">{t('home.exploreProfiles')}</CardTitle>
+          <CardDescription class="text-base">
+            Discover music creators and their collections on the network
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button href="/search" class="w-full" size="lg">
+            {t('home.exploreProfiles')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card class="card-hover border-2">
+        <CardHeader class="pb-4">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Music4 class="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle class="text-xl">{t('home.visitFollowing')}</CardTitle>
+          <CardDescription class="text-base">
+            Check out tracks from people you follow
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button href="/following" variant="outline" class="w-full" size="lg">
+            {t('home.visitFollowing')}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 {:else}
-  <div class="container mx-auto max-w-md mt-16 px-4">
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('home.title')}</CardTitle>
-        <CardDescription>
-          {t('home.subtitle')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onsubmit={(e) => { e.preventDefault(); handleSignIn(); }} class="space-y-4">
+  <div class="container mx-auto max-w-md mt-12 px-4">
+    <div class="mb-8 text-center space-y-3 animate-in">
+      <h1 class="text-4xl font-bold text-gradient">{t('home.title')}</h1>
+      <p class="text-lg text-muted-foreground">{t('home.subtitle')}</p>
+    </div>
+
+    <Card class="border-2 shadow-xl">
+      <CardContent class="pt-6">
+        <form onsubmit={(e) => { e.preventDefault(); handleSignIn(); }} class="space-y-6">
           <div class="space-y-2">
-            <Label for="handle">{t('home.handleLabel')}</Label>
+            <Label for="handle" class="text-base">{t('home.handleLabel')}</Label>
             <Input
               id="handle"
               type="text"
               placeholder={t('home.handlePlaceholder')}
               bind:value={handle}
               disabled={signingIn}
+              class="h-12 text-base"
             />
           </div>
 
           {#if error}
-            <div class="text-sm text-destructive">{error}</div>
+            <div class="rounded-lg bg-destructive/15 border border-destructive/20 p-4 text-sm text-destructive">
+              {error}
+            </div>
           {/if}
 
-          <Button type="submit" class="w-full" disabled={signingIn}>
+          <Button type="submit" class="w-full h-12 text-base" disabled={signingIn}>
             {signingIn ? t('home.submitting') : t('home.submit')}
           </Button>
         </form>

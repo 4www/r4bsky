@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { player, toggle, next, prev, playIndex } from '$lib/player/store';
+  import { player, toggle, next, prev, playIndex, shuffle } from '$lib/player/store';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
-  import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList } from 'lucide-svelte';
+  import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import { resolve } from '$app/paths';
@@ -22,6 +22,7 @@
   let ytApiReady = $state(null);
   let scApiReady = $state(null);
   let vimeoApiReady = $state(null);
+  let mobilePanelOpen = $state(false);
 
   function loadScriptOnce(src, check) {
     return new Promise((resolve, reject) => {
@@ -204,16 +205,16 @@
 
     <aside
       class={cn(
-        "pointer-events-auto flex flex-col gap-4 border bg-card/95 shadow-2xl backdrop-blur rounded-2xl p-4 transition-transform",
-        "fixed inset-y-20 right-4 z-40 w-[22rem] hidden lg:flex"
+        "pointer-events-auto flex flex-col gap-4 border-2 border-primary/20 bg-card/98 shadow-2xl backdrop-blur-xl rounded-3xl p-5 transition-all duration-300",
+        "fixed inset-y-20 right-4 z-40 w-[24rem] hidden lg:flex animate-in"
       )}
     >
       {#if parseTrackUrl(current.url)?.provider === 'file'}
-        <div class="rounded-xl overflow-hidden bg-muted aspect-video">
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
           <audio bind:this={audio} onended={next} controls class="w-full h-full"></audio>
         </div>
       {:else if iframeSrc}
-        <div class="rounded-xl overflow-hidden bg-muted aspect-video">
+        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
           <iframe
             bind:this={iframeEl}
             src={iframeSrc}
@@ -225,21 +226,23 @@
           ></iframe>
         </div>
       {/if}
-      <div class="space-y-3 flex-1 flex flex-col">
-        <div>
-          <p class="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-            <ListMusic class="h-3.5 w-3.5" />
+      <div class="space-y-4 flex-1 flex flex-col">
+        <div class="px-1">
+          <p class="text-xs uppercase tracking-wider font-semibold text-primary flex items-center gap-2">
+            <ListMusic class="h-4 w-4" />
             {t('player.queue')}
           </p>
-          <p class="text-sm text-muted-foreground">{queueCount} tracks</p>
+          <p class="text-sm text-muted-foreground mt-1">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
         </div>
-        <div class="flex-1 overflow-y-auto rounded-xl border divide-y">
+        <div class="flex-1 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
           {#each state.playlist as track, idx}
             <button
               type="button"
               class={cn(
-                "w-full text-left px-3 py-3 transition flex flex-col gap-1",
-                idx === state.index ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+                "w-full text-left px-4 py-3 transition-all duration-200 flex flex-col gap-1.5 relative",
+                idx === state.index
+                  ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-4 border-primary shadow-sm"
+                  : "hover:bg-muted/60 hover:pl-5"
               )}
               onclick={() => playIndex(idx)}
             >
@@ -261,20 +264,20 @@
 
     <div
       class={cn(
-        "fixed inset-y-0 right-0 z-50 w-full max-w-md bg-card/98 shadow-2xl border-l p-4 flex flex-col gap-4 transition-transform lg:hidden pointer-events-auto",
+        "fixed inset-y-0 right-0 z-50 w-full max-w-md bg-gradient-to-b from-background to-muted/20 backdrop-blur-xl shadow-2xl border-l-2 border-primary/20 p-4 flex flex-col gap-4 transition-transform lg:hidden pointer-events-auto",
         mobilePanelOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-xs text-muted-foreground uppercase">{t('player.queue')}</p>
-          <p class="text-sm text-muted-foreground">{queueCount} tracks</p>
+          <p class="text-xs text-primary uppercase font-semibold tracking-wider">{t('player.queue')}</p>
+          <p class="text-sm text-muted-foreground">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
         </div>
         <Button variant="ghost" size="icon" onclick={() => { mobilePanelOpen = false; }}>
-          <X class="h-4 w-4" />
+          <X class="h-5 w-5" />
         </Button>
       </div>
-      <div class="rounded-xl overflow-hidden bg-muted aspect-video">
+      <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
         {#if parseTrackUrl(current.url)?.provider === 'file'}
           <audio bind:this={audio} onended={next} controls class="w-full h-full"></audio>
         {:else if iframeSrc}
@@ -289,15 +292,17 @@
           ></iframe>
         {/if}
       </div>
-      <div class="flex-1 overflow-y-auto rounded-xl border divide-y">
+      <div class="flex-1 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
         {#each state.playlist as track, idx}
           <button
             type="button"
             class={cn(
-              "w-full text-left px-3 py-3 transition flex flex-col gap-1",
-              idx === state.index ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+              "w-full text-left px-4 py-3 transition-all duration-200 flex flex-col gap-1.5 relative",
+              idx === state.index
+                ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-4 border-primary shadow-sm"
+                : "hover:bg-muted/60 hover:pl-5"
             )}
-            onclick={() => { playIndex(idx); mobilePanelOpen = false; }}
+            onclick={() => playIndex(idx)}
           >
             <div class="flex items-center justify-between text-xs text-muted-foreground">
               <span class="font-semibold text-foreground">{idx + 1}</span>
@@ -315,17 +320,29 @@
     </div>
 
     <div class="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-      <div class="pointer-events-auto border-t bg-background/95 backdrop-blur px-4 py-3 shadow-lg">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <ListMusic class="h-5 w-5" />
+      <div class="pointer-events-auto border-t-2 border-primary/20 bg-gradient-to-t from-background via-background/98 to-background/95 backdrop-blur-xl px-6 py-4 shadow-2xl">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-4 min-w-0 flex-1">
+            <div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-purple-500 text-primary-foreground shadow-lg">
+              <ListMusic class="h-6 w-6" />
             </div>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold truncate">{current.title || t('trackItem.untitled')}</p>
-              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-base font-bold truncate flex-1">{current.title || t('trackItem.untitled')}</p>
+                <div class="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" class="h-8 w-8" onclick={openCurrentUrl} aria-label={t('player.openExternal')}>
+                    <ExternalLink class="h-4 w-4" />
+                  </Button>
+                  {#if discogsUrl}
+                    <Button variant="ghost" size="icon" class="h-8 w-8" href={discogsUrl} target="_blank" rel="noopener" aria-label="Open Discogs">
+                      <DiscIcon class="h-4 w-4" />
+                    </Button>
+                  {/if}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-muted-foreground">
                 {#if currentHandle}
-                  <a href={resolve(`/@${encodeURIComponent(currentHandle)}`)} class="hover:underline">
+                  <a href={resolve(`/@${encodeURIComponent(currentHandle)}`)} class="hover:underline hover:text-primary transition-colors">
                     @{currentHandle}
                   </a>
                 {/if}
@@ -334,29 +351,26 @@
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <Button variant="outline" size="icon" onclick={prev} aria-label={t('player.previous')}>
-              <SkipBack class="h-4 w-4" />
-            </Button>
-            <Button size="icon" onclick={toggle} aria-label={t('player.toggle')}>
-              {#if state.playing}
-                <Pause class="h-5 w-5" />
-              {:else}
-                <Play class="h-5 w-5" />
-              {/if}
-            </Button>
-            <Button variant="outline" size="icon" onclick={next} aria-label={t('player.next')}>
-              <SkipForward class="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onclick={openCurrentUrl} aria-label={t('player.openExternal')}>
-              <ExternalLink class="h-4 w-4" />
-            </Button>
-            {#if discogsUrl}
-              <Button variant="ghost" size="icon" href={discogsUrl} target="_blank" rel="noopener" aria-label="Open Discogs">
-                <DiscIcon class="h-4 w-4" />
+          <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-2">
+              <Button variant="outline" size="icon" class="h-10 w-10" onclick={shuffle} aria-label="Shuffle">
+                <Shuffle class="h-4 w-4" />
               </Button>
-            {/if}
-            <Button variant="secondary" class="lg:hidden" size="sm" onclick={() => { mobilePanelOpen = true; }}>
+              <Button variant="outline" size="icon" class="h-10 w-10" onclick={prev} aria-label={t('player.previous')}>
+                <SkipBack class="h-4 w-4" />
+              </Button>
+              <Button size="icon" class="h-12 w-12 shadow-lg bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" onclick={toggle} aria-label={t('player.toggle')}>
+                {#if state.playing}
+                  <Pause class="h-5 w-5" />
+                {:else}
+                  <Play class="h-5 w-5" />
+                {/if}
+              </Button>
+              <Button variant="outline" size="icon" class="h-10 w-10" onclick={next} aria-label={t('player.next')}>
+                <SkipForward class="h-4 w-4" />
+              </Button>
+            </div>
+            <Button class="lg:hidden shadow-md" size="sm" onclick={() => { mobilePanelOpen = true; }}>
               <LayoutList class="h-4 w-4 mr-2" />
               {t('player.queue')}
             </Button>

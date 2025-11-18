@@ -77,3 +77,18 @@ export function prev(): void {
   const i = (s.index - 1 + s.playlist.length) % s.playlist.length
   player.set({ ...s, index: i, playing: true })
 }
+
+export function shuffle(): void {
+  const s = player.get()
+  if (!s.playlist?.length) return
+
+  // Fisher-Yates shuffle algorithm
+  const shuffled = [...s.playlist]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  // Reset to first track after shuffle
+  player.set({ ...s, playlist: shuffled, index: 0, playing: true })
+}

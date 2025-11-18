@@ -129,25 +129,30 @@
   });
 </script>
 
-<Card class="hover:shadow-md transition-shadow">
-  <CardHeader class="pb-3">
+<Card class="card-hover border-2">
+  <CardHeader class="pb-4">
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1 min-w-0">
-        <CardTitle class="text-lg">
-          <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors" onclick={openDetail}>
+        <CardTitle class="text-xl mb-2">
+          <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors font-bold" onclick={openDetail}>
             {item.title || t('trackItem.untitled')}
           </a>
         </CardTitle>
         {#if authorHandle}
-          <CardDescription class="mt-1">
-            {t('trackItem.by', { handle: authorHandle })}
+          <CardDescription class="text-base flex items-center gap-2">
+            <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+              @
+            </span>
+            <a href={resolve(`/@${encodeURIComponent(authorHandle)}`)} class="hover:text-primary transition-colors">
+              {authorHandle}
+            </a>
           </CardDescription>
         {/if}
       </div>
 
       <div class="flex items-center gap-2">
-        <Button size="sm" onclick={play}>
-          <Play class="h-4 w-4 mr-1" />
+        <Button size="default" class="shadow-md" onclick={play}>
+          <Play class="h-4 w-4 mr-2" />
           {t('trackItem.play')}
         </Button>
 
@@ -221,9 +226,11 @@
 
   {#if item.description}
     <CardContent class="pt-0">
-      <p class="text-sm text-muted-foreground whitespace-pre-wrap">
-        {item.description}
-      </p>
+      <div class="rounded-lg bg-muted/30 border border-muted p-4">
+        <p class="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+          {item.description}
+        </p>
+      </div>
     </CardContent>
   {/if}
 
