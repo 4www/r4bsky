@@ -123,8 +123,8 @@
   const links = $derived(
     ($session && $session.did)
       ? (userHandle
-          ? [['/', t('nav.links.home')], ['/add', t('nav.links.add')], [myPath, `@${userHandle}`], ['/search', t('nav.links.search')], ['/following', t('nav.links.following')], ['/followers', t('nav.links.followers')], ['/settings', t('nav.links.settings')]]
-          : [['/', t('nav.links.home')], ['/add', t('nav.links.add')], ['/search', t('nav.links.search')], ['/following', t('nav.links.following')], ['/followers', t('nav.links.followers')], ['/settings', t('nav.links.settings')]]
+          ? [['/', t('nav.links.home')], ['/add', t('nav.links.add')], [myPath, `@${userHandle}`], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
+          : [['/', t('nav.links.home')], ['/add', t('nav.links.add')], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
         )
       : [['/', t('nav.links.home')], ['/search', t('nav.links.search')], ['/settings', t('nav.links.settings')]]
   );
@@ -135,7 +135,7 @@
 </script>
 
 {#if !ready}
-  <div class="flex items-center justify-center min-h-screen p-4">
+  <div class="flex items-center justify-center min-h-screen p-6">
     <StateCard
       icon={Loader2}
       title={t('app.loadingTitle')}

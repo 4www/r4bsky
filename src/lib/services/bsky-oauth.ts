@@ -152,6 +152,7 @@ class BskyOAuthService {
 					...baseOpts,
 					authorization_details: [
 						{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
+						{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'com.radio4000.follow' },
 						{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
 					],
 				}
@@ -187,33 +188,50 @@ class BskyOAuthService {
 	 * Request additional fine-grained permissions via re-consent.
 	 */
 	async requestScopes(): Promise<void> {
+		console.log('[requestScopes] Starting...')
 		await this.ensureInitialized()
+		console.log('[requestScopes] Client initialized')
+
 		if (!this.client) throw new Error('OAuth client not available')
+
 		const handle = this.session?.handle || this.session?.did
-		if (!handle) throw new Error('No session')
-			const baseOpts: any = {
-				state: window.location.pathname,
-				signal: new AbortController().signal,
-				prompt: 'consent' as const,
-				redirect_uri: this.#canonicalRedirectUri(),
-			}
-			const withAuthz: any = {
-				...baseOpts,
-				authorization_details: [
-					{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
-					{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
-				],
-			}
-			try {
-				await this.client.signIn(handle, withAuthz)
-			} catch (e) {
-				const msg = String((e as Error)?.message || e)
-				if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata') || msg.includes('invalid_scope')) {
+		console.log('[requestScopes] Current session handle/DID:', handle)
+		if (!handle) throw new Error('No session - please sign in first')
+
+		// Don't pass redirect_uri explicitly - let the client use its configured redirect URIs
+		const baseOpts: any = {
+			state: window.location.pathname,
+			signal: new AbortController().signal,
+			prompt: 'consent' as const,
+		}
+		const withAuthz: any = {
+			...baseOpts,
+			authorization_details: [
+				{ type: 'atproto_repo', actions: ['create','update','delete'], identifier: 'com.radio4000.track' },
+				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'com.radio4000.follow' },
+				{ type: 'atproto_repo', actions: ['create','delete'], identifier: 'app.bsky.graph.follow' },
+			],
+		}
+
+		console.log('[requestScopes] Calling signIn with authorization_details...')
+		try {
+			await this.client.signIn(handle, withAuthz)
+			console.log('[requestScopes] signIn returned (should not reach here - should redirect)')
+		} catch (e) {
+			console.error('[requestScopes] signIn failed:', e)
+			const msg = String((e as Error)?.message || e)
+			if (msg.includes('invalid_request') || msg.includes('invalid_client_metadata') || msg.includes('invalid_scope') || msg.includes('Invalid redirect_uri')) {
+				console.log('[requestScopes] Falling back to base scope...')
+				try {
 					await this.client.signIn(handle, baseOpts)
-				} else {
-					throw e
+				} catch (e2) {
+					console.error('[requestScopes] Base scope also failed:', e2)
+					throw new Error('Unable to request permissions. The authorization server may not support fine-grained permissions.')
 				}
+			} else {
+				throw e
 			}
+		}
 	}
 
 	/** Resolve handle lazily and update session */

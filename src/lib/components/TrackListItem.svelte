@@ -129,15 +129,43 @@
   });
 </script>
 
-<Card class="card-hover border-2">
+<Card class="border-2">
   <CardHeader class="pb-4">
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1 min-w-0">
-        <CardTitle class="text-xl mb-2">
-          <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors font-bold" onclick={openDetail}>
-            {item.title || t('trackItem.untitled')}
-          </a>
-        </CardTitle>
+        <div class="flex items-center gap-2 mb-2">
+          <CardTitle class="text-xl flex-1 min-w-0">
+            <a href={resolve(viewHref() || '/')} class="hover:text-primary transition-colors font-bold" onclick={openDetail}>
+              {item.title || t('trackItem.untitled')}
+            </a>
+          </CardTitle>
+          <div class="flex items-center gap-1 shrink-0">
+            <a
+              href={
+                safeOpenUrl && safeOpenUrl !== '#'
+                  ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
+                  : '#'
+              }
+              target="_blank"
+              rel="noopener"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              aria-label={t('trackItem.openExternal')}
+            >
+              <ExternalLink class="h-3.5 w-3.5" />
+            </a>
+            {#if discogsLink}
+              <a
+                href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                aria-label="Open Discogs"
+              >
+                <DiscIcon class="h-3.5 w-3.5" />
+              </a>
+            {/if}
+          </div>
+        </div>
         {#if authorHandle}
           <CardDescription class="text-base flex items-center gap-2">
             <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
@@ -203,7 +231,7 @@
                     Discogs
                   </button>
                 {/if}
-                <div class="my-1 border-t" />
+                <div class="my-1 border-t"></div>
                 <button
                   type="button"
                   class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
@@ -215,10 +243,6 @@
               </div>
             {/if}
           </div>
-        {:else}
-          <Button variant="ghost" size="icon" onclick={openExternalUrl} aria-label={t('trackItem.openExternal')}>
-            <ExternalLink class="h-4 w-4" />
-          </Button>
         {/if}
       </div>
     </div>

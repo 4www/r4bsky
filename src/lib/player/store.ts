@@ -11,6 +11,8 @@ interface PlayerState {
   index: number
   playing: boolean
   context: any
+  originalPlaylist?: Track[]
+  isShuffled: boolean
 }
 
 type Subscriber = (value: PlayerState) => void
@@ -45,10 +47,10 @@ function createStore(initial: PlayerState): Store {
   }
 }
 
-export const player = createStore({ playlist: [], index: -1, playing: false, context: null })
+export const player = createStore({ playlist: [], index: -1, playing: false, context: null, isShuffled: false })
 
 export function setPlaylist(items: Track[], startIndex: number = 0, context: any = null): void {
-  player.set({ playlist: items || [], index: startIndex ?? 0, playing: true, context })
+  player.set({ playlist: items || [], index: startIndex ?? 0, playing: true, context, isShuffled: false })
 }
 
 export function playIndex(idx: number): void {
@@ -78,17 +80,21 @@ export function prev(): void {
   player.set({ ...s, index: i, playing: true })
 }
 
-export function shuffle(): void {
+export function toggleShuffle(): void {
   const s = player.get()
   if (!s.playlist?.length) return
 
-  // Fisher-Yates shuffle algorithm
-  const shuffled = [...s.playlist]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  if (s.isShuffled) {
+    // Restore original order
+    const original = s.originalPlaylist || s.playlist
+    player.set({ ...s, playlist: original, originalPlaylist: undefined, isShuffled: false, index: 0 })
+  } else {
+    // Shuffle
+    const shuffled = [...s.playlist]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    player.set({ ...s, playlist: shuffled, originalPlaylist: s.playlist, isShuffled: true, index: 0 })
   }
-
-  // Reset to first track after shuffle
-  player.set({ ...s, playlist: shuffled, index: 0, playing: true })
 }

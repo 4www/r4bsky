@@ -45,7 +45,7 @@
       </p>
     </div>
 
-    <div class="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+    <div class="grid gap-6 max-w-xl mx-auto">
       <Card class="card-hover border-2">
         <CardHeader class="pb-4">
           <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -63,22 +63,6 @@
         </CardContent>
       </Card>
 
-      <Card class="card-hover border-2">
-        <CardHeader class="pb-4">
-          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Music4 class="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle class="text-xl">{t('home.visitFollowing')}</CardTitle>
-          <CardDescription class="text-base">
-            Check out tracks from people you follow
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button href="/following" variant="outline" class="w-full" size="lg">
-            {t('home.visitFollowing')}
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   </div>
 {:else}

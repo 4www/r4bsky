@@ -27,7 +27,7 @@
     <div class="flex items-start justify-between gap-4 flex-wrap">
       {#if clickable}
         <a
-          href={resolve(`/@${encodeURIComponent(handle)}`)}
+          href={resolve(`/@${handle}`)}
           class="flex items-center gap-4 hover:opacity-80 transition-opacity min-w-0"
         >
           <Avatar

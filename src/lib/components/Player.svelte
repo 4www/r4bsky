@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { player, toggle, next, prev, playIndex, shuffle } from '$lib/player/store';
+  import { player, toggle, next, prev, playIndex, toggleShuffle } from '$lib/player/store';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
   import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import { resolve } from '$app/paths';
+  import Avatar from '$lib/components/Avatar.svelte';
+  import { getProfile } from '$lib/services/r4-service';
   const props = $props();
   const extraClass = $derived(props.class || '');
 
@@ -23,6 +25,9 @@
   let scApiReady = $state(null);
   let vimeoApiReady = $state(null);
   let mobilePanelOpen = $state(false);
+  let ytPlayerReady = $state(false);
+  let scWidgetReady = $state(false);
+  let vimeoPlayerReady = $state(false);
 
   function loadScriptOnce(src, check) {
     return new Promise((resolve, reject) => {
@@ -70,13 +75,17 @@
   function cleanupProviders() {
     try { if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy(); } catch {}
     ytPlayer = null;
+    ytPlayerReady = false;
     try { if (vimeoPlayer && vimeoPlayer.unload) vimeoPlayer.unload(); } catch {}
     vimeoPlayer = null;
+    vimeoPlayerReady = false;
     scWidget = null;
+    scWidgetReady = false;
   }
 
   let lastUrl = $state('');
   let lastProvider = $state('');
+  let syncingWithIframe = $state(false);
 
   const unsub = player.subscribe((s) => {
     state = s;
@@ -108,14 +117,35 @@
           lastProvider = provider;
           lastUrl = url;
         } else {
-          if (!s.playing) {
-            if (provider === 'youtube' && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
-            if (provider === 'soundcloud' && scWidget && scWidget.pause) scWidget.pause();
-            if (provider === 'vimeo' && vimeoPlayer && vimeoPlayer.pause) vimeoPlayer.pause().catch(() => {});
-          } else {
-            if (provider === 'youtube' && ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
-            if (provider === 'soundcloud' && scWidget && scWidget.play) scWidget.play();
-            if (provider === 'vimeo' && vimeoPlayer && vimeoPlayer.play) vimeoPlayer.play().catch(() => {});
+          // Only control iframe if change wasn't triggered by iframe itself
+          if (!syncingWithIframe) {
+            if (!s.playing) {
+              if (provider === 'youtube' && ytPlayerReady && ytPlayer && ytPlayer.getPlayerState && ytPlayer.pauseVideo) {
+                const state = ytPlayer.getPlayerState();
+                if (state === window.YT?.PlayerState?.PLAYING || state === window.YT?.PlayerState?.BUFFERING) {
+                  ytPlayer.pauseVideo();
+                }
+              }
+              if (provider === 'soundcloud' && scWidgetReady && scWidget && scWidget.pause) {
+                scWidget.isPaused((paused) => { if (!paused) scWidget.pause(); });
+              }
+              if (provider === 'vimeo' && vimeoPlayerReady && vimeoPlayer && vimeoPlayer.pause && vimeoPlayer.getPaused) {
+                vimeoPlayer.getPaused().then(paused => { if (!paused) vimeoPlayer.pause(); }).catch(() => {});
+              }
+            } else {
+              if (provider === 'youtube' && ytPlayerReady && ytPlayer && ytPlayer.getPlayerState && ytPlayer.playVideo) {
+                const state = ytPlayer.getPlayerState();
+                if (state === window.YT?.PlayerState?.PAUSED || state === window.YT?.PlayerState?.CUED) {
+                  ytPlayer.playVideo();
+                }
+              }
+              if (provider === 'soundcloud' && scWidgetReady && scWidget && scWidget.play) {
+                scWidget.isPaused((paused) => { if (paused) scWidget.play(); });
+              }
+              if (provider === 'vimeo' && vimeoPlayerReady && vimeoPlayer && vimeoPlayer.play && vimeoPlayer.getPaused) {
+                vimeoPlayer.getPaused().then(paused => { if (paused) vimeoPlayer.play(); }).catch(() => {});
+              }
+            }
           }
         }
       }
@@ -146,11 +176,23 @@
       if (iframeProvider === 'youtube') {
         await ensureYouTubeAPI();
         if (!window.YT || !window.YT.Player) return;
-        if (ytPlayer) { try { ytPlayer.destroy(); } catch {} ytPlayer = null; }
+        if (ytPlayer) { try { ytPlayer.destroy(); } catch {} ytPlayer = null; ytPlayerReady = false; }
         ytPlayer = new window.YT.Player(iframeEl, {
           events: {
-            onReady: () => { if (state.playing) ytPlayer.playVideo(); },
-            onStateChange: (e) => { if (e?.data === window.YT.PlayerState.ENDED) next(); }
+            onReady: () => {
+              ytPlayerReady = true;
+              if (state.playing) {
+                try { ytPlayer.playVideo(); } catch {}
+              }
+            },
+            onStateChange: (e) => {
+              if (e?.data === window.YT.PlayerState.ENDED) next();
+              // Sync play/pause state
+              syncingWithIframe = true;
+              if (e?.data === window.YT.PlayerState.PLAYING) player.update(s => ({ ...s, playing: true }));
+              if (e?.data === window.YT.PlayerState.PAUSED) player.update(s => ({ ...s, playing: false }));
+              setTimeout(() => { syncingWithIframe = false; }, 100);
+            }
           }
         });
       } else if (iframeProvider === 'soundcloud') {
@@ -158,14 +200,44 @@
         if (!window.SC || !window.SC.Widget) return;
         scWidget = window.SC.Widget(iframeEl);
         scWidget.bind('finish', () => next());
-        scWidget.bind('ready', () => { if (state.playing) scWidget.play(); });
+        scWidget.bind('play', () => {
+          syncingWithIframe = true;
+          player.update(s => ({ ...s, playing: true }));
+          setTimeout(() => { syncingWithIframe = false; }, 100);
+        });
+        scWidget.bind('pause', () => {
+          syncingWithIframe = true;
+          player.update(s => ({ ...s, playing: false }));
+          setTimeout(() => { syncingWithIframe = false; }, 100);
+        });
+        scWidget.bind('ready', () => {
+          scWidgetReady = true;
+          if (state.playing) {
+            try { scWidget.play(); } catch {}
+          }
+        });
       } else if (iframeProvider === 'vimeo') {
         await ensureVimeoAPI();
         if (!window.Vimeo || !window.Vimeo.Player) return;
-        if (vimeoPlayer) { try { vimeoPlayer.unload(); } catch {} vimeoPlayer = null; }
+        if (vimeoPlayer) { try { vimeoPlayer.unload(); } catch {} vimeoPlayer = null; vimeoPlayerReady = false; }
         vimeoPlayer = new window.Vimeo.Player(iframeEl);
+        vimeoPlayer.on('loaded', () => {
+          vimeoPlayerReady = true;
+          if (state.playing) {
+            vimeoPlayer.play().catch(() => {});
+          }
+        });
         vimeoPlayer.on('ended', () => next());
-        if (state.playing) vimeoPlayer.play().catch(() => {});
+        vimeoPlayer.on('play', () => {
+          syncingWithIframe = true;
+          player.update(s => ({ ...s, playing: true }));
+          setTimeout(() => { syncingWithIframe = false; }, 100);
+        });
+        vimeoPlayer.on('pause', () => {
+          syncingWithIframe = true;
+          player.update(s => ({ ...s, playing: false }));
+          setTimeout(() => { syncingWithIframe = false; }, 100);
+        });
       }
     } catch {}
   }
@@ -191,6 +263,22 @@
 
   const discogsUrl = $derived(current?.discogsUrl ?? current?.discogs_url ?? '');
   const queueCount = $derived(state.playlist?.length ?? 0);
+
+  let profileData = $state(null);
+  let lastFetchedHandle = $state('');
+
+  $effect(() => {
+    if (currentHandle && currentHandle !== lastFetchedHandle) {
+      lastFetchedHandle = currentHandle;
+      getProfile(currentHandle).then(data => {
+        if (currentHandle === lastFetchedHandle) {
+          profileData = data;
+        }
+      }).catch(() => {
+        profileData = null;
+      });
+    }
+  });
 </script>
 
 {#if current}
@@ -264,11 +352,11 @@
 
     <div
       class={cn(
-        "fixed inset-y-0 right-0 z-50 w-full max-w-md bg-gradient-to-b from-background to-muted/20 backdrop-blur-xl shadow-2xl border-l-2 border-primary/20 p-4 flex flex-col gap-4 transition-transform lg:hidden pointer-events-auto",
+        "fixed inset-y-0 right-0 z-50 w-full max-w-md bg-gradient-to-b from-background to-muted/20 backdrop-blur-xl shadow-2xl border-l-2 border-primary/20 p-4 flex flex-col gap-4 transition-transform lg:hidden pointer-events-auto overflow-y-auto",
         mobilePanelOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between shrink-0">
         <div>
           <p class="text-xs text-primary uppercase font-semibold tracking-wider">{t('player.queue')}</p>
           <p class="text-sm text-muted-foreground">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
@@ -277,7 +365,7 @@
           <X class="h-5 w-5" />
         </Button>
       </div>
-      <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
+      <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0">
         {#if parseTrackUrl(current.url)?.provider === 'file'}
           <audio bind:this={audio} onended={next} controls class="w-full h-full"></audio>
         {:else if iframeSrc}
@@ -292,7 +380,7 @@
           ></iframe>
         {/if}
       </div>
-      <div class="flex-1 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
+      <div class="flex-1 min-h-0 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
         {#each state.playlist as track, idx}
           <button
             type="button"
@@ -321,28 +409,49 @@
 
     <div class="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
       <div class="pointer-events-auto border-t-2 border-primary/20 bg-gradient-to-t from-background via-background/98 to-background/95 backdrop-blur-xl px-6 py-4 shadow-2xl">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-4 md:flex-row items-center md:justify-between">
           <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-purple-500 text-primary-foreground shadow-lg">
-              <ListMusic class="h-6 w-6" />
+            <div class="hidden sm:block shrink-0">
+              <Avatar
+                src={profileData?.avatar || ''}
+                alt={profileData?.displayName || currentHandle || 'Profile'}
+                size="md"
+                class="shadow-lg"
+              />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <p class="text-base font-bold truncate flex-1">{current.title || t('trackItem.untitled')}</p>
-                <div class="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" class="h-8 w-8" onclick={openCurrentUrl} aria-label={t('player.openExternal')}>
-                    <ExternalLink class="h-4 w-4" />
-                  </Button>
+              {#snippet trackLinks()}
+                {@const url = parseTrackUrl(current?.url || '')?.url || current?.url || ''}
+                <div class="flex items-center gap-1.5">
+                  <p class="text-base font-bold truncate">{current.title || t('trackItem.untitled')}</p>
+                  {#if url}
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
+                      aria-label={t('player.openExternal')}
+                    >
+                      <ExternalLink class="h-3.5 w-3.5" />
+                    </a>
+                  {/if}
                   {#if discogsUrl}
-                    <Button variant="ghost" size="icon" class="h-8 w-8" href={discogsUrl} target="_blank" rel="noopener" aria-label="Open Discogs">
-                      <DiscIcon class="h-4 w-4" />
-                    </Button>
+                    <a
+                      href={discogsUrl}
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
+                      aria-label="Open Discogs"
+                    >
+                      <DiscIcon class="h-3.5 w-3.5" />
+                    </a>
                   {/if}
                 </div>
-              </div>
-              <div class="flex items-center gap-2 text-sm text-muted-foreground">
+              {/snippet}
+              {@render trackLinks()}
+              <div class="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                 {#if currentHandle}
-                  <a href={resolve(`/@${encodeURIComponent(currentHandle)}`)} class="hover:underline hover:text-primary transition-colors">
+                  <a href={resolve(`/@${currentHandle}`)} class="hover:underline hover:text-primary transition-colors">
                     @{currentHandle}
                   </a>
                 {/if}
@@ -351,9 +460,15 @@
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-3 flex-wrap">
-            <div class="flex items-center gap-2">
-              <Button variant="outline" size="icon" class="h-10 w-10" onclick={shuffle} aria-label="Shuffle">
+          <div class="flex items-center justify-center gap-3 flex-wrap">
+            <div class="flex items-center justify-center gap-2">
+              <Button
+                variant={state.isShuffled ? "default" : "outline"}
+                size="icon"
+                class="h-10 w-10"
+                onclick={toggleShuffle}
+                aria-label="Shuffle"
+              >
                 <Shuffle class="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" class="h-10 w-10" onclick={prev} aria-label={t('player.previous')}>

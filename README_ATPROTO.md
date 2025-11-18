@@ -2,7 +2,7 @@ Radio4000 AT Protocol Client (Svelte)
 
 Overview
 - Login with the AT Protocol (OAuth) and manage a personal collection of music links stored as custom records (`com.radio4000.track`).
-- Browse your saved tracks, search users, follow/unfollow, and enjoy the built-in player. (Shared timeline to return soon.)
+- Browse your saved tracks, search users, and enjoy the built-in player. (Shared timeline to return soon.)
 
 Run
 - Dev: `npm run dev` (use HTTPS or loopback client id is handled automatically)
@@ -24,7 +24,6 @@ Routes
 - `/#/add` add a track
 - `/#/@handle` author/my tracks
 - `/#/search` search actors
-- `/#/followers`, `/#/following` lists with pagination
 - `/#/t/:repo/:rkey` view track; `/#/@:handle/:rkey/edit` edit track (modal)
 - `/#/settings` manage permissions and session
 
@@ -54,4 +53,3 @@ Notes
 Troubleshooting
 - GitHub Pages callback: include both your base path with and without a trailing slash in `redirect_uris` if deploying under a subpath.
 - invalid_request on Permissions: your AS may not support authorization_details yet; the app falls back automatically.
-- Missing scopes on Followers: open Settings to re-consent.

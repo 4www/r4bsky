@@ -13,6 +13,7 @@
   let results = $state([]);
   let status = $state('');
   let loading = $state(false);
+  let hasSearched = $state(false);
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function executeSearch() {
@@ -20,6 +21,7 @@
 
     loading = true;
     status = '';
+    hasSearched = true;
     try {
       results = await searchActors(q, { limit: 25 });
     } catch (err) {
@@ -90,8 +92,8 @@
   {:else if results.length > 0}
     <div class="space-y-4">
       {#each results as actor, idx (actor.did || actor.handle || idx)}
-        <Card class="card-hover border-2">
-          <a href={resolve(`/@${encodeURIComponent(actor.handle)}`)} class="block">
+        <Card class="border-2">
+          <a href={resolve(`/@${actor.handle}`)} class="block">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-4">
                 <Avatar
@@ -121,7 +123,7 @@
         </Card>
       {/each}
     </div>
-  {:else if q && !loading}
+  {:else if hasSearched && !loading}
     <StateCard
       icon={User}
       title={t('search.emptyTitle')}
@@ -135,6 +137,7 @@
             q = '';
             results = [];
             status = '';
+            hasSearched = false;
           }}
         >
           {t('search.clear')}

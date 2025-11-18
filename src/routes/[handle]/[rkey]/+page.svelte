@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getTrackByUri, resolveHandle, getProfile } from '$lib/services/r4-service';
+  import { getTrackByUri, resolveHandle, getProfile, listTracksByDid } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
@@ -19,10 +19,12 @@
   let item = $state(null);
   let did = $state('');
   let profile = $state(null);
+  let allTracks = $state([]);
   let status = $state('');
   let loading = $state(true);
   let displayHandle = $state('');
-  const context = $derived({ type: 'detail', key: rkey, handle: displayHandle || undefined });
+  const context = $derived({ type: 'author', key: did, handle: displayHandle || undefined });
+  const trackIndex = $derived(allTracks.findIndex(t => t.uri === item?.uri));
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
   let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
@@ -37,6 +39,7 @@
     status = '';
     item = null;
     profile = null;
+    allTracks = [];
 
     try {
       if (!currentHandle || !currentRkey) {
@@ -49,15 +52,17 @@
       did = resolvedDid;
       displayHandle = currentHandle;
 
-      // Fetch profile and track in parallel
-      const [profileData, trackData] = await Promise.all([
+      // Fetch profile, track, and all tracks in parallel
+      const [profileData, trackData, tracksData] = await Promise.all([
         getProfile(currentHandle),
-        getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`)
+        getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`),
+        listTracksByDid(resolvedDid, { limit: 100 })
       ]);
 
       if (requestId === loadRequestId) {
         profile = profileData;
         item = { ...trackData };
+        allTracks = tracksData.tracks;
       }
     } catch (e) {
       if (requestId === loadRequestId) status = (e as Error)?.message || t('trackDetail.errorTitle');
@@ -103,6 +108,6 @@
       {/snippet}
     </StateCard>
   {:else if item}
-    <TrackListItem item={item} index={0} items={[item]} {context} {editable} />
+    <TrackListItem item={item} index={trackIndex >= 0 ? trackIndex : 0} items={allTracks.length > 0 ? allTracks : [item]} {context} {editable} />
   {/if}
 </div>

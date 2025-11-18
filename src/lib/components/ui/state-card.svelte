@@ -29,23 +29,27 @@
 	} = $props();
 </script>
 
-<Card class={cn("text-center", className)}>
-	<CardHeader class="items-center text-center space-y-2">
+<Card class={cn("text-center max-w-md mx-auto", className)}>
+	<CardHeader class="items-center text-center space-y-4 pb-6">
 		{#if Icon}
-			<Icon class="h-10 w-10 text-muted-foreground" />
+			<div class="rounded-full bg-muted p-4">
+				<Icon class="h-8 w-8 text-muted-foreground" />
+			</div>
 		{/if}
-		<CardTitle>{title}</CardTitle>
-		{#if description}
-			<CardDescription>{description}</CardDescription>
-		{/if}
+		<div class="space-y-2">
+			<CardTitle class="text-xl">{title}</CardTitle>
+			{#if description}
+				<CardDescription class="text-base">{description}</CardDescription>
+			{/if}
+		</div>
 	</CardHeader>
 	{#if children}
-		<CardContent class="text-sm text-muted-foreground">
+		<CardContent class="text-sm text-muted-foreground pb-6">
 			{@render children?.()}
 		</CardContent>
 	{/if}
 	{#if actions}
-		<CardFooter class="flex justify-center gap-2">
+		<CardFooter class="flex justify-center gap-3 pt-0">
 			{@render actions?.()}
 		</CardFooter>
 	{/if}

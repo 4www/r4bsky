@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { followActor, unfollowActor, findFollowUri } from '$lib/services/r4-service';
+  import {
+    followActor,
+    unfollowActor,
+    findFollowUri,
+    createR4Follow,
+    deleteR4Follow,
+  } from '$lib/services/r4-service';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
   import { locale, translate } from '$lib/i18n';
@@ -30,10 +36,12 @@
     try {
       if (followUri) {
         await unfollowActor(followUri);
+        await deleteR4Follow(actorDid);
         followUri = null;
       } else {
         const res = await followActor(actorDid);
         followUri = res?.uri || null;
+        await createR4Follow(actorDid);
       }
       await refreshState();
     } catch (e) {

@@ -12,6 +12,7 @@
 
   let working = $state(false);
   let handle = $state('');
+  let permissionError = $state('');
   const t = (key, vars = {}) => translate($localeStore, key, vars);
 
   async function signOut() {
@@ -30,9 +31,15 @@
   async function managePermissions() {
     try {
       working = true;
+      permissionError = '';
+      console.log('Requesting permissions...');
       await bskyOAuth.requestScopes();
+      console.log('Permissions requested (should have redirected)');
+      // If we reach here without redirect, something went wrong
+      permissionError = 'Expected to redirect but did not. Check console for errors.';
     } catch (e) {
-      console.error(e);
+      console.error('Permission request error:', e);
+      permissionError = String(e?.message || e || 'Failed to request permissions');
     } finally {
       working = false;
     }
@@ -90,50 +97,40 @@
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <Shield class="h-5 w-5" />
-            {t('settings.permissionsTitle')}
+            App Permissions
           </CardTitle>
           <CardDescription>
-            {t('settings.permissionsDescription')}
+            Manage access permissions for Radio4000
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent class="space-y-3">
+          <div class="rounded-lg bg-muted/50 p-3 text-sm">
+            <p class="font-semibold mb-1">Current permissions:</p>
+            <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+              <li>Create, edit, and delete tracks</li>
+              <li>Follow and unfollow users</li>
+            </ul>
+          </div>
           <Button onclick={managePermissions} disabled={working} variant="outline" class="w-full">
             {#if working}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              {t('settings.permissionsWorking')}
+              Requesting permissions...
             {:else}
               <Shield class="mr-2 h-4 w-4" />
-              {t('settings.permissionsButton')}
+              Request Permissions
             {/if}
           </Button>
-          <p class="text-xs text-muted-foreground mt-3">
-            {t('settings.permissionsFootnote')}
+          <p class="text-xs text-muted-foreground">
+            This will redirect you to your server to grant Radio4000 specific permissions. Use this if features aren't working or you want to review access.
           </p>
+          {#if permissionError}
+            <div class="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {permissionError}
+            </div>
+          {/if}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-destructive flex items-center gap-2">
-            <LogOut class="h-5 w-5" />
-            {t('settings.signOutTitle')}
-          </CardTitle>
-          <CardDescription>
-            {t('settings.signOutDescription')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
-            {#if working}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              {t('settings.signOutWorking')}
-            {:else}
-              <LogOut class="mr-2 h-4 w-4" />
-              {t('settings.signOutButton')}
-            {/if}
-          </Button>
-        </CardContent>
-      </Card>
       <Card>
         <CardHeader>
           <CardTitle class="text-destructive flex items-center gap-2">
