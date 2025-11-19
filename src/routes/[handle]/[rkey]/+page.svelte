@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getTrackByUri, resolveHandle, getProfile, listTracksByDid } from '$lib/services/r4-service';
+  import { getTrackByUri, resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
-  import FollowButton from '$lib/components/FollowButton.svelte';
-  import ProfileHeader from '$lib/components/ProfileHeader.svelte';
+  import DiscogsResource from '$lib/components/DiscogsResource.svelte';
   import { session } from '$lib/state/session';
   import { Loader2, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
@@ -20,7 +19,6 @@
 
   let item = $state(null);
   let did = $state('');
-  let profile = $state(null);
   let allTracks = $state([]);
   let status = $state('');
   let loading = $state(true);
@@ -29,6 +27,7 @@
   const context = $derived({ type: 'author', key: did, handle: displayHandle || undefined });
   const trackIndex = $derived(allTracks.findIndex(t => t.uri === item?.uri));
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
+  const discogsUrl = $derived(item?.discogsUrl || item?.discogs_url || '');
   let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
 
@@ -41,7 +40,6 @@
     loading = true;
     status = '';
     item = null;
-    profile = null;
     allTracks = [];
 
     try {
@@ -55,14 +53,12 @@
       did = resolvedDid;
       displayHandle = currentHandle;
 
-      const [profileData, trackData, tracksData] = await Promise.all([
-        getProfile(currentHandle),
+      const [trackData, tracksData] = await Promise.all([
         getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`),
         listTracksByDid(resolvedDid, { limit: 100 })
       ]);
 
       if (requestId === loadRequestId) {
-        profile = profileData;
         item = { ...trackData };
         allTracks = tracksData.tracks;
       }
@@ -92,18 +88,8 @@
   }
 </script>
 
-<Dialog title={item?.title || t('trackItem.untitled')} onClose={closeModal}>
-  <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-    {#if displayHandle && profile}
-      <ProfileHeader {profile} handle={displayHandle} size="md">
-        {#snippet children()}
-          {#if did && $session?.did !== did}
-            <FollowButton actorDid={did} />
-          {/if}
-        {/snippet}
-      </ProfileHeader>
-    {/if}
-
+<Dialog onClose={closeModal}>
+  <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
     {#if loading}
       <StateCard
         icon={Loader2}
@@ -131,6 +117,10 @@
         {context}
         {editable}
       />
+
+      {#if discogsUrl}
+        <DiscogsResource url={discogsUrl} />
+      {/if}
     {/if}
   </div>
 </Dialog>
