@@ -87,6 +87,12 @@ const en = {
 	settings: {
 		title: "Settings",
 		description: "Manage your account and permissions",
+		nav: {
+			account: "Account",
+			appearance: "Appearance",
+			permissions: "Permissions",
+			language: "Language",
+		},
 		accountTitle: "Account",
 		accountDescription: "Your AT Protocol account information",
 		handleLabel: "Handle",
