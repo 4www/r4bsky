@@ -1,6 +1,6 @@
 <script lang="ts">
   import { listTracksByDid } from '$lib/services/r4-service';
-  import { onMount, getContext } from 'svelte';
+  import { getContext } from 'svelte';
   import TrackList from '$lib/components/TrackList.svelte';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
@@ -50,12 +50,6 @@
       }
     })();
   }
-
-  onMount(() => {
-    if (did) {
-      loadTracks(did);
-    }
-  });
 
   $effect(() => {
     if (did) {

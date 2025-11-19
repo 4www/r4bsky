@@ -8,6 +8,7 @@
   } from '$lib/services/r4-service';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
+  import { Star } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
   const { actorDid = '' } = $props();
   let followUri = $state(null);
@@ -53,12 +54,19 @@
 </script>
 
 {#if $session?.did}
-  <Button onclick={toggle} disabled={pending} variant={followUri ? 'outline' : 'default'} size="sm">
-    {followUri ? t('follow.unfollow') : t('follow.follow')}
+  <Button onclick={toggle} disabled={pending} variant={followUri ? 'default' : 'secondary'} size="sm">
+    {#if followUri}
+      <Star class="h-4 w-4 mr-1 fill-current" />
+      Unfavorite
+    {:else}
+      <Star class="h-4 w-4 mr-1" />
+      Favorite
+    {/if}
   </Button>
 {:else}
-  <Button variant="outline" size="sm" disabled>
-    {t('follow.follow')}
+  <Button variant="secondary" size="sm" disabled>
+    <Star class="h-4 w-4 mr-1" />
+    Favorite
   </Button>
 {/if}
-{#if error}<div class="mt-2 text-sm text-destructive">{t('follow.error', { message: error })}</div>{/if}
+{#if error}<div class="mt-2 text-sm text-foreground/70">{error}</div>{/if}

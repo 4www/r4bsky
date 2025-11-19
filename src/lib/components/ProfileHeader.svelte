@@ -1,13 +1,13 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
-  import { Button } from './ui/button';
-  import { cn } from '$lib/utils';
+  import { Button, buttonVariants } from './ui/button';
+  import { cn, menuItemClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
-  import { PlayCircle, Loader2, Disc as DiscIcon, Radio } from 'lucide-svelte';
+  import { PlayCircle, Loader2, Disc as DiscIcon, MoreVertical, ExternalLink, Copy } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import { setPlaylist, player } from '$lib/player/store';
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   const {
     profile,
@@ -32,6 +32,10 @@
     playerState = value;
   });
   onDestroy(() => unsubscribe?.());
+
+  let menuOpen = $state(false);
+  let menuRef = $state<HTMLElement | null>(null);
+  let triggerRef = $state<HTMLElement | null>(null);
 
   const normalizedHandle = $derived(handle?.replace(/^@/, '') ?? '');
   const currentHandle = $derived.by(() => {
@@ -65,6 +69,45 @@
       loadingTracks = false;
     }
   }
+
+  function toggleMenu() {
+    menuOpen = !menuOpen;
+  }
+
+  function closeMenu() {
+    menuOpen = false;
+  }
+
+  function openInBluesky() {
+    const url = `https://bsky.app/profile/${normalizedHandle}`;
+    window.open(url, '_blank', 'noopener');
+    closeMenu();
+  }
+
+  function copyProfileUrl() {
+    const url = window.location.origin + `/@${normalizedHandle}`;
+    navigator.clipboard.writeText(url);
+    closeMenu();
+  }
+
+  onMount(() => {
+    function handleClick(event: MouseEvent) {
+      if (!menuOpen) return;
+      const target = event.target as Node;
+      if (menuRef && menuRef.contains(target)) return;
+      if (triggerRef && triggerRef.contains(target)) return;
+      menuOpen = false;
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') menuOpen = false;
+    }
+    window.addEventListener('click', handleClick);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('click', handleClick);
+      window.removeEventListener('keydown', handleKey);
+    };
+  });
 </script>
 
 <Card
@@ -89,7 +132,7 @@
           <div class="min-w-0">
             <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
               {#if isActiveProfile}
-                <Radio class="h-5 w-5 text-primary animate-pulse" />
+                <DiscIcon class="h-5 w-5 text-primary animate-spin" style="animation-duration: 3s;" />
               {/if}
               <span class={isActiveProfile ? "text-primary" : ""}>
                 {profile?.displayName || handle}
@@ -115,7 +158,7 @@
           <div class="min-w-0">
             <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
               {#if isActiveProfile}
-                <Radio class="h-5 w-5 text-primary animate-pulse" />
+                <DiscIcon class="h-5 w-5 text-primary animate-spin" style="animation-duration: 3s;" />
               {/if}
               <span class={isActiveProfile ? "text-primary" : ""}>
                 {profile?.displayName || handle}
@@ -151,6 +194,44 @@
         {#if children}
           {@render children()}
         {/if}
+
+        <div class="relative">
+          <button
+            bind:this={triggerRef}
+            type="button"
+            class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+            onclick={toggleMenu}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
+            <MoreVertical class="h-4 w-4" />
+            <span class="sr-only">Profile actions</span>
+          </button>
+          {#if menuOpen}
+            <div
+              bind:this={menuRef}
+              class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border bg-popover text-popover-foreground shadow-lg"
+              role="menu"
+            >
+              <button
+                type="button"
+                class={menuItemClass}
+                onclick={openInBluesky}
+              >
+                <ExternalLink class="h-4 w-4" />
+                Open in Bluesky
+              </button>
+              <button
+                type="button"
+                class={menuItemClass}
+                onclick={copyProfileUrl}
+              >
+                <Copy class="h-4 w-4" />
+                Copy profile link
+              </button>
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   </CardHeader>

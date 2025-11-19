@@ -9,7 +9,7 @@
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause } from 'lucide-svelte';
-  import { cn } from '$lib/utils';
+  import { cn, menuItemClass } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
@@ -155,11 +155,7 @@
         <div class="flex items-center gap-1 mb-0.5">
           {#if isActiveTrack}
             <div class="shrink-0 text-primary">
-              {#if playerState.playing}
-                <Pause class="h-4 w-4 animate-pulse" />
-              {:else}
-                <Play class="h-4 w-4" />
-              {/if}
+              <DiscIcon class="h-4 w-4 animate-spin" style="animation-duration: 3s;" />
             </div>
           {/if}
           <CardTitle class="text-base flex-1 min-w-0 font-semibold">
@@ -234,7 +230,7 @@
                 {#if editHref()}
                   <button
                     type="button"
-                    class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                    class={menuItemClass}
                     onclick={() => { closeMenu(); openEdit(); }}
                   >
                     <Pencil class="h-4 w-4" />
@@ -243,7 +239,7 @@
                 {/if}
                 <button
                   type="button"
-                  class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  class={menuItemClass}
                   onclick={() => { closeMenu(); openExternalUrl(); }}
                 >
                   <ExternalLink class="h-4 w-4" />
@@ -252,7 +248,7 @@
                 {#if discogsLink}
                   <button
                     type="button"
-                    class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                    class={menuItemClass}
                     onclick={() => { closeMenu(); openDiscogs(); }}
                   >
                     <DiscIcon class="h-4 w-4" />
@@ -262,7 +258,7 @@
                 <div class="my-1 border-t"></div>
                 <button
                   type="button"
-                  class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                  class={cn(menuItemClass, "text-muted-foreground")}
                   onclick={() => { closeMenu(); remove(); }}
                 >
                   <Trash2 class="h-4 w-4" />

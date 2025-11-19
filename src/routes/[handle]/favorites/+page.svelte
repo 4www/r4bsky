@@ -1,6 +1,6 @@
 <script lang="ts">
   import { listR4FavoritesByDid, getProfiles } from '$lib/services/r4-service';
-  import { onMount, getContext } from 'svelte';
+  import { getContext } from 'svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Loader2, AlertCircle, Users } from 'lucide-svelte';
@@ -84,12 +84,6 @@
       }
     })();
   }
-
-  onMount(() => {
-    if (did) {
-      loadFollowing(did);
-    }
-  });
 
   $effect(() => {
     if (did) {

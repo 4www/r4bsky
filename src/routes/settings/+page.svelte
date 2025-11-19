@@ -258,7 +258,7 @@
                   Saving...
                 </span>
               {:else if themeSaved}
-                <span class="text-xs text-green-600 dark:text-green-400">
+                <span class="text-xs text-primary">
                   Saved!
                 </span>
               {/if}

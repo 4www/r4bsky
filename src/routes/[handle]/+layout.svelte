@@ -1,9 +1,11 @@
 <script lang="ts">
   import { resolveHandle, getProfile } from '$lib/services/r4-service';
-  import { onMount, setContext } from 'svelte';
+  import { setContext } from 'svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import ProfileNav from '$lib/components/ProfileNav.svelte';
+  import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -12,9 +14,21 @@
   import { Loader2, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   const { data, children } = $props();
   const handle = $derived(data?.handle ? data.handle.replace(/^@/, '') : '');
+
+  // Check if we're on an edit route
+  const isEditRoute = $derived($page.url.pathname.includes('/edit'));
+  const editRkey = $derived.by(() => {
+    if (!isEditRoute) return '';
+    const parts = $page.url.pathname.split('/');
+    const editIndex = parts.indexOf('edit');
+    return editIndex > 0 ? parts[editIndex - 1] : '';
+  });
 
   let did = $state('');
   let profile = $state(null);
@@ -60,7 +74,13 @@
     })();
   }
 
-  onMount(() => {
+  function closeEditDialog() {
+    const userHandle = handle || $session?.handle || '';
+    const fallback = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/';
+    goto(resolve(fallback), { replaceState: false, noScroll: true, keepFocus: true });
+  }
+
+  $effect(() => {
     if (handle) {
       loadProfile(handle);
     }
@@ -101,7 +121,9 @@
 
       <ProfileNav {handle} />
 
-      {@render children()}
+      {#if !isEditRoute}
+        {@render children()}
+      {/if}
     {/if}
   {:else}
     <Card>
@@ -129,3 +151,13 @@
     </Card>
   {/if}
 </div>
+
+{#if isEditRoute && editRkey}
+  <Dialog title={t('editTrack.title')} onClose={closeEditDialog}>
+    <TrackEditDialogContent
+      {handle}
+      repo={did}
+      rkey={editRkey}
+    />
+  </Dialog>
+{/if}

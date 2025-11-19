@@ -22,10 +22,10 @@
   const isOwnProfile = $derived($session?.handle === handle);
 
   const linkClass = (active: boolean) => cn(
-    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border-2',
     active
-      ? 'bg-primary text-primary-foreground shadow-md'
-      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      ? 'text-foreground border-primary shadow-sm'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground border-transparent'
   );
 </script>
 
