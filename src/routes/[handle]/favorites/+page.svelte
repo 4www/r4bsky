@@ -125,6 +125,7 @@
 {#if loading}
   <StateCard
     icon={Loader2}
+    loading={true}
     title={t('following.loadingTitle')}
     description={t('following.loadingDescription')}
   />

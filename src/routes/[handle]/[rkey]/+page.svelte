@@ -107,6 +107,7 @@
     {#if loading}
       <StateCard
         icon={Loader2}
+        loading={true}
         title={t('trackDetail.loadingTitle')}
         description={t('trackDetail.loadingDescription')}
       />

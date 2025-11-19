@@ -16,6 +16,7 @@
 		title = "",
 		description = "",
 		icon: Icon = null,
+		loading = false,
 		children,
 		actions,
 		class: className,
@@ -23,6 +24,7 @@
 		title: string;
 		description?: string;
 		icon?: IconComponent | null;
+		loading?: boolean;
 		children?: Snippet;
 		actions?: Snippet;
 		class?: string;
@@ -33,7 +35,7 @@
 	<CardHeader class="items-center text-center space-y-4 pb-6">
 		{#if Icon}
 			<div class="rounded-full bg-muted p-4">
-				<Icon class="h-8 w-8 text-muted-foreground" />
+				<Icon class={cn("h-8 w-8 text-muted-foreground", loading && "animate-spin")} />
 			</div>
 		{/if}
 		<div class="space-y-2">

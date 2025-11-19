@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import NavTabs from '$lib/components/NavTabs.svelte';
   import { locale, translate } from '$lib/i18n';
+  import { Music, Heart, Plus } from 'lucide-svelte';
   import { base } from '$app/paths';
   import { session } from '$lib/state/session';
 
@@ -20,9 +21,9 @@
   const isOwnProfile = $derived($session?.handle === handle);
 
   const navItems = $derived([
-    { href: profilePath, label: t('profileNav.tracks'), isActive: isTracksActive },
-    { href: followingPath, label: t('profileNav.following'), isActive: isFollowingActive },
-    ...(isOwnProfile ? [{ href: addPath, label: t('nav.links.add'), isActive: isAddActive }] : [])
+    { href: profilePath, label: t('profileNav.tracks'), icon: Music, isActive: isTracksActive },
+    { href: followingPath, label: t('profileNav.following'), icon: Heart, isActive: isFollowingActive },
+    ...(isOwnProfile ? [{ href: addPath, label: t('nav.links.add'), icon: Plus, isActive: isAddActive }] : [])
   ]);
 </script>
 

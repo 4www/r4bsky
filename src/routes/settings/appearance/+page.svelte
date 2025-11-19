@@ -128,15 +128,15 @@
     <CardHeader>
       <CardTitle class="flex items-center gap-2">
         <MonitorSmartphone class="h-5 w-5" />
-        Theme Mode
+        {t('settings.appearanceThemeModeTitle')}
       </CardTitle>
       <CardDescription>
-        Choose between light, dark, or automatic theme based on your system preference.
+        {t('settings.appearanceThemeModeDescription')}
       </CardDescription>
     </CardHeader>
     <CardContent>
       <div class="space-y-2">
-        <Label>Select mode</Label>
+        <Label>{t('settings.appearanceSelectMode')}</Label>
         <div class="grid grid-cols-3 gap-2">
           <button
             type="button"
@@ -144,7 +144,7 @@
             class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'auto' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
           >
             <MonitorSmartphone class="h-5 w-5" />
-            <span class="text-xs font-medium">Auto</span>
+            <span class="text-xs font-medium">{t('settings.appearanceModeAuto')}</span>
           </button>
           <button
             type="button"
@@ -152,7 +152,7 @@
             class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'light' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
           >
             <Sun class="h-5 w-5" />
-            <span class="text-xs font-medium">Light</span>
+            <span class="text-xs font-medium">{t('settings.appearanceModeLight')}</span>
           </button>
           <button
             type="button"
@@ -160,7 +160,7 @@
             class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'dark' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
           >
             <Moon class="h-5 w-5" />
-            <span class="text-xs font-medium">Dark</span>
+            <span class="text-xs font-medium">{t('settings.appearanceModeDark')}</span>
           </button>
         </div>
       </div>
@@ -172,10 +172,10 @@
     <CardHeader>
       <CardTitle class="flex items-center gap-2">
         <Palette class="h-5 w-5" />
-        Theme Colors
+        {t('settings.appearanceThemeColorsTitle')}
       </CardTitle>
       <CardDescription>
-        Customize your theme colors. Changes are saved to your profile and visible to others.
+        {t('settings.appearanceThemeColorsDescription')}
       </CardDescription>
     </CardHeader>
     <CardContent>
@@ -184,27 +184,27 @@
           <h3 class="font-medium flex items-center gap-2">
             {#if effectiveMode === 'dark'}
               <Moon class="h-4 w-4" />
-              Dark Mode Colors
+              {t('settings.appearanceDarkModeColors')}
             {:else}
               <Sun class="h-4 w-4" />
-              Light Mode Colors
+              {t('settings.appearanceLightModeColors')}
             {/if}
           </h3>
           {#if themeSaving}
             <span class="text-xs text-muted-foreground flex items-center gap-1">
               <Loader2 class="h-3 w-3 animate-spin" />
-              Saving...
+              {t('settings.appearanceSaving')}
             </span>
           {:else if themeSaved}
             <span class="text-xs text-primary">
-              Saved!
+              {t('settings.appearanceSaved')}
             </span>
           {/if}
         </div>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
-              <Label for="current-bg">Background</Label>
+              <Label for="current-bg">{t('settings.appearanceBackground')}</Label>
               <div class="flex gap-2">
                 <input
                   id="current-bg"
@@ -223,7 +223,7 @@
               </div>
             </div>
             <div class="space-y-2">
-              <Label for="current-fg">Foreground</Label>
+              <Label for="current-fg">{t('settings.appearanceForeground')}</Label>
               <div class="flex gap-2">
                 <input
                   id="current-fg"
@@ -243,7 +243,7 @@
             </div>
           </div>
           <div class="space-y-2">
-            <Label for="current-accent">Accent Color</Label>
+            <Label for="current-accent">{t('settings.appearanceAccentColor')}</Label>
             <div class="flex gap-2">
               <input
                 id="current-accent"
@@ -270,7 +270,7 @@
             class="flex-1"
           >
             <RotateCcw class="mr-2 h-4 w-4" />
-            Reset to Defaults
+            {t('settings.appearanceResetToDefaults')}
           </Button>
           <Button
             onclick={saveTheme}
@@ -281,15 +281,15 @@
           >
             {#if themeSaving}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {t('settings.appearanceSaving')}
             {:else}
               <Palette class="mr-2 h-4 w-4" />
-              Save Now
+              {t('settings.appearanceSaveNow')}
             {/if}
           </Button>
         </div>
         <p class="text-xs text-muted-foreground">
-          Pick a color to save automatically, or click "Save Now". Switch theme mode above to customize other mode.
+          {t('settings.appearanceColorHint')}
         </p>
       </div>
 
@@ -300,7 +300,7 @@
       {/if}
 
       <p class="text-xs text-muted-foreground">
-        Theme colors are saved to AT Protocol and will be visible to others when they visit your profile.
+        {t('settings.appearanceColorFootnote')}
       </p>
     </CardContent>
   </Card>

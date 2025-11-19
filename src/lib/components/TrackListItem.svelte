@@ -149,8 +149,8 @@
     isActiveTrack ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20" : ""
   )}
 >
-  <CardHeader class="p-3 pb-1.5">
-    <div class="flex items-start justify-between gap-2">
+  <CardHeader class="p-2 pb-1">
+    <div class="flex items-start justify-between gap-1.5">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1 mb-0.5">
           {#if isActiveTrack}
@@ -158,7 +158,7 @@
               <DiscIcon class="h-4 w-4 animate-spin" style="animation-duration: 3s;" />
             </div>
           {/if}
-          <CardTitle class="text-base flex-1 min-w-0 font-semibold">
+          <CardTitle class="text-sm flex-1 min-w-0 font-semibold">
             <Link href={viewHref() || '/'} class={cn("hover:text-primary transition-colors", isActiveTrack ? "text-primary" : "")} onclick={openDetail}>
               {item.title || t('trackItem.untitled')}
             </Link>
@@ -203,8 +203,8 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <Button size="sm" class="shadow" onclick={play}>
-          <Play class="h-4 w-4 mr-1" />
+        <Button size="sm" class="shadow h-7 px-2 text-xs" onclick={play}>
+          <Play class="h-3 w-3 mr-1" />
           {t('trackItem.play')}
         </Button>
 
@@ -213,7 +213,12 @@
             <button
               bind:this={triggerRef}
               type="button"
-              class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+              class={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-md border-2 transition-all",
+                menuOpen
+                  ? "border-primary text-foreground shadow-sm"
+                  : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              )}
               onclick={() => toggleMenu()}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -273,9 +278,9 @@
   </CardHeader>
 
   {#if item.description}
-    <CardContent class="pt-0 pb-3 px-3">
-      <div class="rounded-lg bg-muted/30 border border-muted/60 p-2.5">
-        <p class="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+    <CardContent class="pt-0 pb-2 px-2">
+      <div class="rounded-md bg-muted/30 border border-muted/60 p-1.5">
+        <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug">
           {item.description}
         </p>
       </div>
@@ -283,8 +288,8 @@
   {/if}
 
   {#if message}
-    <CardContent class="pt-0 pb-3 px-3">
-      <div class="rounded-md bg-destructive/15 p-2.5 text-sm text-destructive">
+    <CardContent class="pt-0 pb-2 px-2">
+      <div class="rounded-md bg-destructive/15 p-1.5 text-xs text-destructive">
         {message}
       </div>
     </CardContent>

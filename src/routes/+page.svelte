@@ -8,7 +8,6 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import StateCard from '$lib/components/ui/state-card.svelte';
-  import SearchProfiles from '$lib/components/SearchProfiles.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { Music4, Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
@@ -79,8 +78,6 @@
 
 {#if isAuthenticated}
   <div class="container max-w-4xl py-4 space-y-6">
-    <SearchProfiles showHeading={false} />
-
     {#if loadingHome}
       <StateCard
         icon={Loader2}
@@ -131,8 +128,6 @@
   </div>
 {:else}
   <div class="container mx-auto max-w-2xl mt-10 px-3 space-y-8">
-    <SearchProfiles showHeading={false} />
-
     <div class="mb-8 text-center space-y-3 animate-in">
       <h1 class="text-4xl font-bold text-gradient">{t('home.title')}</h1>
       <p class="text-lg text-muted-foreground">{t('home.subtitle')}</p>

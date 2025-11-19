@@ -345,10 +345,10 @@
   <aside
     class={cn(
       extraClass,
-      "w-full sticky top-0 z-30 lg:top-4",
-      isDesktop && !visible ? "opacity-0 pointer-events-none" : "opacity-100"
+      "w-full sticky top-0 z-30 lg:top-4 transition-all duration-300",
+      !visible ? "h-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
     )}
-    style={`height:${playerHeight};max-height:${playerHeight};`}
+    style={visible ? `height:${playerHeight};max-height:${playerHeight};` : ''}
   >
     <section
       class="flex h-full min-h-0 flex-col gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
@@ -375,7 +375,7 @@
           </div>
         </div>
 
-        <div class={cn("grid gap-3 flex-1 min-h-0", isDesktop ? "grid-cols-1" : "grid-cols-[1.2fr_1fr]")}>
+        <div class="grid gap-3 flex-1 min-h-0 grid-cols-1">
           <div class="flex flex-col min-h-0">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
               <div class="flex-1 min-h-[220px] rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
@@ -439,28 +439,52 @@
       </div>
 
       <div class={cn("flex items-center justify-center gap-2 pt-1", isDesktop ? '' : 'shrink-0')}>
-        <Button
-          variant={state.isShuffled ? "default" : "outline"}
-          size="icon"
-          class="h-8 w-8"
+        <button
+          type="button"
+          class={cn(
+            "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2",
+            state.isShuffled
+              ? "text-foreground border-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          )}
           onclick={toggleShuffle}
           aria-label="Shuffle"
         >
           <Shuffle class="h-3.5 w-3.5" />
-        </Button>
-        <Button variant="outline" size="icon" class="h-8 w-8" onclick={prev} aria-label={t('player.previous')}>
+        </button>
+        <button
+          type="button"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          onclick={prev}
+          aria-label={t('player.previous')}
+        >
           <SkipBack class="h-3.5 w-3.5" />
-        </Button>
-        <Button size="icon" class="h-10 w-10 shadow border border-primary/40 bg-primary text-primary-foreground hover:bg-primary/90" onclick={toggle} aria-label={t('player.toggle')}>
+        </button>
+        <button
+          type="button"
+          class={cn(
+            "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2",
+            state.playing
+              ? "text-foreground border-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          )}
+          onclick={toggle}
+          aria-label={t('player.toggle')}
+        >
           {#if state.playing}
             <Pause class="h-4 w-4" />
           {:else}
             <Play class="h-4 w-4" />
           {/if}
-        </Button>
-        <Button variant="outline" size="icon" class="h-8 w-8" onclick={next} aria-label={t('player.next')}>
+        </button>
+        <button
+          type="button"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          onclick={next}
+          aria-label={t('player.next')}
+        >
           <SkipForward class="h-3.5 w-3.5" />
-        </Button>
+        </button>
       </div>
     </section>
   </aside>

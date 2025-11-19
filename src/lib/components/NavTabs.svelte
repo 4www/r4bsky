@@ -20,10 +20,10 @@
 
   // Container styles based on variant
   const containerClass = $derived(cn(
-    'inline-flex gap-1.5',
+    'inline-flex gap-1.5 overflow-x-auto',
     variant === 'pills' && 'p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20',
     variant === 'pills-muted' && 'p-1.5 rounded-full bg-muted/40 border border-muted',
-    variant === 'sidebar' && 'flex-col gap-2',
+    variant === 'sidebar' && 'flex-col gap-2 overflow-x-visible',
     className
   ));
 
@@ -47,7 +47,7 @@
 <nav class={containerClass}>
   {#each items as item (item.href)}
     <Link href={item.href} class={linkClass(item.isActive)}>
-      {#if item.icon}
+      {#if item.icon && !item.isActive}
         {@const Icon = item.icon}
         <Icon class={iconClass} />
       {/if}

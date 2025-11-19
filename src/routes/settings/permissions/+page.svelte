@@ -3,9 +3,11 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Loader2, Shield } from 'lucide-svelte';
+  import { locale, translate } from '$lib/i18n';
 
   let working = $state(false);
   let permissionError = $state('');
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function managePermissions() {
     try {
@@ -30,45 +32,45 @@
     <CardHeader>
       <CardTitle class="flex items-center gap-2">
         <Shield class="h-5 w-5" />
-        App Permissions
+        {t('settings.permissionsTitle')}
       </CardTitle>
       <CardDescription>
-        Manage access permissions for Radio4000
+        {t('settings.permissionsDescription')}
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-3">
       <div class="rounded-lg bg-muted/50 p-3 text-sm space-y-2">
-        <p class="font-semibold mb-2">AT Protocol Permissions:</p>
+        <p class="font-semibold mb-2">{t('settings.permissionsAtProtocolLabel')}</p>
         <div class="space-y-2 text-xs">
           <div class="border-l-2 border-primary/50 pl-2">
             <p class="font-mono text-foreground">com.radio4000.track</p>
-            <p class="text-muted-foreground">Actions: create, update, delete</p>
+            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>
           <div class="border-l-2 border-primary/50 pl-2">
             <p class="font-mono text-foreground">com.radio4000.favorite</p>
-            <p class="text-muted-foreground">Actions: create, delete</p>
+            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
           <div class="border-l-2 border-primary/50 pl-2">
             <p class="font-mono text-foreground">app.bsky.graph.follow</p>
-            <p class="text-muted-foreground">Actions: create, delete</p>
+            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
           <div class="border-l-2 border-primary/50 pl-2">
             <p class="font-mono text-foreground">com.radio4000.profile</p>
-            <p class="text-muted-foreground">Actions: create, update, delete</p>
+            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>
         </div>
       </div>
       <Button onclick={managePermissions} disabled={working} variant="outline" class="w-full">
         {#if working}
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          Requesting permissions...
+          {t('settings.permissionsWorking')}
         {:else}
           <Shield class="mr-2 h-4 w-4" />
-          Request Permissions
+          {t('settings.permissionsButton')}
         {/if}
       </Button>
       <p class="text-xs text-muted-foreground">
-        This will redirect you to your server to grant Radio4000 specific permissions. Use this if features aren't working or you want to review access.
+        {t('settings.permissionsFootnote')}
       </p>
       {#if permissionError}
         <div class="rounded-md bg-destructive/15 p-3 text-sm text-foreground/70">

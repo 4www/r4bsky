@@ -199,7 +199,12 @@
           <button
             bind:this={triggerRef}
             type="button"
-            class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+            class={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-md border-2 transition-all",
+              menuOpen
+                ? "border-primary text-foreground shadow-sm"
+                : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            )}
             onclick={toggleMenu}
             aria-haspopup="menu"
             aria-expanded={menuOpen}

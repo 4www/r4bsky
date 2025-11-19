@@ -211,6 +211,7 @@
     }
 
     baseItems.push(
+      { href: '/search', label: t('nav.links.search'), icon: Search, isActive: currentPath.startsWith('/search') },
       { href: '/settings', label: t('nav.links.settings'), icon: Settings, isActive: currentPath.startsWith('/settings') }
     );
 
@@ -222,22 +223,26 @@
   <div class="flex items-center justify-center min-h-screen p-4">
     <StateCard
       icon={Loader2}
+      loading={true}
       title={t('app.loadingTitle')}
       description={t('app.loadingDescription')}
     />
   </div>
 {:else}
   <div class="min-h-screen bg-background flex flex-col">
-    <div class="flex flex-col flex-1 lg:flex-row lg:items-start lg:gap-4 px-2 sm:px-3 lg:px-4">
+    <div class={cn(
+      "flex flex-col flex-1 px-2 sm:px-3 lg:px-4",
+      playerVisible && hasDesktopPlayer ? "lg:flex-row lg:items-start lg:gap-4" : ""
+    )}>
       <Player
         visible={playerVisible}
         bind:mobilePanelOpen={mobilePanelOpen}
-        class={cn(
-          "order-1 w-full lg:order-2 lg:w-[26rem] lg:top-4",
-          (!playerVisible && hasDesktopPlayer) ? "hidden lg:block" : "block"
-        )}
+        class="order-1 w-full lg:order-2 lg:w-[26rem] lg:top-4"
       />
-      <main class="relative order-2 lg:order-1 flex-1 pt-2 pb-3">
+      <main class={cn(
+        "relative order-2 lg:order-1 pt-2 pb-3",
+        playerVisible && hasDesktopPlayer ? "flex-1" : "max-w-6xl mx-auto w-full"
+      )}>
         <div class="relative z-30 bg-background rounded-2xl">{@render children()}</div>
       </main>
     </div>

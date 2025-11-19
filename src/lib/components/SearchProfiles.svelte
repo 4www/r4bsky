@@ -93,6 +93,7 @@
   {#if loading}
     <StateCard
       icon={Loader2}
+      loading={true}
       title={t('search.loadingTitle')}
       description={t('search.loadingDescription')}
     />

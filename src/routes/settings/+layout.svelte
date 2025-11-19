@@ -17,21 +17,19 @@
   ]);
 </script>
 
-<div class="container max-w-6xl py-6">
+<div class="container max-w-4xl py-6">
   <div class="mb-6">
     <h1 class="text-3xl font-bold">{t('settings.title')}</h1>
     <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
   </div>
 
-  <div class="flex flex-col lg:flex-row gap-6">
-    <!-- Settings Navigation -->
-    <div class="shrink-0 mb-4 lg:mb-0">
-      <NavTabs items={navItems} variant="pills-muted" />
-    </div>
+  <!-- Settings Navigation -->
+  <div class="mb-6 flex justify-center">
+    <NavTabs items={navItems} variant="pills-muted" />
+  </div>
 
-    <!-- Settings Content -->
-    <div class="flex-1 min-w-0">
-      {@render children()}
-    </div>
+  <!-- Settings Content -->
+  <div>
+    {@render children()}
   </div>
 </div>

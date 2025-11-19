@@ -47,8 +47,8 @@
   <div class="space-y-6">
     <Card>
       <CardHeader>
-        <CardTitle>Account Information</CardTitle>
-        <CardDescription>Your AT Protocol account details</CardDescription>
+        <CardTitle>{t('settings.accountTitle')}</CardTitle>
+        <CardDescription>{t('settings.accountDescription')}</CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="space-y-2">
