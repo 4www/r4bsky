@@ -416,7 +416,7 @@
                   class={cn(
                     "w-full text-left px-2.5 py-1.5 transition-all duration-150 flex flex-col gap-1 relative text-xs",
                     idx === state.index
-                      ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-3 border-primary shadow-sm"
+                      ? "bg-primary/15 text-primary border-l-3 border-primary shadow-sm font-medium"
                       : "hover:bg-muted/50 hover:pl-3"
                   )}
                   onclick={() => playIndex(idx)}

@@ -4,7 +4,7 @@
   import { Button } from './ui/button';
   import { cn } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
-  import { PlayCircle, Loader2, Disc as DiscIcon } from 'lucide-svelte';
+  import { PlayCircle, Loader2, Disc as DiscIcon, Radio } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import { setPlaylist, player } from '$lib/player/store';
   import { onDestroy } from 'svelte';
@@ -34,14 +34,14 @@
   onDestroy(() => unsubscribe?.());
 
   const normalizedHandle = $derived(handle?.replace(/^@/, '') ?? '');
-  const currentHandle = $derived(() => {
+  const currentHandle = $derived.by(() => {
     const contextHandle = playerState?.context?.handle;
     const trackHandle = playerState?.playlist?.[playerState.index]?.authorHandle
       ?? playerState?.playlist?.[playerState.index]?.author_handle;
     const raw = contextHandle || trackHandle || '';
     return raw?.replace?.(/^@/, '') ?? '';
   });
-  const isActiveProfile = $derived(() => normalizedHandle && currentHandle
+  const isActiveProfile = $derived.by(() => normalizedHandle && currentHandle
     ? normalizedHandle.toLowerCase() === currentHandle.toLowerCase()
     : false);
 
@@ -70,7 +70,7 @@
 <Card
   class={cn(
     'border border-border bg-background animate-in transition-colors shadow-sm hover:bg-muted/20',
-    isActiveProfile ? 'border-primary bg-primary/10 ring-1 ring-primary/30' : '',
+    isActiveProfile ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20' : '',
     extraClass
   )}
 >
@@ -87,8 +87,13 @@
             size={sizes.avatar}
           />
           <div class="min-w-0">
-            <CardTitle class={cn('mb-1', sizes.title)}>
-              {profile?.displayName || handle}
+            <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
+              {#if isActiveProfile}
+                <Radio class="h-5 w-5 text-primary animate-pulse" />
+              {/if}
+              <span class={isActiveProfile ? "text-primary" : ""}>
+                {profile?.displayName || handle}
+              </span>
             </CardTitle>
             <CardDescription class={sizes.description}>
               @{handle}
@@ -108,8 +113,13 @@
             size={sizes.avatar}
           />
           <div class="min-w-0">
-            <CardTitle class={cn('mb-1', sizes.title)}>
-              {profile?.displayName || handle}
+            <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
+              {#if isActiveProfile}
+                <Radio class="h-5 w-5 text-primary animate-pulse" />
+              {/if}
+              <span class={isActiveProfile ? "text-primary" : ""}>
+                {profile?.displayName || handle}
+              </span>
             </CardTitle>
             <CardDescription class={sizes.description}>
               @{handle}

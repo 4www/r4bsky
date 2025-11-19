@@ -52,7 +52,7 @@
 {:else}
   <div
     class={cn(
-      'rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center border-2 border-primary/30',
+      'rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/30',
       sizeClasses[size],
       extraClass
     )}

@@ -8,7 +8,7 @@
   import { createEventDispatcher } from 'svelte';
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon } from 'lucide-svelte';
+  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause } from 'lucide-svelte';
   import { cn } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
@@ -67,7 +67,7 @@
     playerState = value;
   });
   onDestroy(() => unsubscribe?.());
-  const isActiveTrack = $derived(() => playerState?.playlist?.[playerState.index]?.uri === item?.uri);
+  const isActiveTrack = $derived.by(() => playerState?.playlist?.[playerState.index]?.uri === item?.uri);
 
   function viewHref() {
     return buildViewHash(authorHandle, item.uri);
@@ -146,15 +146,24 @@
 <Card
   class={cn(
     "border border-border bg-background transition-colors shadow-sm hover:bg-muted/20",
-    isActiveTrack ? "border-primary bg-primary/10 ring-1 ring-primary/30" : ""
+    isActiveTrack ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20" : ""
   )}
 >
   <CardHeader class="p-3 pb-1.5">
     <div class="flex items-start justify-between gap-2">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1 mb-0.5">
+          {#if isActiveTrack}
+            <div class="shrink-0 text-primary">
+              {#if playerState.playing}
+                <Pause class="h-4 w-4 animate-pulse" />
+              {:else}
+                <Play class="h-4 w-4" />
+              {/if}
+            </div>
+          {/if}
           <CardTitle class="text-base flex-1 min-w-0 font-semibold">
-            <Link href={viewHref() || '/'} class="hover:text-primary transition-colors" onclick={openDetail}>
+            <Link href={viewHref() || '/'} class={cn("hover:text-primary transition-colors", isActiveTrack ? "text-primary" : "")} onclick={openDetail}>
               {item.title || t('trackItem.untitled')}
             </Link>
           </CardTitle>
