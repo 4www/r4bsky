@@ -17,7 +17,7 @@
 </script>
 
 {#if tracks && tracks.length > 0}
-  <div class="space-y-4">
+  <div class="space-y-2">
     {#each tracks as item, idx (item.uri || idx)}
       <TrackListItem
         {item}

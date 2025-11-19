@@ -253,7 +253,14 @@ export async function listR4FollowsByDid(did: string, {cursor, limit = 50}: List
 		subject: r.value?.subject,
 		createdAt: r.value?.createdAt || r.value?.created_at,
 	})).filter((rec: R4FollowRecord) => typeof rec.subject === 'string' && rec.subject.startsWith('did:'))
-	return { follows: records, cursor: res.data?.cursor }
+	const seen = new Set<string>()
+	const unique = records.filter((rec: R4FollowRecord) => {
+		if (!rec.subject) return false
+		if (seen.has(rec.subject)) return false
+		seen.add(rec.subject)
+		return true
+	})
+	return { follows: unique, cursor: res.data?.cursor }
 }
 
 export async function createR4Follow(subjectDid: string): Promise<any> {

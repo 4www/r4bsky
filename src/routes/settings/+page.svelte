@@ -61,13 +61,13 @@
   }
 </script>
 
-<div class="container max-w-2xl py-8">
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold">{t('settings.title')}</h1>
-    <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
+<div class="container max-w-2xl py-6">
+  <div class="mb-4">
+    <h1 class="text-2xl font-bold">{t('settings.title')}</h1>
+    <p class="text-sm text-muted-foreground mt-1">{t('settings.description')}</p>
   </div>
 
-  <div class="space-y-4">
+  <div class="space-y-3">
     {#if $session?.did}
       <Card>
         <CardHeader>
@@ -133,7 +133,7 @@
 
       <Card>
         <CardHeader>
-          <CardTitle class="text-destructive flex items-center gap-2">
+          <CardTitle class="flex items-center gap-2">
             <LogOut class="h-5 w-5" />
             {t('settings.signOutTitle')}
           </CardTitle>
@@ -142,7 +142,7 @@
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
+          <Button onclick={signOut} disabled={working} variant="outline" class="w-full">
             {#if working}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
               {t('settings.signOutWorking')}

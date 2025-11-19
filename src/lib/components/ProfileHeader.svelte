@@ -4,9 +4,10 @@
   import { Button } from './ui/button';
   import { cn } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
-  import { PlayCircle, Loader2 } from 'lucide-svelte';
+  import { PlayCircle, Loader2, Disc as DiscIcon } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
-  import { setPlaylist } from '$lib/player/store';
+  import { setPlaylist, player } from '$lib/player/store';
+  import { onDestroy } from 'svelte';
 
   const {
     profile,
@@ -26,6 +27,23 @@
   const sizes = sizeMap[size] || sizeMap.lg;
 
   let loadingTracks = $state(false);
+  let playerState = $state(player.get());
+  const unsubscribe = player.subscribe((value) => {
+    playerState = value;
+  });
+  onDestroy(() => unsubscribe?.());
+
+  const normalizedHandle = $derived(handle?.replace(/^@/, '') ?? '');
+  const currentHandle = $derived(() => {
+    const contextHandle = playerState?.context?.handle;
+    const trackHandle = playerState?.playlist?.[playerState.index]?.authorHandle
+      ?? playerState?.playlist?.[playerState.index]?.author_handle;
+    const raw = contextHandle || trackHandle || '';
+    return raw?.replace?.(/^@/, '') ?? '';
+  });
+  const isActiveProfile = $derived(() => normalizedHandle && currentHandle
+    ? normalizedHandle.toLowerCase() === currentHandle.toLowerCase()
+    : false);
 
   async function playAll(event: Event) {
     event.preventDefault();
@@ -49,7 +67,13 @@
   }
 </script>
 
-<Card class={cn('border-2 shadow-lg animate-in', extraClass)}>
+<Card
+  class={cn(
+    'border border-border bg-background animate-in transition-colors shadow-sm hover:bg-muted/20',
+    isActiveProfile ? 'border-primary bg-primary/10 ring-1 ring-primary/30' : '',
+    extraClass
+  )}
+>
   <CardHeader class="pb-4">
     <div class="flex items-start justify-between gap-4 flex-wrap">
       {#if clickable}
@@ -99,7 +123,7 @@
         </div>
       {/if}
 
-      <div class="shrink-0 flex gap-3 flex-wrap items-center">
+      <div class={cn('shrink-0 flex gap-3 flex-wrap items-center', isActiveProfile ? 'text-primary' : '')}>
         <Button
           size={size === 'sm' ? 'sm' : 'lg'}
           class="shadow-md"

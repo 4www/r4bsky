@@ -74,7 +74,7 @@ const fr = {
 	search: {
 		title: "Rechercher des profils",
 		description: "Trouvez des personnes sur le protocole AT et découvrez leur musique",
-		placeholder: "Rechercher un identifiant… (ex. hwww.org)",
+		placeholder: "Rechercher des identifiants atproto",
 		submit: "Rechercher",
 		submitting: "Recherche…",
 		errorTitle: "La recherche a échoué",
@@ -122,7 +122,7 @@ const fr = {
 	},
 	profileNav: {
 		tracks: "Morceaux",
-		following: "Abonnements",
+		following: "Favoris",
 	},
 	trackDetail: {
 		loadingTitle: "Chargement du morceau",
@@ -148,13 +148,13 @@ const fr = {
 		error: "Impossible de mettre à jour l’abonnement : {message}",
 	},
 	following: {
-		title: "Abonnements de {handle}",
-		description: "Profils Radio4000 suivis par cet utilisateur",
-		loadingTitle: "Chargement des abonnements",
-		loadingDescription: "Récupération des profils suivis par cet utilisateur.",
-		errorTitle: "Impossible de charger les abonnements",
-		emptyTitle: "Aucun abonnement",
-		emptyDescription: "Cet utilisateur ne suit aucun profil Radio4000 pour le moment.",
+		title: "Favoris de {handle}",
+		description: "Profils Radio4000 mis en favoris par cet utilisateur",
+		loadingTitle: "Chargement des favoris",
+		loadingDescription: "Récupération des profils ajoutés aux favoris par cet utilisateur.",
+		errorTitle: "Impossible de charger les favoris",
+		emptyTitle: "Aucun favori",
+		emptyDescription: "Cet utilisateur n’a pas encore ajouté de favoris Radio4000.",
 		loadMore: "Voir plus",
 	},
 };

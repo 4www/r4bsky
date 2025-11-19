@@ -8,6 +8,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import StateCard from '$lib/components/ui/state-card.svelte';
+  import SearchProfiles from '$lib/components/SearchProfiles.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { Music4, Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
@@ -47,7 +48,14 @@
         listR4FollowsByDid($session.did, { limit: 10 })
       ]);
       myProfile = profile;
-      follows = followsData.follows;
+      const uniqueFollows = new Map();
+      for (const follow of followsData.follows || []) {
+        const key = follow?.subject || follow?.uri;
+        if (key && !uniqueFollows.has(key)) {
+          uniqueFollows.set(key, follow);
+        }
+      }
+      follows = Array.from(uniqueFollows.values());
 
       if (follows.length > 0) {
         const dids = follows.map(f => f.subject).filter(Boolean);
@@ -70,12 +78,14 @@
 </script>
 
 {#if isAuthenticated}
-  <div class="container max-w-4xl py-8 lg:py-12">
+  <div class="container max-w-4xl py-4 space-y-6">
+    <SearchProfiles showHeading={false} />
+
     {#if loadingHome}
       <StateCard
         icon={Loader2}
         title="Loading your profile"
-        description="Fetching your profile and favorite radios."
+        description="Fetching your profile and favorites."
       />
     {:else}
       {#if myProfile && $session?.handle}
@@ -83,37 +93,31 @@
           profile={myProfile}
           handle={$session.handle}
           size="lg"
-          class="mb-8"
+          class="mb-6"
         />
       {/if}
 
       {#if follows.length > 0}
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Users class="h-6 w-6" />
-            Your Favorite Radios
-          </h2>
-          <div class="space-y-4">
-            {#each follows as follow (follow.uri)}
-              {@const profile = followProfiles.get(follow.subject)}
-              {@const profileHandle = profile?.handle || follow.subject}
-              <ProfileHeader
-                {profile}
-                handle={profileHandle}
-                size="sm"
-              />
-            {/each}
-          </div>
+        <div class="space-y-3 mb-4">
+          {#each follows as follow (follow.uri)}
+            {@const profile = followProfiles.get(follow.subject)}
+            {@const profileHandle = profile?.handle || follow.subject}
+            <ProfileHeader
+              {profile}
+              handle={profileHandle}
+              size="sm"
+            />
+          {/each}
         </div>
       {:else}
         <Card class="border-2">
           <CardHeader>
             <CardTitle class="flex items-center gap-2">
               <Users class="h-5 w-5" />
-              No favorite radios yet
+              No favorites yet
             </CardTitle>
             <CardDescription>
-              Start following other Radio4000 profiles to see them here.
+              Start adding Radio4000 favorites to see them here.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,7 +130,9 @@
     {/if}
   </div>
 {:else}
-  <div class="container mx-auto max-w-md mt-12 px-4">
+  <div class="container mx-auto max-w-2xl mt-10 px-3 space-y-8">
+    <SearchProfiles showHeading={false} />
+
     <div class="mb-8 text-center space-y-3 animate-in">
       <h1 class="text-4xl font-bold text-gradient">{t('home.title')}</h1>
       <p class="text-lg text-muted-foreground">{t('home.subtitle')}</p>

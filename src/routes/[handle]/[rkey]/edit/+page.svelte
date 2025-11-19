@@ -5,15 +5,24 @@
   import { resolve } from '$app/paths';
   import { session } from '$lib/state/session';
   import { locale, translate } from '$lib/i18n';
+  import { onMount } from 'svelte';
 
-  const { data, handle = '', rkey = '', repo = '' } = $props();
+  let { data, handle = '', rkey = '', repo = '' } = $props();
   const normalizedHandle = $derived(handle ? handle.replace(/^@/, '') : '');
   const t = (key, vars = {}) => translate($locale, key, vars);
+  let returnTo = $state('');
+
+  onMount(() => {
+    returnTo = window.history.state?.returnTo || '';
+  });
 
   function close() {
     const userHandle = normalizedHandle || $session?.handle || '';
-    const back = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/';
-    goto(resolve(back));
+    const fallback = userHandle ? `/@${encodeURIComponent(userHandle)}` : '/';
+    const target = returnTo || fallback;
+    goto(resolve(target), { replaceState: true, noScroll: true, keepFocus: true }).catch(() => {
+      window.history.back();
+    });
   }
 </script>
 

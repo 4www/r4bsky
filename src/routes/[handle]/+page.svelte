@@ -100,7 +100,7 @@
     on:remove={(e) => { items = items.filter((t) => t.uri !== e.detail.uri); }}
   />
   {#if cursor && items.length >= 30}
-    <div class="mt-6 text-center">
+    <div class="mt-4 text-center">
       <Button variant="outline" onclick={more}>
         {t('profile.loadMore')}
       </Button>

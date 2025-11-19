@@ -85,16 +85,35 @@ export function toggleShuffle(): void {
   if (!s.playlist?.length) return
 
   if (s.isShuffled) {
-    // Restore original order
-    const original = s.originalPlaylist || s.playlist
-    player.set({ ...s, playlist: original, originalPlaylist: undefined, isShuffled: false, index: 0 })
+    const original = s.originalPlaylist ? [...s.originalPlaylist] : [...s.playlist]
+    const current = s.playlist[s.index]
+    const newIndex = original.findIndex((track) => track === current)
+    player.set({
+      ...s,
+      playlist: original,
+      originalPlaylist: undefined,
+      isShuffled: false,
+      index: newIndex >= 0 ? newIndex : Math.min(s.index, original.length - 1),
+      playing: s.playing
+    })
   } else {
-    // Shuffle
-    const shuffled = [...s.playlist]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    const original = [...s.playlist]
+    const current = original[s.index]
+    const remaining = original.filter((_, idx) => idx !== s.index)
+    for (let i = remaining.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[remaining[i], remaining[j]] = [remaining[j], remaining[i]]
     }
-    player.set({ ...s, playlist: shuffled, originalPlaylist: s.playlist, isShuffled: true, index: 0 })
+    const before = remaining.slice(0, s.index)
+    const after = remaining.slice(s.index)
+    const shuffled = [...before, current, ...after]
+    player.set({
+      ...s,
+      playlist: shuffled,
+      originalPlaylist: original,
+      isShuffled: true,
+      index: s.index,
+      playing: s.playing
+    })
   }
 }

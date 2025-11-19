@@ -9,9 +9,13 @@
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { getProfile } from '$lib/services/r4-service';
-  const props = $props();
-  const extraClass = $derived(props.class || '');
-  const visible = $derived(props.visible !== undefined ? props.visible : true);
+  let {
+    class: classProp = '',
+    visible: visibleProp = true,
+    mobilePanelOpen = $bindable(false)
+  } = $props();
+  const extraClass = $derived(classProp);
+  const visible = $derived(visibleProp);
 
   let state = $state({ playlist: [], index: -1, playing: false });
   let current = $state(null);
@@ -24,7 +28,6 @@
   let scApiReady = $state(null);
   let vimeoApiReady = $state(null);
   const isBrowser = typeof window !== 'undefined';
-  let mobilePanelOpen = $state(false);
   let ytPlayerReady = $state(false);
   let scWidgetReady = $state(false);
   let vimeoPlayerReady = $state(false);
@@ -196,6 +199,23 @@
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  let isDesktop = $state(false);
+  const playerHeight = $derived(isDesktop ? 'calc(100vh - 2rem)' : 'calc(100vh - 1rem)');
+
+  onMount(() => {
+    if (!isBrowser) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => {
+      isDesktop = media.matches;
+      if (media.matches) {
+        mobilePanelOpen = false;
+      }
+    };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  });
+
   onDestroy(() => {
     cleanupProviders();
   });
@@ -302,6 +322,11 @@
   let profileData = $state(null);
   let lastFetchedHandle = $state('');
 
+  const currentProfileName = $derived(
+    profileData?.displayName || current?.authorDisplayName || current?.authorHandle || currentHandle || t('trackItem.untitled')
+  );
+  const currentTrackTitle = $derived(current?.title || t('trackItem.untitled'));
+
   $effect(() => {
     if (currentHandle && currentHandle !== lastFetchedHandle) {
       lastFetchedHandle = currentHandle;
@@ -317,170 +342,126 @@
 </script>
 
 {#if current}
-  <div class={cn("pointer-events-none", extraClass)}>
-    <div
-      class={cn(
-        "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden",
-        mobilePanelOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-      )}
-      onclick={() => { mobilePanelOpen = false; }}
-    ></div>
-
-    <aside
-      class={cn(
-        "pointer-events-auto flex flex-col gap-4 border-2 border-primary/20 bg-card/98 shadow-2xl backdrop-blur-xl rounded-3xl p-5 transition-all duration-300",
-        "fixed inset-y-4 z-40 w-[24rem] hidden lg:flex animate-in",
-        visible ? "right-4" : "-right-96"
-      )}
+  <aside
+    class={cn(
+      extraClass,
+      "w-full sticky top-0 z-30 lg:top-4",
+      isDesktop && !visible ? "opacity-0 pointer-events-none" : "opacity-100"
+    )}
+    style={`height:${playerHeight};max-height:${playerHeight};`}
+  >
+    <section
+      class="flex h-full min-h-0 flex-col gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
     >
-      <!-- Current track info -->
-      <div class="flex items-center gap-3 min-w-0">
-        <Avatar
-          src={profileData?.avatar || ''}
-          alt={profileData?.displayName || currentHandle || 'Profile'}
-          size="md"
-          class="shadow-lg shrink-0"
-        />
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-bold truncate">{current.title || t('trackItem.untitled')}</p>
-          {#if currentHandle}
-            <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-primary transition-colors truncate block">
-              @{currentHandle}
-            </Link>
-          {/if}
+      <div class="flex flex-col gap-4 flex-1 min-h-0">
+        <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
+          <div class="flex items-center gap-3 min-w-0">
+            <Avatar
+              src={profileData?.avatar || ''}
+              alt={currentProfileName}
+              size={isDesktop ? "md" : "sm"}
+              class="shadow-lg shrink-0"
+            />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold truncate">{currentTrackTitle}</p>
+              {#if currentHandle}
+                <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-primary transition-colors truncate block">
+                  @{currentHandle}
+                </Link>
+              {:else if state.context?.handle}
+                <span class="text-xs text-muted-foreground truncate block">@{state.context.handle}</span>
+              {/if}
+            </div>
+          </div>
+        </div>
+
+        <div class={cn("grid gap-3 flex-1 min-h-0", isDesktop ? "grid-cols-1" : "grid-cols-[1.2fr_1fr]")}>
+          <div class="flex flex-col min-h-0">
+            {#if parseTrackUrl(current.url)?.provider === 'file'}
+              <div class="flex-1 min-h-[220px] rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
+                <audio
+                  bind:this={playerAudio}
+                  onended={next}
+                  controls
+                  class="w-full h-full"
+                ></audio>
+              </div>
+            {:else if iframeSrc}
+              <div class="flex-1 min-h-[220px] rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
+                <iframe
+                  bind:this={playerIframe}
+                  src={iframeSrc}
+                  title="Embedded player"
+                  allow="autoplay; encrypted-media"
+                  allowfullscreen
+                  onload={onIframeLoad}
+                  class="w-full h-full"
+                ></iframe>
+              </div>
+            {/if}
+          </div>
+
+          <div class="flex flex-col min-h-0 space-y-1.5 h-full">
+            <div class="px-0.5">
+              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary flex items-center gap-1.5">
+                <ListMusic class="h-3.5 w-3.5" />
+                {t('player.queue')}
+              </p>
+              <p class="text-[11px] text-muted-foreground mt-0.5">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-primary/10 divide-y bg-gradient-to-b from-muted/20 to-transparent">
+              {#each state.playlist as track, idx}
+                <button
+                  type="button"
+                  class={cn(
+                    "w-full text-left px-2.5 py-1.5 transition-all duration-150 flex flex-col gap-1 relative text-xs",
+                    idx === state.index
+                      ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-3 border-primary shadow-sm"
+                      : "hover:bg-muted/50 hover:pl-3"
+                  )}
+                  onclick={() => playIndex(idx)}
+                >
+                  <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span class="font-semibold text-foreground">{idx + 1}</span>
+                    {#if track?.authorHandle || track?.author_handle}
+                      <span>@{track.authorHandle || track.author_handle}</span>
+                    {/if}
+                  </div>
+                  <p class="truncate text-xs font-medium text-foreground">{track.title || t('trackItem.untitled')}</p>
+                  {#if track.description}
+                    <p class="text-[11px] text-muted-foreground truncate">{track.description}</p>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Player iframe/audio -->
-      {#if parseTrackUrl(current.url)?.provider === 'file'}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
-          <audio bind:this={playerAudio} onended={next} controls class="w-full"></audio>
-        </div>
-      {:else if iframeSrc}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg">
-          <iframe
-            bind:this={playerIframe}
-            src={iframeSrc}
-            title="Embedded player"
-            allow="autoplay; encrypted-media"
-            allowfullscreen
-            onload={onIframeLoad}
-            class="w-full h-full"
-          ></iframe>
-        </div>
-      {/if}
-
-      <!-- Player controls -->
-      <div class="flex items-center justify-center gap-2">
+      <div class={cn("flex items-center justify-center gap-2 pt-1", isDesktop ? '' : 'shrink-0')}>
         <Button
           variant={state.isShuffled ? "default" : "outline"}
           size="icon"
-          class="h-9 w-9"
+          class="h-8 w-8"
           onclick={toggleShuffle}
           aria-label="Shuffle"
         >
-          <Shuffle class="h-4 w-4" />
+          <Shuffle class="h-3.5 w-3.5" />
         </Button>
-        <Button variant="outline" size="icon" class="h-9 w-9" onclick={prev} aria-label={t('player.previous')}>
-          <SkipBack class="h-4 w-4" />
+        <Button variant="outline" size="icon" class="h-8 w-8" onclick={prev} aria-label={t('player.previous')}>
+          <SkipBack class="h-3.5 w-3.5" />
         </Button>
-        <Button size="icon" class="h-11 w-11 shadow-lg bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" onclick={toggle} aria-label={t('player.toggle')}>
+        <Button size="icon" class="h-10 w-10 shadow border border-primary/40 bg-primary text-primary-foreground hover:bg-primary/90" onclick={toggle} aria-label={t('player.toggle')}>
           {#if state.playing}
-            <Pause class="h-5 w-5" />
+            <Pause class="h-4 w-4" />
           {:else}
-            <Play class="h-5 w-5" />
+            <Play class="h-4 w-4" />
           {/if}
         </Button>
-        <Button variant="outline" size="icon" class="h-9 w-9" onclick={next} aria-label={t('player.next')}>
-          <SkipForward class="h-4 w-4" />
+        <Button variant="outline" size="icon" class="h-8 w-8" onclick={next} aria-label={t('player.next')}>
+          <SkipForward class="h-3.5 w-3.5" />
         </Button>
       </div>
-
-      <!-- Queue -->
-      <div class="space-y-3 flex-1 flex flex-col min-h-0">
-        <div class="px-1">
-          <p class="text-xs uppercase tracking-wider font-semibold text-primary flex items-center gap-2">
-            <ListMusic class="h-4 w-4" />
-            {t('player.queue')}
-          </p>
-          <p class="text-sm text-muted-foreground mt-1">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
-        </div>
-        <div class="flex-1 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
-          {#each state.playlist as track, idx}
-            <button
-              type="button"
-              class={cn(
-                "w-full text-left px-4 py-3 transition-all duration-200 flex flex-col gap-1.5 relative",
-                idx === state.index
-                  ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-4 border-primary shadow-sm"
-                  : "hover:bg-muted/60 hover:pl-5"
-              )}
-              onclick={() => playIndex(idx)}
-            >
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span class="font-semibold text-foreground">{idx + 1}</span>
-                {#if track?.authorHandle || track?.author_handle}
-                  <span>@{track.authorHandle || track.author_handle}</span>
-                {/if}
-              </div>
-              <p class="truncate text-sm">{track.title || t('trackItem.untitled')}</p>
-              {#if track.description}
-                <p class="text-xs text-muted-foreground truncate">{track.description}</p>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      </div>
-    </aside>
-
-    <div
-      class={cn(
-        "fixed inset-y-0 right-0 z-50 w-full max-w-md bg-gradient-to-b from-background to-muted/20 backdrop-blur-xl shadow-2xl border-l-2 border-primary/20 p-4 flex flex-col gap-4 transition-transform lg:hidden pointer-events-auto overflow-y-auto",
-        mobilePanelOpen ? "translate-x-0" : "translate-x-full"
-      )}
-    >
-      <div class="flex items-center justify-between shrink-0">
-        <div>
-          <p class="text-xs text-primary uppercase font-semibold tracking-wider">{t('player.queue')}</p>
-          <p class="text-sm text-muted-foreground">{queueCount} {queueCount === 1 ? 'track' : 'tracks'}</p>
-        </div>
-        <Button variant="ghost" size="icon" onclick={() => { mobilePanelOpen = false; }}>
-          <X class="h-5 w-5" />
-        </Button>
-      </div>
-      {#if parseTrackUrl(current.url)?.provider === 'file'}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0 flex items-center justify-center">
-          <p class="text-sm text-muted-foreground px-4 text-center">Audio Player<br/>(controls at bottom)</p>
-        </div>
-      {:else if iframeSrc}
-        <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-purple-500/10 aspect-video border-2 border-primary/20 shadow-lg shrink-0 bg-muted/20">
-        </div>
-      {/if}
-      <div class="flex-1 min-h-0 overflow-y-auto rounded-2xl border-2 border-primary/10 divide-y bg-gradient-to-b from-muted/30 to-transparent">
-        {#each state.playlist as track, idx}
-          <button
-            type="button"
-            class={cn(
-              "w-full text-left px-4 py-3 transition-all duration-200 flex flex-col gap-1.5 relative",
-              idx === state.index
-                ? "bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary border-l-4 border-primary shadow-sm"
-                : "hover:bg-muted/60 hover:pl-5"
-            )}
-            onclick={() => playIndex(idx)}
-          >
-            <div class="flex items-center justify-between text-xs text-muted-foreground">
-              <span class="font-semibold text-foreground">{idx + 1}</span>
-              {#if track?.authorHandle || track?.author_handle}
-                <span>@{track.authorHandle || track.author_handle}</span>
-              {/if}
-            </div>
-            <p class="truncate text-sm">{track.title || t('trackItem.untitled')}</p>
-            {#if track.description}
-              <p class="text-xs text-muted-foreground truncate">{track.description}</p>
-            {/if}
-          </button>
-        {/each}
-      </div>
-    </div>
-  </div>
+    </section>
+  </aside>
 {/if}

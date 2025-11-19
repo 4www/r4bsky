@@ -74,7 +74,7 @@ const en = {
 	search: {
 		title: "Search people",
 		description: "Find people on the AT Protocol and discover their music tracks",
-		placeholder: "Search handles... (e.g., hwww.org)",
+		placeholder: "Search by atproto handles",
 		submit: "Search",
 		submitting: "Searching...",
 		errorTitle: "Search failed",
@@ -122,7 +122,7 @@ const en = {
 	},
 	profileNav: {
 		tracks: "Tracks",
-		following: "Following",
+		following: "Favorites",
 	},
 	trackDetail: {
 		loadingTitle: "Loading track",
@@ -148,13 +148,13 @@ const en = {
 		error: "Unable to update follow: {message}",
 	},
 	following: {
-		title: "Following {handle}",
-		description: "Radio4000 profiles followed by this user",
-		loadingTitle: "Loading following",
-		loadingDescription: "Fetching the profiles this user follows.",
-		errorTitle: "Unable to load following",
-		emptyTitle: "Not following anyone yet",
-		emptyDescription: "This user hasn't followed any Radio4000 profiles yet.",
+		title: "Favorites of {handle}",
+		description: "Radio4000 profiles favorited by this user",
+		loadingTitle: "Loading favorites",
+		loadingDescription: "Fetching the profiles this user marked as favorites.",
+		errorTitle: "Unable to load favorites",
+		emptyTitle: "No favorites yet",
+		emptyDescription: "This user hasn't added any Radio4000 favorites yet.",
 		loadMore: "Load more",
 	},
 };

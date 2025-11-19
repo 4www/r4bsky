@@ -28,6 +28,32 @@
     }
   }
 
+  function dedupeFollows(list: any[] = []) {
+    const seen = new Set<string>();
+    const result = [];
+    for (const follow of list || []) {
+      const key = follow?.subject;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      result.push(follow);
+    }
+    return result;
+  }
+
+  function mergeFollows(existing: any[], incoming: any[]) {
+    const seen = new Set(existing.map((f) => f?.subject).filter(Boolean));
+    const merged = [...existing];
+    const added = [];
+    for (const follow of incoming || []) {
+      const key = follow?.subject;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(follow);
+      added.push(follow);
+    }
+    return { merged, added };
+  }
+
   async function loadFollowing(targetDid: string) {
     const requestId = ++loadRequestId;
     loading = true;
@@ -41,7 +67,7 @@
         const followsData = await listR4FollowsByDid(targetDid);
         if (requestId !== loadRequestId) return;
 
-        follows = followsData.follows;
+        follows = dedupeFollows(followsData.follows);
         cursor = followsData.cursor;
 
         // Fetch profiles for all followed DIDs
@@ -73,13 +99,14 @@
 
   async function more() {
     if (!cursor || !did) return;
-    const { follows: newFollows, cursor: c } = await listR4FollowsByDid(did, { cursor });
-    follows = [...follows, ...newFollows];
+    const { follows: newFollows = [], cursor: c } = await listR4FollowsByDid(did, { cursor });
     cursor = c;
+    const { merged, added } = mergeFollows(follows, newFollows);
+    follows = merged;
 
     // Fetch profiles for new follows
-    if (newFollows.length > 0) {
-      const dids = newFollows.map(f => f.subject).filter(Boolean);
+    if (added.length > 0) {
+      const dids = added.map(f => f.subject).filter(Boolean);
       const newProfiles = await getProfiles(dids);
       profiles = new Map([...profiles, ...newProfiles]);
     }

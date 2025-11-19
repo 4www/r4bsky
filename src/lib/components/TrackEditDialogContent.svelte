@@ -3,7 +3,7 @@
   import { resolveHandle, getTrackByUri } from '$lib/services/r4-service';
   import TrackEditForm from '$lib/components/TrackEditForm.svelte';
 
-  const {
+  let {
     handle = '',
     repo = '',
     rkey = '',
