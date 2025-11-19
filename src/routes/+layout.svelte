@@ -27,11 +27,9 @@
 
   async function initOAuth() {
     try {
-      const metadataFile = window.location.hostname === '4000.radio'
-        ? 'client-metadata.production.json'
-        : 'client-metadata.json';
+      const metadataFile = 'client-metadata.json';
       const clientId = window.location.protocol === 'https:'
-        ? new URL(metadataFile, window.location.origin + '/').href
+        ? new URL(metadataFile, window.location.origin + base + '/').href
         : buildLoopbackClientId(window.location);
 
       await bskyOAuth.init(clientId);

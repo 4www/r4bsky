@@ -1,8 +1,6 @@
-// for cloudflare workers deploy
+// Cloudflare Workers script for serving the SPA
 export default {
 	async fetch(request, env) {
-		const url = new URL(request.url);
-
 		// Try to get the asset from the ASSETS binding
 		let response = await env.ASSETS.fetch(request);
 

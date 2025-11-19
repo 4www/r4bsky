@@ -1,0 +1,18 @@
+{
+  "client_id": "https://r4atproto.i4k.workers.dev/client-metadata.json",
+  "client_name": "R4Atproto - Radio4000 for Atprotocol",
+  "client_uri": "https://r4atproto.i4k.workers.dev",
+  "logo_uri": "https://r4atproto.i4k.workers.dev/logo.png",
+  "tos_uri": "https://r4atproto.i4k.workers.dev/tos",
+  "policy_uri": "https://r4atproto.i4k.workers.dev/privacy",
+  "redirect_uris": [
+    "https://r4atproto.i4k.workers.dev",
+    "https://r4atproto.i4k.workers.dev/"
+  ],
+  "scope": "atproto transition:generic",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "application_type": "web",
+  "token_endpoint_auth_method": "none",
+  "dpop_bound_access_tokens": true
+}

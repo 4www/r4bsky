@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:cloudflare": "cp -f static/client-metadata.cloudflare.json static/client-metadata.json && R4_BASE='' npm run build",
+    "build:github": "cp -f static/client-metadata.production.json static/client-metadata.json && npm run build",
     "preview": "vite preview",
-    "deploy": "npm run build && npx wrangler deploy",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"
