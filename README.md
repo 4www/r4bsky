@@ -1,80 +1,109 @@
-# Radio4000 for AT Protocol (Svelte 5)
+# Radio4000 for AT Protocol
 
-Radio4000 on AT Protocol. Save your favorite music links (YouTube, SoundCloud, Vimeo, files) as custom records and play them in the app. (Shared timeline will return later.) The production instance lives at [https://4000.radio](https://4000.radio).
+Radio4000 for AT Protocol is a SvelteKit 2 + Svelte 5 application that lets you save your favorite music links as custom AT Protocol records and play them inside a modern web player. The app focuses on personal collections (the shared timeline will return later) and ships as a static bundle that can live on GitHub Pages, Cloudflare, or any static host.
 
-Key features
-- AT Protocol OAuth login (no passwords) with robust fallback.
-- Custom atproto collection `com.radio4000.track` for tracks.
-- Player for direct files; embedded players for YouTube/Vimeo/SoundCloud; auto-next.
-- Routes inspired by Radio4000: `/` home hub, `/#/@handle` author/my tracks, search, track view/edit.
-- Permissions re-consent flow (when server supports fine-grained scopes).
+## Features
+- **AT Protocol OAuth** – secure sign-in powered by `@atproto/oauth-client-browser`, no passwords required. The session layer automatically handles loopback vs HTTPS clients.
+- **Track management** – create, browse, edit, and delete `com.radio4000.track` records with metadata pulled from oEmbed providers and optional Discogs lookups.
+- **Built-in player** – queue, shuffle, and control tracks from YouTube, Vimeo, SoundCloud, or direct file links via `src/lib/player/store.ts` and `src/lib/components/Player.svelte`.
+- **Discogs helpers** – paste a Discogs release/master URL to fetch suggested hashtags or open a pre-filled Discogs search when you already know the artist/title.
+- **Favorites and theming** – follow radios via `com.radio4000.favorite`, manage palette preferences stored in `com.radio4000.profile`, and load the theme automatically on login.
+- **I18n + UI kit** – English and French translations live in `src/lib/i18n`, and interface components are built on a small shadcn-inspired kit under `src/lib/components/ui`.
 
-Quick start
+## Tech stack
+- [SvelteKit 2](https://kit.svelte.dev/) with Svelte 5 runes and Vite 7
+- Static adapter with pre-rendered public routes (`npm run build` writes to `dist/`)
+- TypeScript everywhere (`src` is ESM, `type: module` package)
+- Tailwind & shadcn-svelte primitives for styling
+- `@atproto/api` + `@atproto/oauth-client-browser` for Bluesky API access
+
+## Getting started
+### Requirements
+- Node.js 20+ (LTS) and npm 10+
+
+### Install & run
 ```bash
 npm install
 npm run dev
 # open http://127.0.0.1:5173
 ```
 
-Build & preview
-```bash
-npm run build
-npm run preview
+The dev server automatically falls back to the loopback OAuth client, so local HTTP works without extra configuration. When you deploy or expose the app via HTTPS you must serve a `client-metadata.json` file (see below).
+
+## Project scripts
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server in SPA mode. |
+| `npm run build` | Build the static site to `dist/` using the default metadata in `static/client-metadata.json`. |
+| `npm run build:github` | Copy `static/client-metadata.production.json` into place (GitHub Pages metadata) and build. |
+| `npm run build:cloudflare` | Copy `static/client-metadata.cloudflare.json`, clear `R4_BASE`, and build for Cloudflare. |
+| `npm run preview` | Serve the production build locally. |
+| `npm test` | Run the Vitest suite (unit/component tests). |
+
+Set `R4_BASE` when you need to override the base path (the default is `/r4atproto` for production builds so GitHub Pages works out of the box).
+
+## OAuth & client metadata
+`src/routes/+layout.svelte` loads `client-metadata.json` from the published site root. Update the copy under `static/client-metadata.json` (and any environment-specific variants in `static/`) before building.
+
+Minimum metadata requirements:
+
+```json
+{
+  "client_id": "https://your.domain/client-metadata.json",
+  "application_type": "web",
+  "redirect_uris": [
+    "https://your.domain/",
+    "https://your.domain"
+  ],
+  "authorization_details_types": ["atproto_repo"],
+  "scope": "atproto"
+}
 ```
 
-Testing
-```bash
-npm test
-```
+Tips:
+- Include both versions of your redirect URI if you deploy under a subpath (with and without the trailing slash).
+- When the AS does not understand `authorization_details`, remove `authorization_details_types` and the app will fall back to coarse scopes.
+- For remote dev (ngrok, Tailscale, etc.) copy the generated HTTPS URL into `static/client-metadata.json`, rebuild, and serve the site from that URL so the OAuth server can fetch it.
+- More background lives in `OAUTH_SETUP.md`, `README_ATPROTO.md`, and `AUTH_COMPARISON.md`.
 
-Routing
-- `/` — Home hub (timeline temporarily offline; quick actions)
-- `/#/add` — Add a track
-- `/#/@alice.bsky.social` — Author/My tracks
-- `/#/search` — Search actors
-- `/#/t/:repo/:rkey` — Track view
-- `/#/@:handle/:rkey/edit` — Track edit (modal route)
-- `/#/settings` — Manage permissions (re-consent)
+## Routes & flows
+| Route | Purpose |
+| --- | --- |
+| `/` | Hub/sign-in and list of favorites once authenticated. |
+| `/add` and `/@me/add` | Track creation form with Discogs helpers. |
+| `/@<handle>` | View a radio, play tracks, and open Discogs data if attached. |
+| `/@<handle>/<rkey>` | Track detail, including Discogs resource embeds. |
+| `/search` | Look up users/handles. |
+| `/settings` | Review permissions, theme prefs, and session state. |
 
-Architecture (modular)
-- Svelte 5 components (no styles in templates):
-  - Router: `src/svelte/Router.svelte`, routes: `src/svelte/routes.js`, matcher: `src/svelte/routing/match.js`
-  - Player: `src/svelte/components/Player.svelte`, store: `src/svelte/player/store.js`
-- Pages: `src/svelte/pages/…` (Author, Search, TrackView/Edit, Settings)
-- Services:
-  - OAuth/session: `src/libs/bsky-oauth.js`
-  - R4 data and social: `src/libs/r4-service.js`
-  - URL parsing/embeds: `src/libs/url-patterns.js`
-  - oEmbed/Discogs helpers: `src/libs/oembed.js`, `src/libs/discogs.js`
+## Project layout
+- `src/lib/components` – shared UI (player, track cards, state cards, Discogs widgets, etc.).
+- `src/lib/services` – AT Protocol helpers (`bsky-oauth`, `r4-service`, `oembed`, `discogs`, URL parsing).
+- `src/lib/player` – lightweight player store with shuffle/next helpers.
+- `src/lib/state` – session and theme stores hydrated from OAuth/profile records.
+- `src/routes` – SvelteKit pages using runes (`/`, `/add`, `/search`, `/settings`, `/@handle`, nested track routes).
+- `static/` – `client-metadata.json` variants used during builds.
 
-OAuth setup (prod vs dev)
-- Dev (HTTP loopback): handled automatically using loopback client id. Note: AT Protocol OAuth requires HTTPS, so HTTP localhost may not work for actual login.
-- Dev (HTTPS with Tailscale Funnel): Expose your local dev server publicly via Tailscale funnel:
-  1. Start your dev server: `npm run dev`
-  2. Run `tailscale funnel --bg 443:https+insecure://localhost:5174` (adjust port if needed)
-  3. Update `public/client-metadata.json` with your Tailscale domain (e.g., `https://yourname.tailnet.ts.net`)
-  4. Access your app via the Tailscale funnel URL and OAuth will work
-- Prod (HTTPS): expose `public/client-metadata.json` at a stable URL.
-  - If deploying under a subpath (e.g., GitHub Pages), include both with and without trailing slash in `redirect_uris`.
-  - The app passes a canonical `redirect_uri` (with trailing slash) for both authorization and callback handling to avoid mismatches.
-  - Some servers don't support `authorization_details` yet; the app falls back to default atproto scope.
- - Optional (force HTTPS client metadata in dev): set `VITE_CLIENT_ID` in your env to the full URL of a hosted `client-metadata.json` to request fine-grained scopes even when running locally.
+## Data model & services
+- `com.radio4000.track` – the library record for each music link. CRUD lives in `src/lib/services/r4-service.ts`.
+- `com.radio4000.favorite` – map of DID → favorite radios, surfaced on the home page.
+- `com.radio4000.profile` – theme palette + mode preferences.
 
-Custom record (com.radio4000.track)
-- Fields: `url` (string), `title` (string), optional `description`, optional `discogsUrl`, `createdAt` (ISO string).
-- Create/List/Update/Delete implemented in `src/libs/r4-service.js` via atproto repo APIs.
+`src/lib/services/r4-service.ts` handles DID resolution, DPoP retries, Discogs lookups, favorites, and theme persistence. The Discogs helper lives in `src/lib/services/discogs.ts` and is used by `TrackForm` and `DiscogsResource`.
 
-Permissions & scopes
-- Custom records only: `com.radio4000.track` (create, update, delete).
-- Social (optional): `app.bsky.graph.follow` (create, delete) for follow/unfollow.
-- No feed posting is attempted or requested.
-- If reads or writes fail due to missing scope, you’ll see a clear message and an “Open Settings” button.
+## Testing
+Run `npm test` to execute the Vitest suite. The tests currently cover utility/services modules; feel free to add component tests under `src/lib/components` using the happy-dom environment defined in `vitest.config.js`.
 
-Troubleshooting
-- Login redirect mismatch on GitHub Pages (subpath deploys): ensure your `public/client-metadata.json` includes both the base path with and without trailing slash.
-- "Invalid hostname" error during OAuth: if using Tailscale, make sure you're using `tailscale funnel` (public) not `tailscale serve` (private). The OAuth server needs public access to fetch your client metadata.
-- OAuth callback not completing login: check browser console for errors. Ensure your `client-metadata.json` redirect_uris match exactly (with and without trailing slash).
-- DPoP nonce 401 seen in devtools: we avoid eager profile fetch on hydration; it's harmless if seen intermittently.
+## Troubleshooting
+- **OAuth redirect mismatch** – confirm that the published `client-metadata.json` includes the exact URL you are serving (add both trailing and non-trailing slash variants for GitHub Pages or other subpath hosts).
+- **DPoP nonce errors** – retries are built in, but if you still see failures, reload after a few seconds; PDSs occasionally rotate nonces during local dev.
+- **Missing scopes** – the app surfaces a "Missing permission" message when the AS rejected your authorization_details request. Open Settings, re-consent, or temporarily remove `authorization_details_types` from the metadata file.
 
-License
+## Additional documentation
+- `README_ATPROTO.md` – quick overview tailored to AT Protocol builders.
+- `OAUTH_SETUP.md` – detailed instructions for hosting `client-metadata.json` (loopback, ngrok, GitHub Pages, Cloudflare, etc.).
+- `AUTH_COMPARISON.md` – notes comparing OAuth client implementations.
+
+## License
 MIT
+
