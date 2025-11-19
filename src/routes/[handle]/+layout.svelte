@@ -159,6 +159,7 @@
       {handle}
       repo={did}
       rkey={editRkey}
+      onsaved={closeEditDialog}
     />
   </Dialog>
 {/if}

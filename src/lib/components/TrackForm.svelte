@@ -4,6 +4,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
+  import { Loader2 } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
   const props = $props();
@@ -17,6 +18,7 @@
   let description = $state('');
   let discogs_url = $state('');
   let status = $state('');
+  let submitting = $state(false);
   let prefilled = $state(false);
 
   // Populate from initial when it arrives (edit case)
@@ -45,11 +47,14 @@
   async function submit(e) {
     e?.preventDefault?.();
     status = '';
+    submitting = true;
     try {
       const res = await onSubmit?.({ url, title, description, discogs_url });
       return res;
     } catch (err) {
       status = t('forms.errorMessage', { message: err?.message || String(err) });
+    } finally {
+      submitting = false;
     }
   }
 </script>
@@ -107,7 +112,12 @@
     </div>
   {/if}
 
-  <Button type="submit" class="w-full">
-    {submitText}
+  <Button type="submit" class="w-full" disabled={submitting}>
+    {#if submitting}
+      <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+      {t('settings.appearanceSaving')}
+    {:else}
+      {submitText}
+    {/if}
   </Button>
 </form>

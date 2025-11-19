@@ -8,6 +8,7 @@
     repo = '',
     rkey = '',
     track = null,
+    onsaved = () => {},
   } = $props();
 
   const sanitizedHandle = $derived(handle ? handle.replace(/^@/, '') : '');
@@ -65,4 +66,4 @@
   });
 </script>
 
-<TrackEditForm {initial} {uri} />
+<TrackEditForm {initial} {uri} {onsaved} />

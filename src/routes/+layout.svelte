@@ -22,7 +22,7 @@
   let ready = $state(false);
   let hasDesktopPlayer = $state(false);
   let playerVisible = $state(true);
-  let mobilePanelOpen = $state(false);
+  let mobilePanelOpen = $state(true);
   let playerState = $state({ playing: false, playlist: [] });
   // Legacy modal placeholders to avoid runtime errors from stale navigation state
   let viewModal = $state(null);
