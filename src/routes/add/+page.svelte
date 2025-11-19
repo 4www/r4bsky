@@ -1,7 +1,5 @@
 <script lang="ts">
   import { createTrack } from '$lib/services/r4-service';
-  import { fetchOEmbed } from '$lib/services/oembed';
-  import { parseUrl as parseDiscogsUrl, fetchDiscogs, extractSuggestions } from '$lib/services/discogs';
   import TrackForm from '$lib/components/TrackForm.svelte';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { parseAtUri } from '$lib/services/track-uri';
@@ -23,18 +21,7 @@
   }
 
   async function onCreate({ url, title, description, discogs_url }) {
-    let fullDescription = description;
-    if (discogs_url) {
-      try {
-        const info = parseDiscogsUrl(discogs_url);
-        if (info?.id && info?.type) {
-          const data = await fetchDiscogs(info);
-          const tags = extractSuggestions(data);
-          if (tags?.length) fullDescription = [description, tags.map((t) => `#${t}`).join(' ')].join(' ').trim();
-        }
-      } catch (_) {}
-    }
-    const res = await createTrack({ url, title, description: fullDescription, discogs_url });
+    const res = await createTrack({ url, title, description, discogs_url });
     savedUri = res?.data?.uri || res?.uri || '';
     return res;
   }

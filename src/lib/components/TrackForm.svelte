@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fetchOEmbed } from '$lib/services/oembed';
+  import { parseUrl as parseDiscogsUrl, fetchDiscogs, extractSuggestions } from '$lib/services/discogs';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -20,6 +21,17 @@
   let status = $state('');
   let submitting = $state(false);
   let prefilled = $state(false);
+  let discogsSuggestions = $state<string[]>([]);
+  let discogsSuggestionsStatus = $state('');
+  let discogsSuggestionsIsError = $state(false);
+  let discogsLoading = $state(false);
+  let discogsLookupId = 0;
+
+  const discogsSearchUrl = $derived.by(() => {
+    if (!url || !title) return '';
+    const params = new URLSearchParams({ q: title, type: 'all' });
+    return `https://www.discogs.com/search/?${params.toString()}`;
+  });
 
   // Populate from initial when it arrives (edit case)
   $effect(() => {
@@ -43,6 +55,97 @@
       })();
     }
   });
+
+  function isDiscogsLink(link: string): boolean {
+    try {
+      const parsed = new URL(link);
+      return parsed.hostname.includes('discogs.com');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  $effect(() => {
+    const link = discogs_url?.trim();
+    discogsSuggestions = [];
+    discogsSuggestionsStatus = '';
+    discogsSuggestionsIsError = false;
+    discogsLoading = false;
+    if (!link || !isDiscogsLink(link)) {
+      return;
+    }
+
+    const info = (() => {
+      try {
+        return parseDiscogsUrl(link);
+      } catch (_) {
+        return undefined;
+      }
+    })();
+
+    if (!info) {
+      discogsSuggestionsStatus = t('forms.discogsInvalid');
+      discogsSuggestionsIsError = true;
+      return;
+    }
+
+    const requestId = ++discogsLookupId;
+    discogsLoading = true;
+
+    (async () => {
+      try {
+        const data = await fetchDiscogs(info);
+        if (requestId !== discogsLookupId) return;
+        const tags = extractSuggestions(data) || [];
+        discogsSuggestions = tags;
+        if (!tags.length) {
+          discogsSuggestionsStatus = t('forms.discogsSuggestionsEmpty');
+          discogsSuggestionsIsError = false;
+        }
+      } catch (err) {
+        if (requestId !== discogsLookupId) return;
+        discogsSuggestionsStatus = err?.message || t('forms.discogsGenericError');
+        discogsSuggestionsIsError = true;
+      } finally {
+        if (requestId === discogsLookupId) discogsLoading = false;
+      }
+    })();
+  });
+
+  function hasDiscogsTag(tag: string): boolean {
+    const slug = tag?.trim();
+    if (!slug) return false;
+    const hashtag = `#${slug}`;
+    const tokens = description?.split(/\s+/).filter(Boolean) ?? [];
+    return tokens.includes(hashtag);
+  }
+
+  function appendDiscogsTag(tag: string) {
+    if (!tag || hasDiscogsTag(tag)) return;
+    const slug = tag.trim();
+    if (!slug) return;
+    const hashtag = `#${slug}`;
+    const base = description?.trim();
+    description = base ? `${base} ${hashtag}`.trim() : hashtag;
+  }
+
+  function removeDiscogsTag(tag: string) {
+    if (!hasDiscogsTag(tag)) return;
+    const slug = tag.trim();
+    if (!slug) return;
+    const hashtag = `#${slug}`;
+    const tokens = description?.split(/\s+/).filter(Boolean) ?? [];
+    description = tokens.filter((token) => token !== hashtag).join(' ');
+  }
+
+  function toggleDiscogsTag(tag: string) {
+    if (!tag) return;
+    if (hasDiscogsTag(tag)) {
+      removeDiscogsTag(tag);
+    } else {
+      appendDiscogsTag(tag);
+    }
+  }
 
   async function submit(e) {
     e?.preventDefault?.();
@@ -104,6 +207,43 @@
       bind:value={discogs_url}
       placeholder={t('forms.discogsPlaceholder')}
     />
+    {#if discogsSearchUrl}
+      <p class="text-xs text-muted-foreground">
+        {t('forms.discogsSearchHelp')}
+        <a
+          href={discogsSearchUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="underline-offset-2 hover:underline"
+        >
+          {t('forms.discogsSearchLink')}
+        </a>
+      </p>
+    {/if}
+    {#if discogsLoading}
+      <p class="text-xs text-muted-foreground">{t('forms.discogsLoading')}</p>
+    {:else if discogsSuggestions.length}
+      <div class="space-y-2 rounded-md border border-border/60 p-3">
+        <p class="text-xs font-medium text-foreground">
+          {t('forms.discogsSuggestionsTitle')}
+        </p>
+        <p class="text-xs text-muted-foreground">{t('forms.discogsSuggestionsHint')}</p>
+        <div class="flex flex-wrap gap-2">
+          {#each discogsSuggestions as tag}
+            {@const applied = hasDiscogsTag(tag)}
+            <button
+              type="button"
+              class={`text-xs rounded-full border px-2 py-0.5 font-mono transition-colors ${applied ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border/70 bg-background hover:bg-muted'}`}
+              onclick={() => toggleDiscogsTag(tag)}
+            >#{tag}</button>
+          {/each}
+        </div>
+      </div>
+    {:else if discogsSuggestionsStatus}
+      <p class={`text-xs ${discogsSuggestionsIsError ? 'text-destructive' : 'text-muted-foreground'}`}>
+        {discogsSuggestionsStatus}
+      </p>
+    {/if}
   </div>
 
   {#if status}
