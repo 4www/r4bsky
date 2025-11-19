@@ -5,3 +5,5 @@ coverage
 .DS_Store
 *.log
 .svelte-kit/
+.wrangler/
+wrangler.log

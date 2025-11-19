@@ -1,0 +1,7 @@
+name = "r4atproto"
+compatibility_date = "2025-11-19"
+main = "src/index.js"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
