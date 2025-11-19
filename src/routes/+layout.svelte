@@ -14,7 +14,7 @@
   import { locale, translate } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import { resolveHandle } from '$lib/services/r4-service';
-  import Link from '$lib/components/Link.svelte';
+  import NavTabs from '$lib/components/NavTabs.svelte';
   import { base } from '$app/paths';
   import { browser } from '$app/environment';
 
@@ -189,19 +189,33 @@
     };
   });
 
+  const t = (key, vars = {}) => translate($locale, key, vars);
+
   const userHandle = $derived(($session && $session.handle) || '');
   const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/');
   const addPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}/add` : '/');
 
-  const links = $derived(
-    ($session && $session.did)
-      ? (userHandle
-          ? [['/', t('nav.links.home'), Home], [myPath, userHandle, AtSign], [addPath, t('nav.links.add'), Plus], ['/settings', t('nav.links.settings'), Settings]]
-          : [['/', t('nav.links.home'), Home], ['/settings', t('nav.links.settings'), Settings]]
-        )
-      : [['/', t('nav.links.home'), Home], ['/settings', t('nav.links.settings'), Settings]]
-  );
-  const t = (key, vars = {}) => translate($locale, key, vars);
+  const navItems = $derived.by(() => {
+    const currentPath = $page.url.pathname;
+    const checkActive = (href: string) => currentPath === (base + href) || currentPath === href;
+
+    const baseItems = [
+      { href: '/', label: t('nav.links.home'), icon: Home, isActive: checkActive('/') }
+    ];
+
+    if ($session?.did && userHandle) {
+      baseItems.push(
+        { href: myPath, label: userHandle, icon: AtSign, isActive: checkActive(myPath) },
+        { href: addPath, label: t('nav.links.add'), icon: Plus, isActive: checkActive(addPath) }
+      );
+    }
+
+    baseItems.push(
+      { href: '/settings', label: t('nav.links.settings'), icon: Settings, isActive: currentPath.startsWith('/settings') }
+    );
+
+    return baseItems;
+  });
 </script>
 
 {#if !ready}
@@ -231,27 +245,7 @@
     <nav class="sticky bottom-0 left-0 right-0 z-40 pb-1 px-2 sm:px-3">
       <div class="flex items-center justify-center gap-2">
         <!-- Navigation links -->
-        <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20">
-          {#each links as [href, title, iconComponent]}
-            {#key href}
-              {@const Icon = iconComponent}
-              {@const isActive = $page.url.pathname === (base + href) || $page.url.pathname === href}
-              <Link
-                href={href}
-                class={cn(
-                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "text-foreground border-2 border-primary shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
-                )}
-                aria-label={title}
-              >
-                <Icon class="h-3.5 w-3.5" />
-                <span class="hidden sm:inline">{title}</span>
-              </Link>
-            {/key}
-          {/each}
-        </div>
+        <NavTabs items={navItems} variant="pills" />
 
         <!-- Player mini controls -->
         {#if playerState.playlist?.length > 0}

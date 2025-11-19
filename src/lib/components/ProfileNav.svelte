@@ -1,9 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import Link from '$lib/components/Link.svelte';
-  import { cn } from '$lib/utils';
+  import NavTabs from '$lib/components/NavTabs.svelte';
   import { locale, translate } from '$lib/i18n';
-  import { Music, Users, Plus } from 'lucide-svelte';
   import { base } from '$app/paths';
   import { session } from '$lib/state/session';
 
@@ -21,29 +19,13 @@
 
   const isOwnProfile = $derived($session?.handle === handle);
 
-  const linkClass = (active: boolean) => cn(
-    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border-2',
-    active
-      ? 'text-foreground border-primary shadow-sm'
-      : 'text-muted-foreground hover:bg-muted hover:text-foreground border-transparent'
-  );
+  const navItems = $derived([
+    { href: profilePath, label: t('profileNav.tracks'), isActive: isTracksActive },
+    { href: followingPath, label: t('profileNav.following'), isActive: isFollowingActive },
+    ...(isOwnProfile ? [{ href: addPath, label: t('nav.links.add'), isActive: isAddActive }] : [])
+  ]);
 </script>
 
-<nav class="flex gap-2 mb-4 justify-center">
-  <div class="inline-flex gap-1.5 p-1.5 rounded-full bg-muted/40 border border-muted">
-    <Link href={profilePath} class={linkClass(isTracksActive)}>
-      <Music class="h-3.5 w-3.5" />
-      {t('profileNav.tracks')}
-    </Link>
-    <Link href={followingPath} class={linkClass(isFollowingActive)}>
-      <Users class="h-3.5 w-3.5" />
-      {t('profileNav.following')}
-    </Link>
-    {#if isOwnProfile}
-      <Link href={addPath} class={linkClass(isAddActive)}>
-        <Plus class="h-3.5 w-3.5" />
-        {t('nav.links.add')}
-      </Link>
-    {/if}
-  </div>
-</nav>
+<div class="flex gap-2 mb-4 justify-center">
+  <NavTabs items={navItems} variant="pills-muted" />
+</div>
