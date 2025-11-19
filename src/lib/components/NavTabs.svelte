@@ -47,7 +47,7 @@
 <nav class={containerClass}>
   {#each items as item (item.href)}
     <Link href={item.href} class={linkClass(item.isActive)}>
-      {#if item.icon && !item.isActive}
+      {#if item.icon}
         {@const Icon = item.icon}
         <Icon class={iconClass} />
       {/if}
