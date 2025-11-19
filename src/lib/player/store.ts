@@ -53,6 +53,12 @@ export function setPlaylist(items: Track[], startIndex: number = 0, context: any
   player.set({ playlist: items || [], index: startIndex ?? 0, playing: true, context, isShuffled: false })
 }
 
+export function play(tracks: Track[], startIndex: number = 0, context: any = null): void {
+  if (!tracks?.length) return
+  const index = Math.max(0, Math.min(startIndex ?? 0, tracks.length - 1))
+  setPlaylist(tracks, index, context)
+}
+
 export function playIndex(idx: number): void {
   const s = player.get()
   if (!s.playlist?.length) return
