@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { listR4FollowsByDid, getProfiles } from '$lib/services/r4-service';
+  import { listR4FavoritesByDid, getProfiles } from '$lib/services/r4-service';
   import { onMount, getContext } from 'svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import { Button } from '$lib/components/ui/button';
@@ -64,11 +64,11 @@
 
     (async () => {
       try {
-        const followsData = await listR4FollowsByDid(targetDid);
+        const favoritesData = await listR4FavoritesByDid(targetDid);
         if (requestId !== loadRequestId) return;
 
-        follows = dedupeFollows(followsData.follows);
-        cursor = followsData.cursor;
+        follows = dedupeFollows(favoritesData.favorites);
+        cursor = favoritesData.cursor;
 
         // Fetch profiles for all followed DIDs
         if (follows.length > 0) {
@@ -99,7 +99,7 @@
 
   async function more() {
     if (!cursor || !did) return;
-    const { follows: newFollows = [], cursor: c } = await listR4FollowsByDid(did, { cursor });
+    const { favorites: newFollows = [], cursor: c } = await listR4FavoritesByDid(did, { cursor });
     cursor = c;
     const { merged, added } = mergeFollows(follows, newFollows);
     follows = merged;

@@ -3,8 +3,8 @@
     followActor,
     unfollowActor,
     findFollowUri,
-    createR4Follow,
-    deleteR4Follow,
+    createR4Favorite,
+    deleteR4Favorite,
   } from '$lib/services/r4-service';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
@@ -36,12 +36,12 @@
     try {
       if (followUri) {
         await unfollowActor(followUri);
-        await deleteR4Follow(actorDid);
+        await deleteR4Favorite(actorDid);
         followUri = null;
       } else {
         const res = await followActor(actorDid);
         followUri = res?.uri || null;
-        await createR4Follow(actorDid);
+        await createR4Favorite(actorDid);
       }
       await refreshState();
     } catch (e) {

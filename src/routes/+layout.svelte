@@ -4,6 +4,8 @@
   import { bskyOAuth } from '$lib/services/bsky-oauth';
   import { buildLoopbackClientId } from '@atproto/oauth-client-browser';
   import { session } from '$lib/state/session';
+  import { theme } from '$lib/state/theme';
+  import { getR4Profile } from '$lib/services/r4-service';
   import Player from '$lib/components/Player.svelte';
   import '../app.css';
   import StateCard from '$lib/components/ui/state-card.svelte';
@@ -14,6 +16,7 @@
   import { resolveHandle } from '$lib/services/r4-service';
   import Link from '$lib/components/Link.svelte';
   import { base } from '$app/paths';
+  import { browser } from '$app/environment';
 
   let { children } = $props();
   let ready = $state(false);
@@ -60,6 +63,92 @@
     }
   }
 
+  // Load theme settings from profile
+  async function loadThemeFromProfile() {
+    if (!$session?.did) {
+      console.log('[loadThemeFromProfile] No session DID, skipping');
+      return;
+    }
+
+    console.log('[loadThemeFromProfile] Loading profile for DID:', $session.did);
+
+    try {
+      const profile = await getR4Profile($session.did);
+      console.log('[loadThemeFromProfile] Profile loaded:', profile);
+
+      if (profile) {
+        console.log('[loadThemeFromProfile] Applying theme from profile');
+        theme.setMode(profile.mode);
+        theme.setLightColors({
+          background: profile.lightBackground,
+          foreground: profile.lightForeground,
+          accent: profile.lightAccent,
+        });
+        theme.setDarkColors({
+          background: profile.darkBackground,
+          foreground: profile.darkForeground,
+          accent: profile.darkAccent,
+        });
+        console.log('[loadThemeFromProfile] Theme applied successfully');
+      } else {
+        console.log('[loadThemeFromProfile] No profile found, using defaults');
+      }
+    } catch (error) {
+      console.error('[loadThemeFromProfile] Failed to load theme from profile:', error);
+    }
+  }
+
+  // Apply theme to document
+  function applyTheme() {
+    if (!browser) return;
+
+    const effectiveMode = $theme.mode === 'auto'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : $theme.mode;
+
+    // Apply dark class
+    if (effectiveMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Apply custom colors
+    const colors = effectiveMode === 'dark' ? $theme.darkColors : $theme.lightColors;
+    const [h, s, l] = colors.background.split(' ').map((v) => parseFloat(v.replace('%', '')));
+
+    // Calculate derived colors
+    const isDark = effectiveMode === 'dark';
+    const mutedL = isDark ? Math.min(l + 3, 100) : Math.max(l - 5, 0);
+    const cardL = isDark ? Math.min(l + 2, 100) : Math.max(l - 3, 0);
+    const borderL = isDark ? Math.min(l + 10, 100) : Math.max(l - 15, 0);
+
+    document.documentElement.style.setProperty('--background', colors.background);
+    document.documentElement.style.setProperty('--foreground', colors.foreground);
+
+    // Derived backgrounds with subtle variations
+    document.documentElement.style.setProperty('--muted', `${h} ${s}% ${mutedL}%`);
+    document.documentElement.style.setProperty('--card', `${h} ${s}% ${cardL}%`);
+    document.documentElement.style.setProperty('--popover', `${h} ${s}% ${cardL}%`);
+
+    // Border color
+    document.documentElement.style.setProperty('--border', `${h} ${Math.max(s - 10, 0)}% ${borderL}%`);
+    document.documentElement.style.setProperty('--input', `${h} ${Math.max(s - 10, 0)}% ${borderL}%`);
+
+    // Apply foreground to all foreground-related variables
+    document.documentElement.style.setProperty('--card-foreground', colors.foreground);
+    document.documentElement.style.setProperty('--popover-foreground', colors.foreground);
+    document.documentElement.style.setProperty('--muted-foreground', colors.foreground);
+    document.documentElement.style.setProperty('--secondary-foreground', colors.foreground);
+
+    // Apply accent to primary and accent variables
+    document.documentElement.style.setProperty('--primary', colors.accent);
+    document.documentElement.style.setProperty('--primary-foreground', colors.foreground);
+    document.documentElement.style.setProperty('--accent', colors.accent);
+    document.documentElement.style.setProperty('--accent-foreground', colors.foreground);
+    document.documentElement.style.setProperty('--ring', colors.accent);
+  }
+
   onMount(() => {
     initOAuth().catch(console.error);
     const unsubscribe = player.subscribe((state) => {
@@ -67,8 +156,36 @@
       playerState = state;
     });
 
+    // Apply theme on mount
+    applyTheme();
+
+    // Watch for theme changes
+    const themeUnsubscribe = theme.subscribe(() => {
+      applyTheme();
+    });
+
+    // Watch for session changes to load profile (only way to load)
+    const sessionUnsubscribe = session.subscribe((s) => {
+      if (s?.did) {
+        console.log('[session subscribe] Session updated, loading profile');
+        loadThemeFromProfile();
+      }
+    });
+
+    // Listen for system preference changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if ($theme.mode === 'auto') {
+        applyTheme();
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+
     return () => {
       unsubscribe();
+      themeUnsubscribe();
+      sessionUnsubscribe();
+      mediaQuery.removeEventListener('change', handleChange);
     };
   });
 
@@ -124,8 +241,8 @@
                 class={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "text-foreground border-2 border-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
                 )}
                 aria-label={title}
               >
@@ -145,8 +262,8 @@
               class={cn(
                 "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                 playerState.playing
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-foreground border-2 border-primary shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
               )}
               aria-label={playerState.playing ? 'Pause' : 'Play'}
             >
@@ -169,8 +286,8 @@
               class={cn(
                 "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                 (playerVisible || mobilePanelOpen)
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-foreground border-2 border-primary shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
               )}
               aria-label="Toggle player"
             >

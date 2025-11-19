@@ -1,7 +1,7 @@
 <script lang="ts">
   import { bskyOAuth } from '$lib/services/bsky-oauth';
   import { session } from '$lib/state/session';
-  import { getProfile, listR4FollowsByDid, getProfiles } from '$lib/services/r4-service';
+  import { getProfile, listR4FavoritesByDid, getProfiles } from '$lib/services/r4-service';
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -43,13 +43,13 @@
     if (!$session?.did || !$session?.handle) return;
     loadingHome = true;
     try {
-      const [profile, followsData] = await Promise.all([
+      const [profile, favoritesData] = await Promise.all([
         getProfile($session.handle),
-        listR4FollowsByDid($session.did, { limit: 10 })
+        listR4FavoritesByDid($session.did, { limit: 10 })
       ]);
       myProfile = profile;
       const uniqueFollows = new Map();
-      for (const follow of followsData.follows || []) {
+      for (const follow of favoritesData.favorites || []) {
         const key = follow?.subject || follow?.uri;
         if (key && !uniqueFollows.has(key)) {
           uniqueFollows.set(key, follow);
