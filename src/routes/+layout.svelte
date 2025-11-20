@@ -233,35 +233,39 @@
 {:else}
 
   <div class="min-h-screen bg-background flex flex-col">
-    <div class="flex-1 px-2 sm:px-3 lg:px-6 py-2">
+    <div class="flex-1 px-2 sm:px-3 lg:px-6 py-1">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
-        {#if !playbackCollapsed}
-          <section
-            class="layout-playback order-1 w-full sticky top-0 z-10 lg:order-2 lg:w-auto lg:min-w-[24rem] lg:max-w-xl lg:h-screen"
-            aria-label="layout-playback"
-          >
-            <div class="w-full bg-background/95 border border-border/60 rounded-2xl shadow-sm lg:h-screen">
-              <Player
-                visible={true}
-                bind:mobilePanelOpen={mobilePanelOpen}
-                class="w-full lg:h-full"
-              />
-            </div>
-          </section>
-        {/if}
+        <section
+          class={cn(
+            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-auto lg:min-w-[24rem] lg:max-w-xl",
+            playbackCollapsed
+              ? "max-h-0 overflow-hidden opacity-0 pointer-events-none lg:w-0 lg:min-w-0 lg:max-w-0"
+              : "h-screen"
+          )}
+          aria-label="layout-playback"
+          aria-hidden={playbackCollapsed}
+        >
+          <div class="h-full rounded-2xl bg-background/95 p-2 lg:p-3 shadow-sm">
+            <Player
+              visible={!playbackCollapsed}
+              bind:mobilePanelOpen={mobilePanelOpen}
+              class="w-full h-full"
+            />
+          </div>
+        </section>
 
         <section
           class={cn(
-            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full",
+            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full bg-background/95 rounded-2xl",
             playbackCollapsed ? "lg:max-w-5xl lg:mx-auto" : ""
           )}
           aria-label="layout-panel"
         >
-          <main class="flex-1 min-h-0">
-            <div class="bg-background/95 rounded-2xl border border-border/60 shadow-sm">{@render children()}</div>
+          <main class="flex-1 min-h-0 rounded-2xl">
+            {@render children()}
           </main>
 
-          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 border border-border/60 bg-background/95 backdrop-blur rounded-2xl px-2 sm:px-3 py-2">
+          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 rounded-2xl px-2 sm:px-3 py-2">
             <div class="flex items-center justify-center gap-2 flex-wrap">
               <NavTabs items={navItems} variant="pills" />
 
@@ -284,6 +288,7 @@
                       <Play class="h-3.5 w-3.5" />
                     {/if}
                   </button>
+                  <!-- Never stop playback when hiding the player -->
                   <button
                     type="button"
                     onclick={() => {
@@ -300,19 +305,15 @@
                         ? "text-foreground border-2 border-primary shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
                     )}
-                    aria-label="Toggle player"
+                    aria-label="Toggle player visibility"
                   >
                     <LayoutList class="h-3.5 w-3.5" />
                   </button>
-                </div>
-              {/if}
+               </div>
+             {/if}
             </div>
           </nav>
         </section>
-
-        {#if !playbackCollapsed}
-          <div class="hidden lg:block" aria-hidden="true"></div>
-        {/if}
 
       </div>
     </div>

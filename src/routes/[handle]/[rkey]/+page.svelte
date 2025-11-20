@@ -29,10 +29,37 @@
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
   const discogsUrl = $derived(item?.discogsUrl || item?.discogs_url || '');
   let loadRequestId = 0;
+  let currentKey = $state('');
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   function refreshTrack() {
     loadTrack(handle, rkey);
+  }
+
+  function hydrateFromState() {
+    if (typeof window === 'undefined') return false;
+    const nav = window.history.state || {};
+    const navTracks = Array.isArray(nav.tracks) ? nav.tracks : null;
+    const navTrack = nav.track || null;
+    const navDid = nav.did || '';
+    const navHandle = nav.handle || '';
+
+    if (!navTracks && !navTrack) return false;
+
+    if (navTracks?.length) {
+      allTracks = navTracks;
+    }
+    if (navTrack) {
+      item = navTrack;
+    }
+    if (navDid) {
+      did = navDid;
+    }
+    if (navHandle) {
+      displayHandle = navHandle;
+    }
+    loading = false;
+    return true;
   }
 
   async function loadTrack(currentHandle: string, currentRkey: string) {
@@ -74,7 +101,11 @@
   });
 
   $effect(() => {
-    if (handle && rkey) {
+    if (!handle || !rkey) return;
+    const key = `${handle}:${rkey}`;
+    if (key === currentKey) return;
+    currentKey = key;
+    if (!hydrateFromState()) {
       loadTrack(handle, rkey);
     }
   });

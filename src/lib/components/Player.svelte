@@ -344,10 +344,10 @@
   <aside
     class={cn(
       extraClass,
-      "flex flex-col transition-all duration-300",
+      "flex flex-col transition-all duration-300 px-1 lg:px-0 h-full",
       !visible ? "h-0 w-0 m-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
     )}
-    style={visible && !isDesktop ? 'max-height:50dvh;' : ''}
+    style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
     <section
       class="flex flex-col flex-1 min-h-0 gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
@@ -378,29 +378,27 @@
           class="grid gap-3 flex-1 min-h-0 w-full"
           style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"
         >
-          <div class="flex flex-col min-h-0 min-w-[16rem]">
+          <div class="flex flex-col min-h-0 min-w-[16rem] flex-1">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
-              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
+              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow flex-1 min-h-[220px]">
                 <audio
                   bind:this={playerAudio}
                   onended={next}
                   controls
-                  class="w-full h-full min-h-[220px]"
+                  class="w-full h-full"
                 ></audio>
               </div>
             {:else if iframeSrc}
-              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
-                <div class="aspect-video w-full min-h-[220px]">
-                  <iframe
-                    bind:this={playerIframe}
-                    src={iframeSrc}
-                    title="Embedded player"
-                    allow="autoplay; encrypted-media"
-                    allowfullscreen
-                    onload={onIframeLoad}
-                    class="w-full h-full"
-                  ></iframe>
-                </div>
+              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow flex-1 min-h-[220px]">
+                <iframe
+                  bind:this={playerIframe}
+                  src={iframeSrc}
+                  title="Embedded player"
+                  allow="autoplay; encrypted-media"
+                  allowfullscreen
+                  onload={onIframeLoad}
+                  class="w-full h-full"
+                ></iframe>
               </div>
             {/if}
           </div>

@@ -96,8 +96,16 @@
     event?.preventDefault?.();
     const href = viewHref();
     if (href) {
+      const navState: any = {
+        returnTo: window.location.pathname,
+        tracks: items,
+        track: item,
+        index,
+        did: context?.key || item.authorDid || '',
+        handle: authorHandle || context?.handle || ''
+      };
       goto(resolve(href), {
-        state: { returnTo: window.location.pathname },
+        state: navState,
         replaceState: false,
         noScroll: true,
         keepFocus: false,
@@ -145,7 +153,7 @@
 
 <Card
   class={cn(
-    "border border-border bg-background transition-colors shadow-sm hover:bg-muted/20",
+    "border border-border bg-background transition-colors shadow-sm hover:bg-muted/20 overflow-visible",
     isActiveTrack ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20" : ""
   )}
 >

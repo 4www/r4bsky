@@ -11,9 +11,14 @@
   const normalizedHandle = $derived(handle ? handle.replace(/^@/, '') : '');
   const t = (key, vars = {}) => translate($locale, key, vars);
   let returnTo = $state('');
+  let trackData = $state(data?.track || null);
 
   onMount(() => {
-    returnTo = window.history.state?.returnTo || '';
+    const navState = window.history.state || {};
+    returnTo = navState?.returnTo || '';
+    if (navState?.track) {
+      trackData = navState.track;
+    }
   });
 
   function close() {
@@ -31,6 +36,6 @@
     handle={handle}
     {repo}
     {rkey}
-    track={data?.track}
+    track={trackData}
   />
 </Dialog>

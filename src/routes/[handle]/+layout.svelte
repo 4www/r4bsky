@@ -87,7 +87,8 @@
   });
 </script>
 
-<div class="container max-w-4xl py-8 lg:py-12">
+{#if !isEditRoute}
+<div class="container max-w-4xl">
   {#if handle}
     {#if loading}
       <StateCard
@@ -110,21 +111,29 @@
         {/snippet}
       </StateCard>
     {:else}
-      <ProfileHeader {profile} {handle} size="lg" class="mb-8" clickable={false}>
-        {#snippet children()}
-          <div class="flex gap-3 flex-wrap">
-            {#if did && $session?.did !== did}
-              <FollowButton actorDid={did} />
-            {/if}
+      <div class="space-y-6">
+        <div class="sticky top-2 lg:top-4 z-20">
+          <div class="rounded-2xl border border-border/40 bg-background/90 backdrop-blur p-4 lg:p-6 space-y-4">
+            <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
+              {#snippet children()}
+                <div class="flex gap-3 flex-wrap">
+                  {#if did && $session?.did !== did}
+                    <FollowButton actorDid={did} />
+                  {/if}
+                </div>
+              {/snippet}
+            </ProfileHeader>
+
+            <ProfileNav {handle} />
           </div>
-        {/snippet}
-      </ProfileHeader>
+        </div>
 
-      <ProfileNav {handle} />
-
-      {#if !isEditRoute}
-        {@render children()}
-      {/if}
+        {#if !isEditRoute}
+          <div class="pt-2">
+            {@render children()}
+          </div>
+        {/if}
+      </div>
     {/if}
   {:else}
     <Card>
@@ -152,6 +161,7 @@
     </Card>
   {/if}
 </div>
+{/if}
 
 {#if isEditRoute && editRkey}
   <Dialog title={t('editTrack.title')} onClose={closeEditDialog}>
