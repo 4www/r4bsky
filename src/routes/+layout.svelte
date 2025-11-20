@@ -217,6 +217,8 @@
 
     return baseItems;
   });
+  const hasPlayback = $derived(playerState.playlist?.length > 0);
+  const playbackCollapsed = $derived(!hasPlayback || !playerVisible);
 </script>
 
 {#if !ready}
@@ -229,72 +231,90 @@
     />
   </div>
 {:else}
+
   <div class="min-h-screen bg-background flex flex-col">
-    <div class={cn(
-      "flex flex-col flex-1 px-2 sm:px-3 lg:px-4",
-      playerVisible && hasDesktopPlayer ? "lg:flex-row lg:items-start lg:gap-4" : ""
-    )}>
-      <Player
-        visible={playerVisible}
-        bind:mobilePanelOpen={mobilePanelOpen}
-        class="order-1 w-full lg:order-2 lg:w-[26rem] lg:top-4"
-      />
-      <main class={cn(
-        "relative order-2 lg:order-1 pt-2 pb-3",
-        playerVisible && hasDesktopPlayer ? "flex-1" : "max-w-6xl mx-auto w-full"
-      )}>
-        <div class="relative z-30 bg-background rounded-2xl">{@render children()}</div>
-      </main>
-    </div>
-
-    <nav class="sticky bottom-0 left-0 right-0 z-40 pb-1 px-2 sm:px-3">
-      <div class="flex items-center justify-center gap-2">
-        <!-- Navigation links -->
-        <NavTabs items={navItems} variant="pills" />
-
-        <!-- Player mini controls -->
-        {#if playerState.playlist?.length > 0}
-          <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20">
-            <button
-              type="button"
-              onclick={toggle}
-              class={cn(
-                "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                playerState.playing
-                  ? "text-foreground border-2 border-primary shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
-              )}
-              aria-label={playerState.playing ? 'Pause' : 'Play'}
-            >
-              {#if playerState.playing}
-                <Pause class="h-3.5 w-3.5" />
-              {:else}
-                <Play class="h-3.5 w-3.5" />
-              {/if}
-            </button>
-            <button
-              type="button"
-              onclick={() => {
-                if (window.innerWidth < 1024) {
-                  mobilePanelOpen = !mobilePanelOpen;
-                  playerVisible = mobilePanelOpen;
-                } else {
-                  playerVisible = !playerVisible;
-                }
-              }}
-              class={cn(
-                "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                (playerVisible || mobilePanelOpen)
-                  ? "text-foreground border-2 border-primary shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
-              )}
-              aria-label="Toggle player"
-            >
-              <LayoutList class="h-3.5 w-3.5" />
-            </button>
-          </div>
+    <div class="flex-1 px-2 sm:px-3 lg:px-6 py-2">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
+        {#if !playbackCollapsed}
+          <section
+            class="layout-playback order-1 w-full sticky top-0 z-10 lg:order-2 lg:w-auto lg:min-w-[24rem] lg:max-w-xl lg:h-screen"
+            aria-label="layout-playback"
+          >
+            <div class="w-full bg-background/95 border border-border/60 rounded-2xl shadow-sm lg:h-screen">
+              <Player
+                visible={true}
+                bind:mobilePanelOpen={mobilePanelOpen}
+                class="w-full lg:h-full"
+              />
+            </div>
+          </section>
         {/if}
+
+        <section
+          class={cn(
+            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full",
+            playbackCollapsed ? "lg:max-w-5xl lg:mx-auto" : ""
+          )}
+          aria-label="layout-panel"
+        >
+          <main class="flex-1 min-h-0">
+            <div class="bg-background/95 rounded-2xl border border-border/60 shadow-sm">{@render children()}</div>
+          </main>
+
+          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 border border-border/60 bg-background/95 backdrop-blur rounded-2xl px-2 sm:px-3 py-2">
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+              <NavTabs items={navItems} variant="pills" />
+
+              {#if playerState.playlist?.length > 0}
+                <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20">
+                  <button
+                    type="button"
+                    onclick={toggle}
+                    class={cn(
+                      "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                      playerState.playing
+                        ? "text-foreground border-2 border-primary shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
+                    )}
+                    aria-label={playerState.playing ? 'Pause' : 'Play'}
+                  >
+                    {#if playerState.playing}
+                      <Pause class="h-3.5 w-3.5" />
+                    {:else}
+                      <Play class="h-3.5 w-3.5" />
+                    {/if}
+                  </button>
+                  <button
+                    type="button"
+                    onclick={() => {
+                      if (window.innerWidth < 1024) {
+                        mobilePanelOpen = !mobilePanelOpen;
+                        playerVisible = mobilePanelOpen;
+                      } else {
+                        playerVisible = !playerVisible;
+                      }
+                    }}
+                    class={cn(
+                      "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                      (playerVisible || mobilePanelOpen)
+                        ? "text-foreground border-2 border-primary shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
+                    )}
+                    aria-label="Toggle player"
+                  >
+                    <LayoutList class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              {/if}
+            </div>
+          </nav>
+        </section>
+
+        {#if !playbackCollapsed}
+          <div class="hidden lg:block" aria-hidden="true"></div>
+        {/if}
+
       </div>
-    </nav>
+    </div>
   </div>
 {/if}

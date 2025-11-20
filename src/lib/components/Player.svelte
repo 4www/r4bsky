@@ -200,7 +200,6 @@
   });
 
   let isDesktop = $state(false);
-  const playerHeight = $derived(isDesktop ? 'calc(100vh - 2rem)' : 'calc(100vh - 1rem)');
 
   onMount(() => {
     if (!isBrowser) return;
@@ -345,13 +344,13 @@
   <aside
     class={cn(
       extraClass,
-      "w-full sticky top-0 z-30 lg:top-4 transition-all duration-300",
-      !visible ? "h-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
+      "flex flex-col transition-all duration-300",
+      !visible ? "h-0 w-0 m-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
     )}
-    style={visible ? `height:${playerHeight};max-height:${playerHeight};` : ''}
+    style={visible && !isDesktop ? 'max-height:50dvh;' : ''}
   >
     <section
-      class="flex h-full min-h-0 flex-col gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
+      class="flex flex-col flex-1 min-h-0 gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
     >
       <div class="flex flex-col gap-4 flex-1 min-h-0">
         <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
@@ -375,33 +374,38 @@
           </div>
         </div>
 
-        <div class="grid gap-3 flex-1 min-h-0 grid-cols-1">
-          <div class="flex flex-col min-h-0">
+        <div
+          class="grid gap-3 flex-1 min-h-0 w-full"
+          style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"
+        >
+          <div class="flex flex-col min-h-0 min-w-[16rem]">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
-              <div class="flex-1 min-h-[220px] rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
+              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
                 <audio
                   bind:this={playerAudio}
                   onended={next}
                   controls
-                  class="w-full h-full"
+                  class="w-full h-full min-h-[220px]"
                 ></audio>
               </div>
             {:else if iframeSrc}
-              <div class="flex-1 min-h-[220px] rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
-                <iframe
-                  bind:this={playerIframe}
-                  src={iframeSrc}
-                  title="Embedded player"
-                  allow="autoplay; encrypted-media"
-                  allowfullscreen
-                  onload={onIframeLoad}
-                  class="w-full h-full"
-                ></iframe>
+              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow">
+                <div class="aspect-video w-full min-h-[220px]">
+                  <iframe
+                    bind:this={playerIframe}
+                    src={iframeSrc}
+                    title="Embedded player"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    onload={onIframeLoad}
+                    class="w-full h-full"
+                  ></iframe>
+                </div>
               </div>
             {/if}
           </div>
 
-          <div class="flex flex-col min-h-0 space-y-1.5 h-full">
+          <div class="flex flex-col min-h-0 min-w-[14rem] space-y-1.5 h-full">
             <div class="px-0.5">
               <p class="text-[11px] uppercase tracking-wider font-semibold text-primary flex items-center gap-1.5">
                 <ListMusic class="h-3.5 w-3.5" />
