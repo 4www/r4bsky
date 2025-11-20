@@ -4,16 +4,17 @@
 	import { type VariantProps, tv } from "tailwind-variants";
 
 	export const buttonVariants = tv({
-		base: "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+		base: "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 		variants: {
 			variant: {
-				default: "text-foreground border-2 border-primary hover:bg-muted",
-				destructive: "text-foreground border-2 border-border hover:bg-muted",
+				default: "bg-card text-foreground border border-border hover:bg-muted hover:border-foreground/20 shadow-sm",
+				primary: "bg-primary/10 text-foreground border border-border hover:bg-primary/20 hover:border-border shadow-sm",
+				destructive: "text-foreground border border-border hover:bg-destructive/10 hover:border-destructive/30 shadow-sm",
 				outline:
-					"border-input bg-background hover:bg-accent hover:text-accent-foreground border",
-				secondary: "text-muted-foreground border-2 border-border hover:bg-muted hover:text-foreground",
-				ghost: "hover:bg-accent hover:text-accent-foreground",
-				link: "text-primary underline-offset-4 hover:underline",
+					"border border-border bg-background hover:bg-muted hover:border-foreground/20",
+				secondary: "bg-muted text-foreground border border-transparent hover:bg-muted/80 hover:border-border",
+				ghost: "hover:bg-muted hover:text-foreground",
+				link: "text-foreground underline-offset-4 hover:underline hover:text-primary",
 			},
 			size: {
 				default: "h-10 px-4 py-2",

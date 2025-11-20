@@ -4,7 +4,7 @@
   import { Button, buttonVariants } from './ui/button';
   import { cn, menuItemClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
-  import { PlayCircle, Loader2, Disc as DiscIcon, MoreVertical, ExternalLink, Copy } from 'lucide-svelte';
+  import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import { setPlaylist, player } from '$lib/player/store';
   import { onMount, onDestroy } from 'svelte';
@@ -61,7 +61,7 @@
       const { tracks } = await listTracksByDid(did);
 
       if (tracks.length > 0) {
-        setPlaylist(tracks, 0);
+        setPlaylist(tracks, 0, { type: 'profile', key: did, handle: normalizedHandle });
       }
     } catch (err) {
       console.error('Failed to load tracks:', err);
@@ -112,34 +112,33 @@
 
 <Card
   class={cn(
-    'border border-border bg-background animate-in transition-colors shadow-sm hover:bg-muted/20',
-    isActiveProfile ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20' : '',
+    'border border-border bg-background animate-in transition-colors shadow-sm',
+    isActiveProfile
+      ? 'border-primary/40 bg-primary/5 shadow-md'
+      : 'hover:bg-muted/20',
     extraClass
   )}
 >
   <CardHeader class="pb-4">
-    <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       {#if clickable}
         <Link
           href={`/@${handle}`}
-          class="flex items-center gap-4 hover:opacity-80 transition-opacity min-w-0"
+          class="flex items-center gap-3 sm:gap-4 hover:opacity-80 transition-opacity min-w-0 w-full sm:w-auto"
         >
           <Avatar
             src={profile?.avatar}
             alt={profile?.displayName || handle}
             size={sizes.avatar}
           />
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
-              {#if isActiveProfile}
-                <DiscIcon class="h-5 w-5 text-primary animate-spin" style="animation-duration: 3s;" />
-              {/if}
-              <span class={isActiveProfile ? "text-primary" : ""}>
-                {profile?.displayName || handle}
-              </span>
+              {profile?.displayName || handle}
             </CardTitle>
             <CardDescription class={sizes.description}>
-              @{handle}
+              <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
+                @{handle}
+              </Link>
             </CardDescription>
             {#if profile?.description && size === 'lg'}
               <p class="text-sm text-muted-foreground mt-2 max-w-xl">
@@ -149,23 +148,20 @@
           </div>
         </Link>
       {:else}
-        <div class="flex items-center gap-4 min-w-0">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
           <Avatar
             src={profile?.avatar}
             alt={profile?.displayName || handle}
             size={sizes.avatar}
           />
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
-              {#if isActiveProfile}
-                <DiscIcon class="h-5 w-5 text-primary animate-spin" style="animation-duration: 3s;" />
-              {/if}
-              <span class={isActiveProfile ? "text-primary" : ""}>
-                {profile?.displayName || handle}
-              </span>
+              {profile?.displayName || handle}
             </CardTitle>
             <CardDescription class={sizes.description}>
-              @{handle}
+              <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
+                @{handle}
+              </Link>
             </CardDescription>
             {#if profile?.description && size === 'lg'}
               <p class="text-sm text-muted-foreground mt-2 max-w-xl">
@@ -176,10 +172,11 @@
         </div>
       {/if}
 
-      <div class={cn('shrink-0 flex gap-3 flex-wrap items-center', isActiveProfile ? 'text-primary' : '')}>
+      <div class="flex gap-2 sm:gap-3 items-center w-full sm:w-auto sm:shrink-0">
         <Button
+          variant="primary"
           size={size === 'sm' ? 'sm' : 'lg'}
-          class="shadow-md"
+          class="flex-1 sm:flex-initial"
           onclick={playAll}
           disabled={loadingTracks}
         >
@@ -200,10 +197,10 @@
             bind:this={triggerRef}
             type="button"
             class={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-md border-2 transition-all",
+              "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
               menuOpen
-                ? "border-primary text-foreground shadow-sm"
-                : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
+                : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
             )}
             onclick={toggleMenu}
             aria-haspopup="menu"

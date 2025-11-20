@@ -1,7 +1,10 @@
 <script lang="ts">
   import { listTracksByDid } from '$lib/services/r4-service';
-  import { getContext } from 'svelte';
-  import TrackList from '$lib/components/TrackList.svelte';
+  import { getContext, tick } from 'svelte';
+  import TrackListItem from '$lib/components/TrackListItem.svelte';
+  import DiscogsResource from '$lib/components/DiscogsResource.svelte';
+  import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
   import { session } from '$lib/state/session';
   import { Button } from '$lib/components/ui/button';
   import { Loader2, AlertCircle } from 'lucide-svelte';
@@ -20,9 +23,18 @@
   let cursor = $state(undefined);
   let status = $state('');
   let loading = $state(false);
+  let selectedTrackUri = $state<string | null>(null);
+  let selectedTrackRef = $state<HTMLElement | null>(null);
+  let editingTrackUri = $state<string | null>(null);
+  let lastLoadedDid = $state<string>('');
   const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' });
   let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
+
+  const selectedTrack = $derived(items.find(t => t.uri === selectedTrackUri) || null);
+  const editingTrack = $derived(items.find(t => t.uri === editingTrackUri) || null);
+  const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
+  const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
 
   function refreshTracks() {
     if (did) {
@@ -52,10 +64,44 @@
   }
 
   $effect(() => {
-    if (did) {
+    // Only load tracks when did actually changes, not on every reactive update
+    if (did && did !== lastLoadedDid) {
+      lastLoadedDid = did;
       loadTracks(did);
     }
   });
+
+  // Scroll to selected track
+  $effect(() => {
+    if (selectedTrack && selectedTrackRef) {
+      tick().then(() => {
+        selectedTrackRef?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  });
+
+  function selectTrack(trackUri: string) {
+    const track = items.find(t => t.uri === trackUri);
+    if (!track) return;
+
+    selectedTrackUri = trackUri;
+  }
+
+  function openEditDialog(trackUri: string) {
+    editingTrackUri = trackUri;
+  }
+
+  function closeEditDialog() {
+    editingTrackUri = null;
+  }
+
+  function onTrackSaved() {
+    closeEditDialog();
+    // Optionally refresh tracks to get updated data
+    if (did) {
+      loadTracks(did);
+    }
+  }
 
   async function more() {
     if (!cursor || !did) return;
@@ -81,19 +127,51 @@
 {/if}
 
 {#if loading}
-  <StateCard
-    icon={Loader2}
-    loading={true}
-    title={t('profile.loadingTitle')}
-    description={t('profile.loadingDescription')}
-  />
+  <div class="flex items-center justify-center min-h-[50vh]">
+    <StateCard
+      icon={Loader2}
+      loading={true}
+      title={t('profile.loadingTitle')}
+      description={t('profile.loadingDescription')}
+    />
+  </div>
 {:else if items.length}
-  <TrackList
-    tracks={items}
-    {context}
-    editable={($session?.did && did && $session.did === did) || false}
-    on:remove={(e) => { items = items.filter((t) => t.uri !== e.detail.uri); }}
-  />
+  <div class="space-y-1">
+    {#each items as item, idx (item.uri || idx)}
+      {@const isSelected = item.uri === selectedTrackUri}
+      {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
+      {#if isSelected}
+        <div bind:this={selectedTrackRef}>
+          <TrackListItem
+            {item}
+            index={idx}
+            items={items}
+            {context}
+            {editable}
+            isDetailView={true}
+            onSelectTrack={selectTrack}
+            onEditTrack={openEditDialog}
+          >
+            {#snippet expandedContent()}
+              {#if discogsUrl}
+                <DiscogsResource url={discogsUrl} {handle} />
+              {/if}
+            {/snippet}
+          </TrackListItem>
+        </div>
+      {:else}
+        <TrackListItem
+          {item}
+          index={idx}
+          items={items}
+          {context}
+          {editable}
+          onSelectTrack={selectTrack}
+          onEditTrack={openEditDialog}
+        />
+      {/if}
+    {/each}
+  </div>
   {#if cursor && items.length >= 30}
     <div class="mt-4 text-center">
       <Button variant="outline" onclick={more}>
@@ -101,4 +179,15 @@
       </Button>
     </div>
   {/if}
+{/if}
+
+{#if editingTrackUri && editingRkey}
+  <Dialog title={t('editTrack.title')} onClose={closeEditDialog}>
+    <TrackEditDialogContent
+      {handle}
+      repo={did}
+      rkey={editingRkey}
+      onsaved={onTrackSaved}
+    />
+  </Dialog>
 {/if}

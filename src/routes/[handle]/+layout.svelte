@@ -20,6 +20,7 @@
 
   const { data, children } = $props();
   const handle = $derived(data?.handle ? data.handle.replace(/^@/, '') : '');
+  const normalizedHandle = $derived(handle || '');
 
   // Check if we're on an edit route
   const isEditRoute = $derived($page.url.pathname.includes('/edit'));
@@ -36,7 +37,8 @@
   // Set context so child pages can access profile and did
   setContext('profile', {
     get profile() { return profile; },
-    get did() { return did; }
+    get did() { return did || ''; },
+    get handle() { return normalizedHandle; }
   });
 
   let status = $state('');
@@ -88,32 +90,36 @@
 </script>
 
 {#if !isEditRoute}
-<div class="container max-w-4xl">
+<div class="max-w-4xl mx-auto w-full">
   {#if handle}
     {#if loading}
-      <StateCard
-        icon={Loader2}
-        loading={true}
-        title={t('profile.loadingTitle')}
-        description={t('profile.loadingDescription')}
-      />
+      <div class="flex items-center justify-center min-h-[50vh]">
+        <StateCard
+          icon={Loader2}
+          loading={true}
+          title={t('profile.loadingTitle')}
+          description={t('profile.loadingDescription')}
+        />
+      </div>
     {:else if status}
-      <StateCard
-        icon={AlertCircle}
-        title={t('profile.errorTitle')}
-        description={status}
-        class="mb-6"
-      >
-        {#snippet actions()}
-          <Button variant="outline" onclick={refreshProfile}>
-            {t('buttons.tryAgain')}
-          </Button>
-        {/snippet}
-      </StateCard>
+      <div class="flex items-center justify-center min-h-[50vh]">
+        <StateCard
+          icon={AlertCircle}
+          title={t('profile.errorTitle')}
+          description={status}
+          class="mb-6"
+        >
+          {#snippet actions()}
+            <Button variant="outline" onclick={refreshProfile}>
+              {t('buttons.tryAgain')}
+            </Button>
+          {/snippet}
+        </StateCard>
+      </div>
     {:else}
       <div class="space-y-6">
         <div class="sticky top-2 lg:top-4 z-20">
-          <div class="rounded-2xl border border-border/40 bg-background/90 backdrop-blur p-4 lg:p-6 space-y-4">
+          <div class="rounded-2xl border border-border/40 bg-background/90 backdrop-blur p-4 lg:p-6">
             <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
               {#snippet children()}
                 <div class="flex gap-3 flex-wrap">
@@ -123,10 +129,10 @@
                 </div>
               {/snippet}
             </ProfileHeader>
-
-            <ProfileNav {handle} />
           </div>
         </div>
+
+        <ProfileNav {handle} />
 
         {#if !isEditRoute}
           <div class="pt-2">

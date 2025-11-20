@@ -7,7 +7,7 @@
   import { ExternalLink, Play, Disc } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
-  let { url = '' } = $props();
+  let { url = '', handle = '' } = $props();
 
   const t = (key, vars = {}) => translate($locale, key, vars);
 
@@ -55,7 +55,7 @@
     play(tracks, index, {
       type: 'discogs',
       key: resource.id,
-      handle: resource.artists_sort || resource.artists?.map(a => a.name).join(', ')
+      handle: handle || resource.artists_sort || resource.artists?.map(a => a.name).join(', ')
     });
   }
 
@@ -114,7 +114,7 @@
     </CardHeader>
     <CardContent class="space-y-3">
       <div class="flex gap-2">
-        <Button onclick={playAll} size="sm" class="flex-1">
+        <Button variant="primary" onclick={playAll} size="sm" class="flex-1">
           <Play class="mr-2 h-3.5 w-3.5" />
           Play All
         </Button>

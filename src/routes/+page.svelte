@@ -79,11 +79,13 @@
 {#if isAuthenticated}
   <div class="container max-w-4xl py-4 space-y-6">
     {#if loadingHome}
-      <StateCard
-        icon={Loader2}
-        title="Loading your profile"
-        description="Fetching your profile and favorites."
-      />
+      <div class="flex items-center justify-center min-h-[50vh]">
+        <StateCard
+          icon={Loader2}
+          title="Loading your profile"
+          description="Fetching your profile and favorites."
+        />
+      </div>
     {:else}
       {#if myProfile && $session?.handle}
         <ProfileHeader

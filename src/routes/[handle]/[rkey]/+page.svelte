@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { getTrackByUri, resolveHandle, listTracksByDid } from '$lib/services/r4-service';
+  import { getTrackByUri, resolveHandle } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import DiscogsResource from '$lib/components/DiscogsResource.svelte';
   import { session } from '$lib/state/session';
@@ -8,9 +7,7 @@
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { Button } from '$lib/components/ui/button';
   import { locale, translate } from '$lib/i18n';
-  import Dialog from '$lib/components/ui/Dialog.svelte';
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
+  import { browser } from '$app/environment';
 
   let { data } = $props();
   const _handle = $derived(data?.handle || '');
@@ -21,11 +18,9 @@
   let did = $state('');
   let allTracks = $state([]);
   let status = $state('');
-  let loading = $state(true);
+  let loading = $state(false);
   let displayHandle = $state('');
-  let returnTo = $state('');
   const context = $derived({ type: 'author', key: did, handle: displayHandle || undefined });
-  const trackIndex = $derived(allTracks.findIndex(t => t.uri === item?.uri));
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
   const discogsUrl = $derived(item?.discogsUrl || item?.discogs_url || '');
   let loadRequestId = 0;
@@ -36,29 +31,29 @@
     loadTrack(handle, rkey);
   }
 
-  function hydrateFromState() {
-    if (typeof window === 'undefined') return false;
+  function tryHydrateFromState() {
+    if (!browser) return false;
+
     const nav = window.history.state || {};
-    const navTracks = Array.isArray(nav.tracks) ? nav.tracks : null;
     const navTrack = nav.track || null;
     const navDid = nav.did || '';
     const navHandle = nav.handle || '';
 
-    if (!navTracks && !navTrack) return false;
+    // Only hydrate if we have the track data
+    if (!navTrack) return false;
 
-    if (navTracks?.length) {
-      allTracks = navTracks;
-    }
-    if (navTrack) {
-      item = navTrack;
-    }
+    console.log('[Track Detail] Hydrating from navigation state');
+
+    item = navTrack;
+    allTracks = [navTrack];
+
     if (navDid) {
       did = navDid;
     }
     if (navHandle) {
       displayHandle = navHandle;
     }
-    loading = false;
+
     return true;
   }
 
@@ -66,8 +61,8 @@
     const requestId = ++loadRequestId;
     loading = true;
     status = '';
-    item = null;
-    allTracks = [];
+
+    console.log('[Track Detail] Loading track data from API', { handle: currentHandle, rkey: currentRkey });
 
     try {
       if (!currentHandle || !currentRkey) {
@@ -80,14 +75,11 @@
       did = resolvedDid;
       displayHandle = currentHandle;
 
-      const [trackData, tracksData] = await Promise.all([
-        getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`),
-        listTracksByDid(resolvedDid, { limit: 100 })
-      ]);
+      const trackData = await getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`);
 
       if (requestId === loadRequestId) {
         item = { ...trackData };
-        allTracks = tracksData.tracks;
+        allTracks = [trackData]; // Just the single track
       }
     } catch (e) {
       if (requestId === loadRequestId) status = (e as Error)?.message || t('trackDetail.errorTitle');
@@ -96,39 +88,34 @@
     }
   }
 
-  onMount(() => {
-    returnTo = window.history.state?.returnTo || '';
-  });
-
   $effect(() => {
     if (!handle || !rkey) return;
     const key = `${handle}:${rkey}`;
     if (key === currentKey) return;
     currentKey = key;
-    if (!hydrateFromState()) {
+
+    // Try to hydrate from navigation state first
+    const hydrated = tryHydrateFromState();
+
+    // Only load from API if hydration failed
+    if (!hydrated) {
       loadTrack(handle, rkey);
     }
   });
-
-  function closeModal() {
-    const fallbackHandle = displayHandle ? `/@${encodeURIComponent(displayHandle)}` : '/';
-    const target = returnTo || fallbackHandle;
-    goto(resolve(target), { replaceState: true, noScroll: true, keepFocus: true }).catch(() => {
-      window.history.back();
-    });
-  }
 </script>
 
-<Dialog onClose={closeModal}>
-  <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-    {#if loading}
+<div class="max-w-4xl mx-auto px-4 py-6">
+  {#if loading}
+    <div class="flex items-center justify-center min-h-[50vh]">
       <StateCard
         icon={Loader2}
         loading={true}
         title={t('trackDetail.loadingTitle')}
         description={t('trackDetail.loadingDescription')}
       />
-    {:else if status}
+    </div>
+  {:else if status}
+    <div class="flex items-center justify-center min-h-[50vh]">
       <StateCard
         icon={AlertCircle}
         title={t('trackDetail.errorTitle')}
@@ -140,18 +127,21 @@
           </Button>
         {/snippet}
       </StateCard>
-    {:else if item}
-      <TrackListItem
-        item={item}
-        index={trackIndex >= 0 ? trackIndex : 0}
-        items={allTracks.length > 0 ? allTracks : [item]}
-        {context}
-        {editable}
-      />
-
-      {#if discogsUrl}
-        <DiscogsResource url={discogsUrl} />
-      {/if}
-    {/if}
-  </div>
-</Dialog>
+    </div>
+  {:else if item}
+    <TrackListItem
+      {item}
+      index={0}
+      items={allTracks}
+      {context}
+      {editable}
+      isDetailView={true}
+    >
+      {#snippet expandedContent()}
+        {#if discogsUrl}
+          <DiscogsResource url={discogsUrl} {handle} />
+        {/if}
+      {/snippet}
+    </TrackListItem>
+  {/if}
+</div>

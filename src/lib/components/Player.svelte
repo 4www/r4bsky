@@ -9,6 +9,7 @@
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { getProfile } from '$lib/services/r4-service';
+  import { buildViewHash } from '$lib/services/track-uri';
   let {
     class: classProp = '',
     visible: visibleProp = true,
@@ -325,6 +326,10 @@
     profileData?.displayName || current?.authorDisplayName || current?.authorHandle || currentHandle || t('trackItem.untitled')
   );
   const currentTrackTitle = $derived(current?.title || t('trackItem.untitled'));
+  const currentTrackHref = $derived.by(() => {
+    if (!current?.uri || !currentHandle) return null;
+    return buildViewHash(currentHandle, current.uri);
+  });
 
   $effect(() => {
     if (currentHandle && currentHandle !== lastFetchedHandle) {
@@ -350,7 +355,7 @@
     style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
     <section
-      class="flex flex-col flex-1 min-h-0 gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4"
+      class="flex flex-col flex-1 min-h-0 gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4 w-full"
     >
       <div class="flex flex-col gap-4 flex-1 min-h-0">
         <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
@@ -362,7 +367,13 @@
               class="shadow-lg shrink-0"
             />
             <div class="min-w-0">
-              <p class="text-sm font-semibold truncate">{currentTrackTitle}</p>
+              {#if currentTrackHref}
+                <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-primary transition-colors">
+                  {currentTrackTitle}
+                </Link>
+              {:else}
+                <p class="text-sm font-semibold truncate">{currentTrackTitle}</p>
+              {/if}
               {#if currentHandle}
                 <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-primary transition-colors truncate block">
                   @{currentHandle}

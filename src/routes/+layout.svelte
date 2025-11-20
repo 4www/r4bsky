@@ -233,11 +233,11 @@
 {:else}
 
   <div class="min-h-screen bg-background flex flex-col">
-    <div class="flex-1 px-2 sm:px-3 lg:px-6 py-1">
+    <div class="flex-1 px-2 sm:px-3 lg:px-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
         <section
           class={cn(
-            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-auto lg:min-w-[24rem] lg:max-w-xl",
+            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-xl",
             playbackCollapsed
               ? "max-h-0 overflow-hidden opacity-0 pointer-events-none lg:w-0 lg:min-w-0 lg:max-w-0"
               : "h-screen"
@@ -270,15 +270,15 @@
               <NavTabs items={navItems} variant="pills" />
 
               {#if playerState.playlist?.length > 0}
-                <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20">
+                <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border border-border">
                   <button
                     type="button"
                     onclick={toggle}
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       playerState.playing
-                        ? "text-foreground border-2 border-primary shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
+                        ? "text-foreground bg-primary/10 border border-primary/30 shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
                     )}
                     aria-label={playerState.playing ? 'Pause' : 'Play'}
                   >
@@ -302,8 +302,8 @@
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       (playerVisible || mobilePanelOpen)
-                        ? "text-foreground border-2 border-primary shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground border-2 border-transparent"
+                        ? "text-foreground bg-primary/10 border border-primary/30 shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
                     )}
                     aria-label="Toggle player visibility"
                   >
