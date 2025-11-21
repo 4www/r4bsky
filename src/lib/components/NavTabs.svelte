@@ -21,8 +21,8 @@
   // Container styles based on variant
   const containerClass = $derived(cn(
     'inline-flex gap-1.5 overflow-x-auto',
-    variant === 'pills' && 'p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border',
-    variant === 'pills-muted' && 'p-1.5 rounded-full bg-muted/40 border border-muted',
+    variant === 'pills' && 'rounded-full bg-background/95 backdrop-blur-xl border-2 border-border',
+    variant === 'pills-muted' && 'rounded-full bg-muted/40 border border-muted',
     variant === 'sidebar' && 'flex-col gap-2 overflow-x-visible',
     className
   ));
@@ -51,11 +51,7 @@
         {@const Icon = item.icon}
         <Icon class={iconClass} />
       {/if}
-      {#if variant === 'pills'}
-        <span class="hidden sm:inline">{item.label}</span>
-      {:else}
-        <span>{item.label}</span>
-      {/if}
+      <span>{item.label}</span>
     </Link>
   {/each}
 </nav>

@@ -113,7 +113,7 @@
     extraClass
   )}
 >
-  <CardHeader class="pb-4">
+  <CardHeader class="pb-2">
     <div class="flex flex-wrap items-center justify-between gap-3">
       {#if clickable}
         <Link
@@ -128,14 +128,17 @@
           <div class="min-w-0 flex-1">
             <CardTitle class={cn('flex items-center gap-2', sizes.title)}>
               <span class={cn(
-                "inline-block px-1.5 py-0.5 rounded transition-colors",
+                "inline-block px-1 py-0.5 rounded transition-colors",
                 isActiveProfile ? "bg-primary text-background" : ""
               )}>
                 {profile?.displayName || handle}
               </span>
             </CardTitle>
             <CardDescription class={cn(sizes.description, "mt-0")}>
-              <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
+              <Link
+                href={`/@${handle}`}
+                class="hover:text-primary hover:underline underline-offset-2 decoration-foreground transition-colors"
+              >
                 @{handle}
               </Link>
             </CardDescription>
@@ -156,14 +159,17 @@
           <div class="min-w-0 flex-1">
             <CardTitle class={cn('flex items-center gap-2', sizes.title)}>
               <span class={cn(
-                "inline-block px-1.5 py-0.5 rounded transition-colors",
+                "inline-block px-1 py-0.5 rounded transition-colors",
                 isActiveProfile ? "bg-primary text-background" : ""
               )}>
                 {profile?.displayName || handle}
               </span>
             </CardTitle>
             <CardDescription class={cn(sizes.description, "mt-0")}>
-              <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
+              <Link
+                href={`/@${handle}`}
+                class="hover:text-primary hover:underline underline-offset-2 decoration-foreground transition-colors"
+              >
                 @{handle}
               </Link>
             </CardDescription>

@@ -260,12 +260,12 @@
             {@render children()}
           </main>
 
-          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 rounded-2xl px-2 sm:px-3 py-2">
+          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 rounded-2xl pb-1">
             <div class="flex items-center justify-center gap-2 flex-wrap">
               <NavTabs items={navItems} variant="pills" />
 
               {#if playerState.playlist?.length > 0}
-                <div class="inline-flex gap-1 p-1 rounded-full bg-background/95 backdrop-blur-xl border border-border">
+                <div class="inline-flex gap-1 rounded-full bg-background/95 backdrop-blur-xl border border-border">
                   <button
                     type="button"
                     onclick={toggle}
