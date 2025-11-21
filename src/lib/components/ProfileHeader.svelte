@@ -2,7 +2,7 @@
   import Avatar from './Avatar.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
   import { Button, buttonVariants } from './ui/button';
-  import { cn, menuItemClass } from '$lib/utils';
+  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
@@ -202,20 +202,12 @@
           <button
             bind:this={triggerRef}
             type="button"
-          class={cn(
-            "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
-              menuOpen
-                ? "bg-foreground text-background border-foreground shadow-sm"
-                : "bg-background border-foreground text-foreground"
-            )}
+            class={cn(menuTriggerClass(menuOpen), "h-9 w-9")}
             onclick={toggleMenu}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
           >
-            <MoreVertical
-              class="h-4 w-4"
-              style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
-            />
+            <MoreVertical class="h-4 w-4 text-current" />
             <span class="sr-only">{t('profile.actions')}</span>
           </button>
           {#if menuOpen}

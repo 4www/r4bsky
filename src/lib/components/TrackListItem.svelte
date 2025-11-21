@@ -8,7 +8,7 @@
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
-  import { cn, menuItemClass } from '$lib/utils';
+  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
@@ -291,20 +291,12 @@
             <button
               bind:this={triggerRef}
               type="button"
-            class={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-              menuOpen
-                ? "bg-foreground text-background border-foreground shadow-sm"
-                : "bg-background text-foreground border-foreground"
-            )}
+            class={cn(menuTriggerClass(menuOpen), "h-7 w-7")}
             onclick={() => toggleMenu()}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
           >
-              <MoreVertical
-                class="h-3.5 w-3.5"
-                style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
-              />
+              <MoreVertical class="h-3.5 w-3.5 text-current" />
               <span class="sr-only">{t('trackItem.actions')}</span>
             </button>
             {#if menuOpen}

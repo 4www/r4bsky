@@ -228,11 +228,11 @@
 {:else}
 
   <div class="min-h-screen bg-background flex flex-col">
-    <div class="flex-1 px-2 sm:px-3 lg:px-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
+    <div class="flex-1 px-0.5 sm:px-1 lg:px-2">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-center lg:gap-4">
         <section
           class={cn(
-            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-xl",
+            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg",
             playbackCollapsed
               ? "max-h-0 overflow-hidden opacity-0 pointer-events-none lg:w-0 lg:min-w-0 lg:max-w-0"
               : "h-screen"
@@ -272,8 +272,8 @@
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       playerState.playing
-                        ? "text-background bg-foreground border border-foreground shadow-sm"
-                        : "text-foreground border border-foreground"
+                        ? "text-background bg-foreground border border-foreground shadow-sm hover:border-background"
+                        : "text-foreground border border-foreground hover:bg-foreground hover:text-background hover:border-background"
                     )}
                     aria-label={playerState.playing ? 'Pause' : 'Play'}
                   >
@@ -297,8 +297,8 @@
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       (playerVisible || mobilePanelOpen)
-                        ? "text-background bg-foreground border border-foreground shadow-sm"
-                        : "text-foreground border border-foreground"
+                        ? "text-background bg-foreground border border-foreground shadow-sm hover:border-background"
+                        : "text-foreground border border-foreground hover:bg-foreground hover:text-background hover:border-background"
                     )}
                     aria-label="Toggle player visibility"
                   >

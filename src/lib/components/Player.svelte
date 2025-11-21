@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle, MoreVertical, Eye, Search } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
-  import { cn, menuItemClass } from '$lib/utils';
+  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { getProfile } from '$lib/services/r4-service';
@@ -479,20 +479,12 @@
               <button
                 bind:this={triggerRef}
                 type="button"
-                  class={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-                    menuOpen
-                    ? "bg-foreground text-background border-foreground shadow-sm"
-                    : "bg-background text-foreground border-foreground"
-                  )}
+                  class={cn(menuTriggerClass(menuOpen), "h-7 w-7")}
                   onclick={() => toggleMenu()}
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
                 >
-                <MoreVertical
-                  class="h-3.5 w-3.5"
-                  style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
-                />
+                <MoreVertical class="h-3.5 w-3.5 text-current" />
                   <span class="sr-only">Track options</span>
                 </button>
               {#if menuOpen}
@@ -624,20 +616,12 @@
                     <button
                       data-track-menu-trigger
                       type="button"
-                  class={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-                    trackMenuOpen === originalIdx
-                      ? "bg-foreground text-background border-foreground"
-                      : "bg-background text-foreground border-foreground"
-                  )}
-                  onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
-                  aria-haspopup="menu"
-                  aria-expanded={trackMenuOpen === originalIdx}
-                >
-                  <MoreVertical
-                    class="h-3.5 w-3.5"
-                    style={trackMenuOpen === originalIdx ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
-                  />
+                      class={cn(menuTriggerClass(trackMenuOpen === originalIdx), "h-7 w-7")}
+                      onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
+                      aria-haspopup="menu"
+                      aria-expanded={trackMenuOpen === originalIdx}
+                    >
+                      <MoreVertical class="h-3.5 w-3.5 text-current" />
                       <span class="sr-only">{t('player.trackOptions')}</span>
                     </button>
                     {#if trackMenuOpen === originalIdx}
@@ -741,10 +725,10 @@
           <button
             type="button"
             class={cn(
-            "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2",
+            "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
             state.isShuffled
-              ? "text-foreground border-foreground shadow-sm"
-              : "text-foreground border-foreground"
+              ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
+              : "text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
           )}
           onclick={toggleShuffle}
           aria-label="Shuffle"
@@ -753,7 +737,7 @@
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-foreground border-foreground"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
           onclick={prev}
           aria-label={t('player.previous')}
         >
@@ -762,10 +746,10 @@
         <button
           type="button"
           class={cn(
-            "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2",
+            "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
             state.playing
-              ? "text-foreground border-foreground shadow-sm"
-              : "text-foreground border-foreground"
+              ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
+              : "text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
           )}
           onclick={toggle}
           aria-label={t('player.toggle')}
@@ -778,7 +762,7 @@
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-foreground border-foreground"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
           onclick={next}
           aria-label={t('player.next')}
         >
