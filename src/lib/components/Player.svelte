@@ -446,7 +446,7 @@
     style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
     <section
-      class="flex flex-col flex-1 min-h-0 gap-4 border border-primary/20 bg-card/95 shadow rounded-3xl p-3 lg:p-4 w-full"
+      class="flex flex-col flex-1 min-h-0 gap-4 border border-foreground bg-card/95 shadow rounded-3xl p-3 lg:p-4 w-full"
     >
       <div class="flex flex-col gap-4 flex-1 min-h-0">
         <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
@@ -459,14 +459,14 @@
             />
             <div class="min-w-0 flex-1">
               {#if currentTrackHref}
-                <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-primary transition-colors">
+                <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-foreground transition-colors">
                   {currentTrackTitle}
                 </Link>
               {:else}
                 <p class="text-sm font-semibold truncate">{currentTrackTitle}</p>
               {/if}
               {#if currentHandle}
-                <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-primary transition-colors truncate block">
+                <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-foreground transition-colors truncate block">
                   @{currentHandle}
                 </Link>
               {:else if state.context?.handle}
@@ -479,23 +479,26 @@
               <button
                 bind:this={triggerRef}
                 type="button"
-                class={cn(
-                  "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-                  menuOpen
-                    ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
-                    : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
-                )}
-                onclick={() => toggleMenu()}
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-              >
-                <MoreVertical class="h-3.5 w-3.5" />
-                <span class="sr-only">Track options</span>
-              </button>
+                  class={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
+                    menuOpen
+                    ? "bg-foreground text-background border-foreground shadow-sm"
+                    : "bg-background text-foreground border-foreground"
+                  )}
+                  onclick={() => toggleMenu()}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                <MoreVertical
+                  class="h-3.5 w-3.5"
+                  style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
+                />
+                  <span class="sr-only">Track options</span>
+                </button>
               {#if menuOpen}
                 <div
                   bind:this={menuRef}
-                  class="absolute right-0 z-40 mt-1.5 w-40 rounded-md border bg-popover text-popover-foreground shadow-lg"
+                  class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
                   role="menu"
                 >
                   {#if currentHandle && current?.uri}
@@ -544,7 +547,7 @@
         >
           <div class="flex flex-col min-h-0 min-w-[16rem] flex-1">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
-              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow flex-1 min-h-[220px]">
+              <div class="rounded-xl overflow-hidden bg-background border border-foreground shadow flex-1 min-h-[220px]">
                 <audio
                   bind:this={playerAudio}
                   onended={next}
@@ -553,7 +556,7 @@
                 ></audio>
               </div>
             {:else if iframeSrc}
-              <div class="rounded-xl overflow-hidden bg-muted/30 border border-primary/20 shadow flex-1 min-h-[220px]">
+              <div class="rounded-xl overflow-hidden bg-background border border-foreground shadow flex-1 min-h-[220px]">
                 <iframe
                   bind:this={playerIframe}
                   src={iframeSrc}
@@ -579,7 +582,7 @@
                 />
               </div>
             </div>
-            <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-primary/10 divide-y bg-gradient-to-b from-muted/20 to-transparent">
+            <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-foreground divide-y bg-background">
               {#each filteredPlaylist as { track, originalIdx }}
                 {@const trackHandle = (track?.authorHandle || track?.author_handle || state.context?.handle || '').replace(/^@/, '')}
                 {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
@@ -590,7 +593,7 @@
                   href={trackHref || '#'}
                   class={cn(
                     "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start",
-                    originalIdx !== state.index && "hover:bg-muted/50"
+                    originalIdx !== state.index && "hover:bg-foreground/10"
                   )}
                   onclick={(e) => {
                     if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
@@ -606,7 +609,7 @@
                   <span class={cn(
                       "truncate text-sm font-medium leading-tight transition-colors px-1.5 py-0.5 rounded",
                       originalIdx === state.index
-                        ? "bg-primary text-background"
+                        ? "bg-foreground text-background"
                         : "text-foreground"
                     )}>
                       {track.title || t('trackItem.untitled')}
@@ -617,27 +620,30 @@
                       </span>
                     {/if}
                   </div>
-                  <div class="relative shrink-0 pt-0.5">
+                  <div class="relative shrink-0">
                     <button
                       data-track-menu-trigger
                       type="button"
-                      class={cn(
-                        "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-                        trackMenuOpen === originalIdx
-                          ? "bg-primary/10 border-primary/30 text-foreground"
-                          : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
-                      )}
-                      onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
-                      aria-haspopup="menu"
-                      aria-expanded={trackMenuOpen === originalIdx}
-                    >
-                      <MoreVertical class="h-2.5 w-2.5" />
+                  class={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
+                    trackMenuOpen === originalIdx
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-foreground border-foreground"
+                  )}
+                  onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
+                  aria-haspopup="menu"
+                  aria-expanded={trackMenuOpen === originalIdx}
+                >
+                  <MoreVertical
+                    class="h-3.5 w-3.5"
+                    style={trackMenuOpen === originalIdx ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
+                  />
                       <span class="sr-only">{t('player.trackOptions')}</span>
                     </button>
                     {#if trackMenuOpen === originalIdx}
                       <div
                         data-track-menu
-                        class="absolute right-0 z-40 mt-1.5 w-40 rounded-md border bg-popover text-popover-foreground shadow-lg"
+                        class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
                         role="menu"
                       >
                         <button
@@ -705,7 +711,6 @@
                           </button>
                         {/if}
                         {#if isEditable}
-                          <div class="my-1 border-t border-border/20"></div>
                           <button
                             type="button"
                             class={cn(menuItemClass, "text-destructive hover:text-destructive")}
@@ -732,14 +737,14 @@
         </div>
       </div>
 
-      <div class={cn("flex items-center justify-center gap-2 pt-1", isDesktop ? '' : 'shrink-0')}>
-        <button
-          type="button"
-          class={cn(
+        <div class={cn("flex items-center justify-center gap-2 pt-1", isDesktop ? '' : 'shrink-0')}>
+          <button
+            type="button"
+            class={cn(
             "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2",
             state.isShuffled
-              ? "text-foreground border-primary shadow-sm"
-              : "text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+              ? "text-foreground border-foreground shadow-sm"
+              : "text-foreground border-foreground"
           )}
           onclick={toggleShuffle}
           aria-label="Shuffle"
@@ -748,7 +753,7 @@
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-foreground border-foreground"
           onclick={prev}
           aria-label={t('player.previous')}
         >
@@ -759,8 +764,8 @@
           class={cn(
             "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2",
             state.playing
-              ? "text-foreground border-primary shadow-sm"
-              : "text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+              ? "text-foreground border-foreground shadow-sm"
+              : "text-foreground border-foreground"
           )}
           onclick={toggle}
           aria-label={t('player.toggle')}
@@ -773,7 +778,7 @@
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-muted-foreground hover:text-foreground border-transparent hover:border-primary/50"
+          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 text-foreground border-foreground"
           onclick={next}
           aria-label={t('player.next')}
         >

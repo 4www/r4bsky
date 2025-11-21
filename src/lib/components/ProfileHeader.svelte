@@ -202,23 +202,26 @@
           <button
             bind:this={triggerRef}
             type="button"
-            class={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
+          class={cn(
+            "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
               menuOpen
-                ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
-                : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
+                ? "bg-foreground text-background border-foreground shadow-sm"
+                : "bg-background border-foreground text-foreground"
             )}
             onclick={toggleMenu}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
           >
-            <MoreVertical class="h-4 w-4" />
+            <MoreVertical
+              class="h-4 w-4"
+              style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
+            />
             <span class="sr-only">{t('profile.actions')}</span>
           </button>
           {#if menuOpen}
             <div
               bind:this={menuRef}
-              class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border bg-popover text-popover-foreground shadow-lg"
+              class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
               role="menu"
             >
               <a

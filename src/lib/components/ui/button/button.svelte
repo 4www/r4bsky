@@ -4,17 +4,17 @@
 	import { type VariantProps, tv } from "tailwind-variants";
 
 	export const buttonVariants = tv({
-		base: "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+		base: "ring-offset-background focus-visible:ring-foreground inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:border-foreground disabled:text-foreground disabled:bg-background [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 		variants: {
 			variant: {
-				default: "bg-card text-foreground border border-border hover:bg-muted hover:border-foreground/20 shadow-sm",
-				primary: "bg-primary/10 text-foreground border border-border hover:bg-primary/20 hover:border-border shadow-sm",
-				destructive: "text-foreground border border-border hover:bg-destructive/10 hover:border-destructive/30 shadow-sm",
+				default: "bg-background text-foreground border border-foreground hover:bg-foreground hover:text-background shadow-sm",
+				primary: "bg-foreground text-background border border-foreground shadow-sm",
+				destructive: "bg-foreground text-background border border-foreground shadow-sm",
 				outline:
-					"border border-border bg-background hover:bg-muted hover:border-foreground/20",
-				secondary: "bg-muted text-foreground border border-transparent hover:bg-muted/80 hover:border-border",
-				ghost: "hover:bg-muted hover:text-foreground",
-				link: "text-foreground underline-offset-4 hover:underline hover:text-primary",
+					"border border-foreground bg-background hover:bg-foreground hover:text-background",
+				secondary: "bg-background text-foreground border border-foreground hover:bg-foreground hover:text-background",
+				ghost: "hover:bg-foreground hover:text-background border border-transparent",
+				link: "text-foreground underline-offset-4 hover:underline",
 			},
 			size: {
 				default: "h-10 px-4 py-2",

@@ -98,7 +98,7 @@
     }
   }
 
-  // Apply theme to document
+  // Apply theme to document using only background/foreground colors
   function applyTheme() {
     if (!browser) return;
 
@@ -113,40 +113,35 @@
       document.documentElement.classList.remove('dark');
     }
 
-    // Apply custom colors
+    // Apply custom colors (only background/foreground)
     const colors = effectiveMode === 'dark' ? $theme.darkColors : $theme.lightColors;
-    const [h, s, l] = colors.background.split(' ').map((v) => parseFloat(v.replace('%', '')));
 
-    // Calculate derived colors
-    const isDark = effectiveMode === 'dark';
-    const mutedL = isDark ? Math.min(l + 3, 100) : Math.max(l - 5, 0);
-    const cardL = isDark ? Math.min(l + 2, 100) : Math.max(l - 3, 0);
-    const borderL = isDark ? Math.min(l + 10, 100) : Math.max(l - 15, 0);
+    const set = (name: string, value: string) => {
+      document.documentElement.style.setProperty(name, value);
+    };
 
-    document.documentElement.style.setProperty('--background', colors.background);
-    document.documentElement.style.setProperty('--foreground', colors.foreground);
+    set('--background', colors.background);
+    set('--foreground', colors.foreground);
 
-    // Derived backgrounds with subtle variations
-    document.documentElement.style.setProperty('--muted', `${h} ${s}% ${mutedL}%`);
-    document.documentElement.style.setProperty('--card', `${h} ${s}% ${cardL}%`);
-    document.documentElement.style.setProperty('--popover', `${h} ${s}% ${cardL}%`);
+    // Map all other tokens to either background or foreground
+    set('--muted', colors.background);
+    set('--card', colors.background);
+    set('--popover', colors.background);
+    set('--secondary', colors.background);
+    set('--accent', colors.foreground);
+    set('--primary', colors.foreground);
+    set('--destructive', colors.foreground);
+    set('--border', colors.foreground);
+    set('--input', colors.foreground);
+    set('--ring', colors.foreground);
 
-    // Border color
-    document.documentElement.style.setProperty('--border', `${h} ${Math.max(s - 10, 0)}% ${borderL}%`);
-    document.documentElement.style.setProperty('--input', `${h} ${Math.max(s - 10, 0)}% ${borderL}%`);
-
-    // Apply foreground to all foreground-related variables
-    document.documentElement.style.setProperty('--card-foreground', colors.foreground);
-    document.documentElement.style.setProperty('--popover-foreground', colors.foreground);
-    document.documentElement.style.setProperty('--muted-foreground', colors.foreground);
-    document.documentElement.style.setProperty('--secondary-foreground', colors.foreground);
-
-    // Apply accent to primary and accent variables
-    document.documentElement.style.setProperty('--primary', colors.accent);
-    document.documentElement.style.setProperty('--primary-foreground', colors.foreground);
-    document.documentElement.style.setProperty('--accent', colors.accent);
-    document.documentElement.style.setProperty('--accent-foreground', colors.foreground);
-    document.documentElement.style.setProperty('--ring', colors.accent);
+    set('--card-foreground', colors.foreground);
+    set('--popover-foreground', colors.foreground);
+    set('--muted-foreground', colors.foreground);
+    set('--secondary-foreground', colors.foreground);
+    set('--accent-foreground', colors.background);
+    set('--primary-foreground', colors.background);
+    set('--destructive-foreground', colors.background);
   }
 
   onMount(() => {
@@ -277,8 +272,8 @@
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       playerState.playing
-                        ? "text-foreground bg-primary/10 border border-primary/30 shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                        ? "text-background bg-foreground border border-foreground shadow-sm"
+                        : "text-foreground border border-foreground"
                     )}
                     aria-label={playerState.playing ? 'Pause' : 'Play'}
                   >
@@ -302,8 +297,8 @@
                     class={cn(
                       "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                       (playerVisible || mobilePanelOpen)
-                        ? "text-foreground bg-primary/10 border border-primary/30 shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                        ? "text-background bg-foreground border border-foreground shadow-sm"
+                        : "text-foreground border border-foreground"
                     )}
                     aria-label="Toggle player visibility"
                   >

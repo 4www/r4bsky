@@ -145,7 +145,7 @@
     />
   </div>
 {:else if items.length}
-  <div>
+  <div class="rounded-xl border border-foreground divide-y overflow-visible">
     {#each items as item, idx (item.uri || idx)}
       {@const isSelected = item.uri === selectedTrackUri}
       {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
@@ -158,6 +158,7 @@
             {context}
             {editable}
             isDetailView={true}
+            flat={true}
             onSelectTrack={selectTrack}
             onEditTrack={openEditDialog}
             onremove={handleTrackRemoved}
@@ -175,6 +176,7 @@
           items={items}
           {context}
           {editable}
+          flat={true}
           onSelectTrack={selectTrack}
           onEditTrack={openEditDialog}
           onremove={handleTrackRemoved}

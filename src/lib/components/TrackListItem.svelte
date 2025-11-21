@@ -25,6 +25,7 @@
     editable = false,
     expandedContent,
     isDetailView = false,
+    flat = false,
     onSelectTrack,
     onEditTrack,
     onremove,
@@ -184,26 +185,50 @@
 <Card
   class={cn(
     isDetailView
-      ? "border border-border bg-primary/5 transition-colors overflow-visible rounded-lg"
-      : "border border-border bg-background transition-colors hover:bg-muted/20 overflow-visible rounded-lg",
+      ? (flat
+        ? "border-0 bg-background transition-colors overflow-visible rounded-none shadow-none"
+        : "border border-foreground bg-background transition-colors overflow-visible rounded-lg shadow")
+      : flat
+        ? "border-0 bg-transparent transition-colors rounded-none shadow-none ring-0 rounded-none"
+        : "border border-foreground bg-background transition-colors hover:bg-foreground/10 overflow-visible rounded-lg shadow-none",
     deleting && "opacity-50 pointer-events-none"
   )}
 >
-  <CardHeader class={cn("p-1.5", isDetailView && "sm:p-3")}>
+  <CardHeader class={cn(
+    flat ? "p-0" : "p-0",
+    isDetailView && !flat && "sm:p-3",
+    flat && "rounded-none",
+    "overflow-visible"
+  )}>
     <div class={cn(
-      "flex items-start justify-between gap-2",
-      isDetailView && "sm:items-center"
+      "flex items-center justify-between gap-2",
+      flat && "px-2.5 py-2"
     )}>
+      <div class="shrink-0 flex items-center">
+        <Button
+          variant="secondary"
+          size="sm"
+          class={cn(
+            "h-7 px-2 text-xs",
+            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
+          )}
+          disabled={isActiveTrack}
+          onclick={play}
+        >
+          <Play class="h-3 w-3" />
+        </Button>
+      </div>
+
       <div class={cn("flex-1 min-w-0 space-y-1", isDetailView && "sm:space-y-1.5")}>
-        <div class={cn(isDetailView && "flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
+        <div class={cn("flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
           <CardTitle class="text-sm font-semibold">
             <a
               href={viewHref() || '#'}
               onclick={openDetail}
               class={cn(
-                "transition-colors cursor-pointer",
+                "transition-colors cursor-pointer px-1.5 py-0.5 inline-block",
                 isActiveTrack
-                  ? "bg-primary text-background px-1.5 py-0.5 rounded inline-block"
+                  ? "bg-primary text-background rounded"
                   : "hover:text-primary hover:underline"
               )}
             >
@@ -225,11 +250,9 @@
           {/if}
         </div>
         {#if item.description}
-          <div class="rounded-md bg-muted/20 p-1.5">
-            <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug">
-              {item.description}
-            </p>
-          </div>
+          <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug m-0">
+            {item.description}
+          </p>
         {/if}
       </div>
 
@@ -260,40 +283,34 @@
         </a>
 
         <Button
-          variant="secondary"
-          size="sm"
-          class={cn(
-            "h-7 px-2 text-xs ml-0.5",
-            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
-          )}
-          disabled={isActiveTrack}
-          onclick={play}
-        >
-          <Play class="h-3 w-3 mr-1" />
-          {t('trackItem.play')}
-        </Button>
+          class="hidden"
+          aria-hidden="true"
+        />
 
         <div class="relative">
             <button
               bind:this={triggerRef}
               type="button"
-              class={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
-                menuOpen
-                  ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
-                  : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
-              )}
-              onclick={() => toggleMenu()}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
-              <MoreVertical class="h-3.5 w-3.5" />
+            class={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
+              menuOpen
+                ? "bg-foreground text-background border-foreground shadow-sm"
+                : "bg-background text-foreground border-foreground"
+            )}
+            onclick={() => toggleMenu()}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
+              <MoreVertical
+                class="h-3.5 w-3.5"
+                style={menuOpen ? "color: hsl(var(--background));" : "color: hsl(var(--foreground));"}
+              />
               <span class="sr-only">{t('trackItem.actions')}</span>
             </button>
             {#if menuOpen}
               <div
                 bind:this={menuRef}
-                class="absolute right-0 z-40 mt-1.5 w-40 rounded-md border bg-popover text-popover-foreground shadow-lg"
+                class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
                 role="menu"
               >
                 {#if viewHref()}
@@ -341,10 +358,9 @@
                   </a>
                 {/if}
                 {#if editable}
-                  <div class="my-1 border-t"></div>
                   <button
                     type="button"
-                    class={cn(menuItemClass, "text-muted-foreground")}
+                    class={menuItemClass}
                     onclick={() => { closeMenu(); confirmDelete(); }}
                   >
                     <Trash2 class="h-4 w-4" />
