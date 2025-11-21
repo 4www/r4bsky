@@ -446,10 +446,10 @@
     style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
     <section
-      class="flex flex-col flex-1 min-h-0 gap-4 border border-foreground bg-card/95 shadow rounded-3xl p-3 lg:p-4 w-full"
+      class="flex flex-col flex-1 min-h-0 gap-0 border border-foreground bg-card/95 shadow rounded-3xl p-0 w-full overflow-hidden"
     >
-      <div class="flex flex-col gap-4 flex-1 min-h-0">
-        <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
+      <div class="flex flex-col gap-3 flex-1 min-h-0">
+        <div class={cn("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <Avatar
               src={profileData?.avatar || ''}
@@ -474,7 +474,7 @@
               {/if}
             </div>
           </div>
-          <div class="flex items-center gap-0.5 shrink-0">
+          <div class="flex items-center gap-0.5 shrink-0 pr-3">
             <div class="relative">
               <button
                 bind:this={triggerRef}
@@ -539,7 +539,7 @@
         >
           <div class="flex flex-col min-h-0 min-w-[16rem] flex-1">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
-              <div class="rounded-xl overflow-hidden bg-background border border-foreground shadow flex-1 min-h-[220px]">
+              <div class="bg-background flex-1 min-h-[220px]">
                 <audio
                   bind:this={playerAudio}
                   onended={next}
@@ -548,7 +548,7 @@
                 ></audio>
               </div>
             {:else if iframeSrc}
-              <div class="rounded-xl overflow-hidden bg-background border border-foreground shadow flex-1 min-h-[220px]">
+              <div class="bg-background flex-1 min-h-[220px]">
                 <iframe
                   bind:this={playerIframe}
                   src={iframeSrc}
@@ -563,7 +563,7 @@
           </div>
 
           <div class="flex flex-col min-h-0 min-w-[14rem] space-y-2 h-full">
-            <div class="px-0.5">
+            <div class="px-3">
               <div class="relative">
                 <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -574,7 +574,7 @@
                 />
               </div>
             </div>
-            <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-foreground divide-y bg-background">
+            <div class="flex-1 min-h-0 overflow-y-auto rounded-none border-t border-foreground border-l-0 border-r-0 divide-y bg-background">
               {#each filteredPlaylist as { track, originalIdx }}
                 {@const trackHandle = (track?.authorHandle || track?.author_handle || state.context?.handle || '').replace(/^@/, '')}
                 {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
@@ -721,7 +721,7 @@
         </div>
       </div>
 
-        <div class={cn("flex items-center justify-center gap-2 pt-1", isDesktop ? '' : 'shrink-0')}>
+        <div class={cn("flex items-center justify-center gap-2 pt-1 pb-2 border-t border-foreground bg-background", isDesktop ? '' : 'shrink-0')}>
           <button
             type="button"
             class={cn(
