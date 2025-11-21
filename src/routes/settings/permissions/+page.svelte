@@ -42,19 +42,19 @@
       <div class="rounded-lg bg-muted/50 p-3 text-sm space-y-2">
         <p class="font-semibold mb-2">{t('settings.permissionsAtProtocolLabel')}</p>
         <div class="space-y-2 text-xs">
-          <div class="border-l-2 border-primary/50 pl-2">
+          <div class="border-l-2 border-border pl-2">
             <p class="font-mono text-foreground">com.radio4000.track</p>
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>
-          <div class="border-l-2 border-primary/50 pl-2">
+          <div class="border-l-2 border-border pl-2">
             <p class="font-mono text-foreground">com.radio4000.favorite</p>
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
-          <div class="border-l-2 border-primary/50 pl-2">
+          <div class="border-l-2 border-border pl-2">
             <p class="font-mono text-foreground">app.bsky.graph.follow</p>
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
-          <div class="border-l-2 border-primary/50 pl-2">
+          <div class="border-l-2 border-border pl-2">
             <p class="font-mono text-foreground">com.radio4000.profile</p>
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>

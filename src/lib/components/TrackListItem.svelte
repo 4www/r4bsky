@@ -7,7 +7,7 @@
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause } from 'lucide-svelte';
+  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
   import { cn, menuItemClass } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
@@ -125,11 +125,11 @@
     }
   }
 
-  function openDetail(event?: Event) {
+  function openDetail(event?: Event, opts?: { forceNavigate?: boolean }) {
     event?.preventDefault?.();
 
     // If onSelectTrack callback is provided, use it instead of navigation
-    if (onSelectTrack) {
+    if (onSelectTrack && !opts?.forceNavigate) {
       onSelectTrack(item.uri);
       return;
     }
@@ -183,28 +183,38 @@
 
 <Card
   class={cn(
-    "border-0 border-b border-border/50 bg-background transition-colors hover:bg-muted/20 overflow-visible rounded-none",
-    isActiveTrack && "bg-primary/5 border-l-2 border-l-primary",
-    isDetailView && !isActiveTrack && "bg-primary/5",
-    isDetailView && isActiveTrack && "bg-primary/5 border-l-2 border-l-primary",
+    isDetailView
+      ? "border border-border bg-primary/5 transition-colors overflow-visible rounded-lg"
+      : "border border-border bg-background transition-colors hover:bg-muted/20 overflow-visible rounded-lg",
     deleting && "opacity-50 pointer-events-none"
   )}
 >
-  <CardHeader class="p-1.5">
-    <div class="flex items-start justify-between gap-2">
-      <div class="flex-1 min-w-0 space-y-1">
-        <div>
+  <CardHeader class={cn("p-1.5", isDetailView && "sm:p-3")}>
+    <div class={cn(
+      "flex items-start justify-between gap-2",
+      isDetailView && "sm:items-center"
+    )}>
+      <div class={cn("flex-1 min-w-0 space-y-1", isDetailView && "sm:space-y-1.5")}>
+        <div class={cn(isDetailView && "flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
           <CardTitle class="text-sm font-semibold">
             <a
               href={viewHref() || '#'}
               onclick={openDetail}
-              class="hover:text-primary transition-colors hover:underline cursor-pointer"
+              class={cn(
+                "transition-colors cursor-pointer",
+                isActiveTrack
+                  ? "bg-primary text-background px-1.5 py-0.5 rounded inline-block"
+                  : "hover:text-primary hover:underline"
+              )}
             >
               {item.title || t('trackItem.untitled')}
             </a>
           </CardTitle>
           {#if showAuthor && authorHandle}
-            <CardDescription class="text-xs flex items-center gap-1 mt-0.5">
+            <CardDescription class={cn(
+              "text-xs flex items-center gap-1 mt-0.5",
+              isDetailView && "mt-0 sm:mt-0"
+            )}>
               <span class="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-foreground text-[0.55rem] font-semibold">
                 @
               </span>
@@ -249,7 +259,16 @@
           <ExternalLink class="h-3 w-3" />
         </a>
 
-        <Button variant="primary" size="sm" class="h-7 px-2 text-xs ml-0.5" onclick={play}>
+        <Button
+          variant="secondary"
+          size="sm"
+          class={cn(
+            "h-7 px-2 text-xs ml-0.5",
+            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
+          )}
+          disabled={isActiveTrack}
+          onclick={play}
+        >
           <Play class="h-3 w-3 mr-1" />
           {t('trackItem.play')}
         </Button>
@@ -277,6 +296,16 @@
                 class="absolute right-0 z-40 mt-1.5 w-40 rounded-md border bg-popover text-popover-foreground shadow-lg"
                 role="menu"
               >
+                {#if viewHref()}
+                  <button
+                    type="button"
+                    class={menuItemClass}
+                    onclick={(e) => { e.preventDefault(); e.stopPropagation(); closeMenu(); openDetail(e, { forceNavigate: true }); }}
+                  >
+                    <Eye class="h-4 w-4" />
+                    View track
+                  </button>
+                {/if}
                 {#if editable && editHref()}
                   <a
                     href={editHref()}
@@ -297,7 +326,7 @@
                   onclick={closeMenu}
                 >
                   <ExternalLink class="h-4 w-4" />
-                  Open media URL
+                  {t('trackItem.openMediaUrl')}
                 </a>
                 {#if discogsLink}
                   <a
@@ -308,7 +337,7 @@
                     onclick={closeMenu}
                   >
                     <DiscIcon class="h-4 w-4" />
-                    Discogs
+                    Open Discogs
                   </a>
                 {/if}
                 {#if editable}

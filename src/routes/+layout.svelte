@@ -245,7 +245,7 @@
           aria-label="layout-playback"
           aria-hidden={playbackCollapsed}
         >
-          <div class="h-full rounded-2xl bg-background/95 p-2 lg:p-3 shadow-sm">
+          <div class="h-full rounded-xl bg-background/95 p-2 lg:p-3 shadow-sm">
             <Player
               visible={!playbackCollapsed}
               bind:mobilePanelOpen={mobilePanelOpen}
@@ -256,7 +256,7 @@
 
         <section
           class={cn(
-            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full bg-background/95 rounded-2xl",
+            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full bg-background/95 rounded-xl",
             playbackCollapsed ? "lg:max-w-5xl lg:mx-auto" : ""
           )}
           aria-label="layout-panel"

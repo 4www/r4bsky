@@ -7,7 +7,7 @@
 
 <div class="container max-w-4xl py-8 lg:py-12 space-y-8">
   <div class="text-center animate-in space-y-3">
-    <h1 class="text-4xl lg:text-5xl font-bold text-gradient">{t('search.title')}</h1>
+    <h1 class="text-4xl lg:text-5xl font-bold text-foreground">{t('search.title')}</h1>
     <p class="text-lg text-muted-foreground max-w-2xl mx-auto">{t('search.description')}</p>
   </div>
 

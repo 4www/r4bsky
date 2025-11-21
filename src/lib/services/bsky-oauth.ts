@@ -50,17 +50,10 @@ class BskyOAuthService {
 
 	#canonicalRedirectUri(): string | undefined {
 		try {
-			const {origin, pathname} = window.location
-			let path = pathname
-			if (!path.endsWith('/')) {
-				if (path.endsWith('/index.html')) {
-					path = path.slice(0, -('/index.html'.length))
-					if (!path.endsWith('/')) path = path + '/'
-				} else {
-					path = path + '/'
-				}
-			}
-			return origin + path
+			const {origin} = window.location
+			// Always use root URL for redirect_uri since only root is in client metadata
+			// The original path is saved in localStorage and restored after callback
+			return origin + '/'
 		} catch {
 			return undefined
 		}

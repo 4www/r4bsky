@@ -15,7 +15,7 @@
   const t = (key, vars = {}) => translate($locale, key, vars);
 </script>
 
-<header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+<header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
   <div class="container flex h-14 items-center justify-between">
     <div class="flex items-center gap-6">
       <Link href="/" class="flex items-center space-x-2">
@@ -46,7 +46,7 @@
 
   <!-- Mobile Navigation -->
   {#if open}
-    <div class="md:hidden border-t">
+    <div class="md:hidden border-t border-border">
       <nav class="container grid gap-2 py-4">
         {#each linksVal as [href, title]}
           <Link

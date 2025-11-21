@@ -14,7 +14,12 @@
   const followingPath = `/@${handle}/favorites`;
   const addPath = `/@${handle}/add`;
 
-  const isTracksActive = $derived(currentPath === (base + profilePath) || currentPath === profilePath);
+  const isTracksActive = $derived(
+    currentPath === (base + profilePath) ||
+    currentPath === profilePath ||
+    currentPath.startsWith(`${base}/@${handle}/tracks/`) ||
+    currentPath.startsWith(`/@${handle}/tracks/`)
+  );
   const isFollowingActive = $derived(currentPath === (base + followingPath) || currentPath === followingPath);
   const isAddActive = $derived(currentPath === (base + addPath) || currentPath === addPath);
 

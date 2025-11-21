@@ -4,10 +4,11 @@
   import { Button, buttonVariants } from './ui/button';
   import { cn, menuItemClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
-  import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy } from 'lucide-svelte';
+  import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye } from 'lucide-svelte';
   import { resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import { setPlaylist, player } from '$lib/player/store';
   import { onMount, onDestroy } from 'svelte';
+  import { locale, translate } from '$lib/i18n';
 
   const {
     profile,
@@ -17,6 +18,8 @@
     clickable = true,
     children
   } = $props();
+
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
   const sizeMap = {
     sm: { avatar: 'md', title: 'text-xl', description: 'text-sm' },
@@ -106,19 +109,16 @@
 
 <Card
   class={cn(
-    'border border-border bg-card animate-in transition-colors shadow-sm',
-    isActiveProfile
-      ? 'border-primary/40 bg-primary/5 shadow-md'
-      : 'hover:bg-muted/20',
+    'border border-border bg-card animate-in transition-colors shadow-sm hover:bg-muted/20',
     extraClass
   )}
 >
   <CardHeader class="pb-4">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
       {#if clickable}
         <Link
           href={`/@${handle}`}
-          class="flex items-center gap-3 sm:gap-4 hover:opacity-80 transition-opacity min-w-0 w-full sm:w-auto"
+          class="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
         >
           <Avatar
             src={profile?.avatar}
@@ -126,10 +126,15 @@
             size={sizes.avatar}
           />
           <div class="min-w-0 flex-1">
-            <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
-              {profile?.displayName || handle}
+            <CardTitle class={cn('flex items-center gap-2', sizes.title)}>
+              <span class={cn(
+                "inline-block px-1.5 py-0.5 rounded transition-colors",
+                isActiveProfile ? "bg-primary text-background" : ""
+              )}>
+                {profile?.displayName || handle}
+              </span>
             </CardTitle>
-            <CardDescription class={sizes.description}>
+            <CardDescription class={cn(sizes.description, "mt-0")}>
               <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
                 @{handle}
               </Link>
@@ -142,17 +147,22 @@
           </div>
         </Link>
       {:else}
-        <div class="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
           <Avatar
             src={profile?.avatar}
             alt={profile?.displayName || handle}
             size={sizes.avatar}
           />
           <div class="min-w-0 flex-1">
-            <CardTitle class={cn('mb-1 flex items-center gap-2', sizes.title)}>
-              {profile?.displayName || handle}
+            <CardTitle class={cn('flex items-center gap-2', sizes.title)}>
+              <span class={cn(
+                "inline-block px-1.5 py-0.5 rounded transition-colors",
+                isActiveProfile ? "bg-primary text-background" : ""
+              )}>
+                {profile?.displayName || handle}
+              </span>
             </CardTitle>
-            <CardDescription class={sizes.description}>
+            <CardDescription class={cn(sizes.description, "mt-0")}>
               <Link href={`/@${handle}`} class="hover:text-primary transition-colors">
                 @{handle}
               </Link>
@@ -166,20 +176,22 @@
         </div>
       {/if}
 
-      <div class="flex gap-2 sm:gap-3 items-center w-full sm:w-auto sm:shrink-0">
+      <div class="flex gap-2 items-center shrink-0">
         <Button
-          variant="primary"
-          size={size === 'sm' ? 'sm' : 'lg'}
-          class="flex-1 sm:flex-initial"
+          variant="secondary"
+          size="default"
+          class={cn(
+            isActiveProfile && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
+          )}
           onclick={playAll}
-          disabled={loadingTracks}
+          disabled={loadingTracks || isActiveProfile}
         >
           {#if loadingTracks}
             <Loader2 class="mr-2 h-4 w-4 animate-spin" />
           {:else}
-            <PlayCircle class="mr-2 h-4 w-4" />
+            <PlayCircle class="mr-1.5 h-4 w-4" />
           {/if}
-          Play
+          {t('trackItem.play')}
         </Button>
 
         {#if children}
@@ -201,7 +213,7 @@
             aria-expanded={menuOpen}
           >
             <MoreVertical class="h-4 w-4" />
-            <span class="sr-only">Profile actions</span>
+            <span class="sr-only">{t('profile.actions')}</span>
           </button>
           {#if menuOpen}
             <div
@@ -210,6 +222,14 @@
               role="menu"
             >
               <a
+                href={`/@${normalizedHandle}`}
+                class={menuItemClass}
+                onclick={closeMenu}
+              >
+                <Eye class="h-4 w-4" />
+                {t('profile.viewProfile')}
+              </a>
+              <a
                 href={`https://bsky.app/profile/${normalizedHandle}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -217,7 +237,7 @@
                 onclick={closeMenu}
               >
                 <ExternalLink class="h-4 w-4" />
-                Open in Bluesky
+                {t('profile.openInBluesky')}
               </a>
               <button
                 type="button"
@@ -225,7 +245,7 @@
                 onclick={copyProfileUrl}
               >
                 <Copy class="h-4 w-4" />
-                Copy profile link
+                {t('profile.copyLink')}
               </button>
             </div>
           {/if}

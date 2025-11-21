@@ -82,6 +82,7 @@
       <div class="flex items-center justify-center min-h-[50vh]">
         <StateCard
           icon={Loader2}
+          loading={true}
           title="Loading your profile"
           description="Fetching your profile and favorites."
         />

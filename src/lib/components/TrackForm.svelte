@@ -115,9 +115,9 @@
   function hasDiscogsTag(tag: string): boolean {
     const slug = tag?.trim();
     if (!slug) return false;
-    const hashtag = `#${slug}`;
+    const hashtag = `#${slug}`.toLowerCase();
     const tokens = description?.split(/\s+/).filter(Boolean) ?? [];
-    return tokens.includes(hashtag);
+    return tokens.some(token => token.toLowerCase() === hashtag);
   }
 
   function appendDiscogsTag(tag: string) {
@@ -133,9 +133,9 @@
     if (!hasDiscogsTag(tag)) return;
     const slug = tag.trim();
     if (!slug) return;
-    const hashtag = `#${slug}`;
+    const hashtag = `#${slug}`.toLowerCase();
     const tokens = description?.split(/\s+/).filter(Boolean) ?? [];
-    description = tokens.filter((token) => token !== hashtag).join(' ');
+    description = tokens.filter((token) => token.toLowerCase() !== hashtag).join(' ');
   }
 
   function toggleDiscogsTag(tag: string) {

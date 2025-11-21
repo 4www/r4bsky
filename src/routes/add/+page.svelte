@@ -31,9 +31,6 @@
     <Card>
       <CardHeader>
         <CardTitle>{t('add.title')}</CardTitle>
-        <CardDescription>
-          {t('add.description')}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />

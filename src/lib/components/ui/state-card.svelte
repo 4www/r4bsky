@@ -31,7 +31,11 @@
 	} = $props();
 </script>
 
-<Card class={cn("text-center max-w-md mx-auto", className)}>
+<Card class={cn(
+	"text-center max-w-md mx-auto",
+	loading && "border-none border-0 shadow-none bg-transparent",
+	className
+)}>
 	<CardHeader class="items-center text-center space-y-4 pb-6">
 		{#if Icon}
 			<div class="rounded-full bg-muted p-4">

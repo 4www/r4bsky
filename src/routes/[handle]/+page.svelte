@@ -84,7 +84,7 @@
     const track = items.find(t => t.uri === trackUri);
     if (!track) return;
 
-    selectedTrackUri = trackUri;
+    selectedTrackUri = selectedTrackUri === trackUri ? null : trackUri;
   }
 
   function openEditDialog(trackUri: string) {
@@ -190,6 +190,12 @@
       </Button>
     </div>
   {/if}
+{:else}
+  <StateCard
+    icon={AlertCircle}
+    title={t('profile.noTracksTitle')}
+    description={t('profile.noTracksDescription')}
+  />
 {/if}
 
 {#if editingTrackUri && editingRkey}

@@ -21,7 +21,7 @@
   // Container styles based on variant
   const containerClass = $derived(cn(
     'inline-flex gap-1.5 overflow-x-auto',
-    variant === 'pills' && 'p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-primary/20',
+    variant === 'pills' && 'p-1 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border',
     variant === 'pills-muted' && 'p-1.5 rounded-full bg-muted/40 border border-muted',
     variant === 'sidebar' && 'flex-col gap-2 overflow-x-visible',
     className
@@ -29,12 +29,12 @@
 
   // Link styles based on variant
   const linkClass = (active: boolean) => cn(
-    'flex items-center gap-2 text-sm font-medium transition-all duration-200 border-2',
+    'flex items-center gap-1 text-sm font-medium transition-all duration-200 border-2',
     variant === 'pills' && 'gap-1.5 px-3 py-2 rounded-full',
     variant === 'pills-muted' && 'gap-1.5 px-3 py-1.5 rounded-full',
     variant === 'sidebar' && 'px-3 py-2 rounded-md whitespace-nowrap',
     active
-      ? 'text-foreground border-primary shadow-sm'
+      ? 'text-foreground border-border shadow-sm bg-muted'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground border-transparent',
     variant === 'sidebar' && !active && 'hover:bg-muted/50'
   );
