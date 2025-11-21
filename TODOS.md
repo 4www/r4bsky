@@ -1,2 +1,0 @@
-- [ ] on a track detail page, add discogs info, and discogs trck list of the release, and allow to play that in the player.
-- [ ] add a /settings/feedback route, to somehow make a new post on bluesky (public #radio4000-feedback or private the @radio4000 profile in DM)?eee
