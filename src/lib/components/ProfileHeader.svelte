@@ -78,12 +78,6 @@
     menuOpen = false;
   }
 
-  function openInBluesky() {
-    const url = `https://bsky.app/profile/${normalizedHandle}`;
-    window.open(url, '_blank', 'noopener');
-    closeMenu();
-  }
-
   function copyProfileUrl() {
     const url = window.location.origin + `/@${normalizedHandle}`;
     navigator.clipboard.writeText(url);
@@ -112,7 +106,7 @@
 
 <Card
   class={cn(
-    'border border-border bg-background animate-in transition-colors shadow-sm',
+    'border border-border bg-card animate-in transition-colors shadow-sm',
     isActiveProfile
       ? 'border-primary/40 bg-primary/5 shadow-md'
       : 'hover:bg-muted/20',
@@ -215,14 +209,16 @@
               class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border bg-popover text-popover-foreground shadow-lg"
               role="menu"
             >
-              <button
-                type="button"
+              <a
+                href={`https://bsky.app/profile/${normalizedHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 class={menuItemClass}
-                onclick={openInBluesky}
+                onclick={closeMenu}
               >
                 <ExternalLink class="h-4 w-4" />
                 Open in Bluesky
-              </button>
+              </a>
               <button
                 type="button"
                 class={menuItemClass}

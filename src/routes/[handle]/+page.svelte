@@ -103,6 +103,15 @@
     }
   }
 
+  function handleTrackRemoved(event) {
+    const { uri } = event.detail;
+    items = items.filter(track => track.uri !== uri);
+    // If the removed track was selected, clear selection
+    if (selectedTrackUri === uri) {
+      selectedTrackUri = null;
+    }
+  }
+
   async function more() {
     if (!cursor || !did) return;
     const { tracks, cursor: c } = await listTracksByDid(did, { cursor });
@@ -136,11 +145,11 @@
     />
   </div>
 {:else if items.length}
-  <div class="space-y-1">
+  <div>
     {#each items as item, idx (item.uri || idx)}
       {@const isSelected = item.uri === selectedTrackUri}
       {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
-      {#if isSelected}
+      {#if isSelected && discogsUrl}
         <div bind:this={selectedTrackRef}>
           <TrackListItem
             {item}
@@ -151,11 +160,11 @@
             isDetailView={true}
             onSelectTrack={selectTrack}
             onEditTrack={openEditDialog}
+            onremove={handleTrackRemoved}
+            showAuthor={false}
           >
             {#snippet expandedContent()}
-              {#if discogsUrl}
-                <DiscogsResource url={discogsUrl} {handle} />
-              {/if}
+              <DiscogsResource url={discogsUrl} {handle} />
             {/snippet}
           </TrackListItem>
         </div>
@@ -168,6 +177,8 @@
           {editable}
           onSelectTrack={selectTrack}
           onEditTrack={openEditDialog}
+          onremove={handleTrackRemoved}
+          showAuthor={false}
         />
       {/if}
     {/each}

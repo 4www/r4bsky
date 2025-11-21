@@ -59,7 +59,7 @@
 	}
 	input::placeholder,
 	textarea::placeholder {
-		@apply text-foreground/30;
+		@apply text-muted-foreground/60 italic;
 	}
 }
 

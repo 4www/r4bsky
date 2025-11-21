@@ -118,9 +118,8 @@
       </div>
     {:else}
       <div class="space-y-6">
-        <div class="sticky top-2 lg:top-4 z-20">
-          <div class="rounded-2xl border border-border/40 bg-background/90 backdrop-blur p-4 lg:p-6">
-            <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
+        <div class="sticky top-2 lg:top-4 z-20 bg-background pb-2">
+          <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
               {#snippet children()}
                 <div class="flex gap-3 flex-wrap">
                   {#if did && $session?.did !== did}
@@ -129,7 +128,6 @@
                 </div>
               {/snippet}
             </ProfileHeader>
-          </div>
         </div>
 
         <ProfileNav {handle} />

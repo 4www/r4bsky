@@ -3,9 +3,9 @@
   import { player, toggle, next, prev, playIndex, toggleShuffle } from '$lib/player/store';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
-  import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle } from 'lucide-svelte';
+  import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle, MoreVertical, Eye } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
-  import { cn } from '$lib/utils';
+  import { cn, menuItemClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { getProfile } from '$lib/services/r4-service';
@@ -34,6 +34,17 @@
   let vimeoPlayerReady = $state(false);
   let playerIframe = $state<HTMLIFrameElement | null>(null);
   let playerAudio = $state<HTMLAudioElement | null>(null);
+  let menuOpen = $state(false);
+  let menuRef = $state<HTMLElement | null>(null);
+  let triggerRef = $state<HTMLElement | null>(null);
+
+  function toggleMenu() {
+    menuOpen = !menuOpen;
+  }
+
+  function closeMenu() {
+    menuOpen = false;
+  }
 
   function loadScriptOnce(src, check) {
     return new Promise((resolve, reject) => {
@@ -78,6 +89,10 @@
   }
 
   let lastIndex = $state(-1);
+  let lastUrl = $state('');
+  let lastProvider = $state('');
+  let syncingWithIframe = $state(false);
+
   function cleanupProviders() {
     try { if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy(); } catch {}
     ytPlayer = null;
@@ -87,11 +102,10 @@
     vimeoPlayerReady = false;
     scWidget = null;
     scWidgetReady = false;
+    // Reset tracking variables to ensure iframe rebuilds on next track
+    lastUrl = '';
+    lastProvider = '';
   }
-
-  let lastUrl = $state('');
-  let lastProvider = $state('');
-  let syncingWithIframe = $state(false);
 
   function resetAudioElement(el?: HTMLAudioElement | null) {
     if (!el) return;
@@ -214,6 +228,25 @@
     update();
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
+  });
+
+  onMount(() => {
+    function handleClick(event: MouseEvent) {
+      if (!menuOpen) return;
+      const target = event.target as Node;
+      if (menuRef && menuRef.contains(target)) return;
+      if (triggerRef && triggerRef.contains(target)) return;
+      menuOpen = false;
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') menuOpen = false;
+    }
+    window.addEventListener('click', handleClick);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('click', handleClick);
+      window.removeEventListener('keydown', handleKey);
+    };
   });
 
   onDestroy(() => {
@@ -359,14 +392,14 @@
     >
       <div class="flex flex-col gap-4 flex-1 min-h-0">
         <div class={cn("flex items-start gap-3", isDesktop ? "min-w-0" : "justify-between items-start")}>
-          <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-3 min-w-0 flex-1">
             <Avatar
               src={profileData?.avatar || ''}
               alt={currentProfileName}
               size={isDesktop ? "md" : "sm"}
               class="shadow-lg shrink-0"
             />
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               {#if currentTrackHref}
                 <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-primary transition-colors">
                   {currentTrackTitle}
@@ -380,6 +413,68 @@
                 </Link>
               {:else if state.context?.handle}
                 <span class="text-xs text-muted-foreground truncate block">@{state.context.handle}</span>
+              {/if}
+            </div>
+          </div>
+          <div class="flex items-center gap-0.5 shrink-0">
+            <div class="relative">
+              <button
+                bind:this={triggerRef}
+                type="button"
+                class={cn(
+                  "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
+                  menuOpen
+                    ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
+                    : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
+                )}
+                onclick={() => toggleMenu()}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                <MoreVertical class="h-3.5 w-3.5" />
+                <span class="sr-only">Track options</span>
+              </button>
+              {#if menuOpen}
+                <div
+                  bind:this={menuRef}
+                  class="absolute right-0 z-40 mt-1.5 w-40 rounded-md border bg-popover text-popover-foreground shadow-lg"
+                  role="menu"
+                >
+                  {#if currentHandle && current?.uri}
+                    <a
+                      href={buildViewHash(currentHandle, current.uri) || '#'}
+                      class={menuItemClass}
+                      onclick={closeMenu}
+                    >
+                      <Eye class="h-4 w-4" />
+                      View track
+                    </a>
+                  {/if}
+                  {#if current?.url}
+                    <a
+                      href={current.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class={menuItemClass}
+                      onclick={closeMenu}
+                    >
+                      <ExternalLink class="h-4 w-4" />
+                      Open media URL
+                    </a>
+                  {/if}
+                  {#if discogsUrl}
+                    <a
+                      href={discogsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class={menuItemClass}
+                      onclick={closeMenu}
+                    >
+                      <DiscIcon class="h-4 w-4" />
+                      Discogs
+                    </a>
+                  {/if}
+                </div>
               {/if}
             </div>
           </div>
@@ -424,27 +519,36 @@
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-primary/10 divide-y bg-gradient-to-b from-muted/20 to-transparent">
               {#each state.playlist as track, idx}
-                <button
-                  type="button"
+                {@const trackHandle = track?.authorHandle || track?.author_handle || ''}
+                {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
+                <a
+                  href={trackHref || '#'}
                   class={cn(
-                    "w-full text-left px-2.5 py-1.5 transition-all duration-150 flex flex-col gap-1 relative text-xs",
+                    "w-full text-left px-2.5 py-2 transition-all duration-150 flex gap-2 relative text-xs items-start block",
                     idx === state.index
                       ? "bg-primary/15 text-primary border-l-3 border-primary shadow-sm font-medium"
                       : "hover:bg-muted/50 hover:pl-3"
                   )}
-                  onclick={() => playIndex(idx)}
+                  onclick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey) {
+                      e.preventDefault();
+                      playIndex(idx);
+                    }
+                  }}
                 >
-                  <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span class="font-semibold text-foreground">{idx + 1}</span>
-                    {#if track?.authorHandle || track?.author_handle}
-                      <span>@{track.authorHandle || track.author_handle}</span>
-                    {/if}
+                  <span class="text-[11px] text-muted-foreground font-semibold mt-0.5 shrink-0 w-6">{idx + 1}</span>
+                  <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <p class="truncate text-xs font-medium text-foreground leading-tight">{track.title || t('trackItem.untitled')}</p>
+                    <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      {#if track?.authorHandle || track?.author_handle}
+                        <span class="truncate">@{track.authorHandle || track.author_handle}</span>
+                      {/if}
+                      {#if track.description}
+                        <span class="truncate">{track.description}</span>
+                      {/if}
+                    </div>
                   </div>
-                  <p class="truncate text-xs font-medium text-foreground">{track.title || t('trackItem.untitled')}</p>
-                  {#if track.description}
-                    <p class="text-[11px] text-muted-foreground truncate">{track.description}</p>
-                  {/if}
-                </button>
+                </a>
               {/each}
             </div>
           </div>

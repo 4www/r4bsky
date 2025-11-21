@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getTrackByUri, resolveHandle } from '$lib/services/r4-service';
+  import { getTrackByUri, resolveHandle, listTracksByDid } from '$lib/services/r4-service';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import DiscogsResource from '$lib/components/DiscogsResource.svelte';
   import { session } from '$lib/state/session';
@@ -26,6 +26,7 @@
   let loadRequestId = 0;
   let currentKey = $state('');
   const t = (key, vars = {}) => translate($locale, key, vars);
+  const trackIndex = $derived(item ? allTracks.findIndex(t => t.uri === item.uri) : 0);
 
   function refreshTrack() {
     loadTrack(handle, rkey);
@@ -36,6 +37,7 @@
 
     const nav = window.history.state || {};
     const navTrack = nav.track || null;
+    const navTracks = nav.tracks || [];
     const navDid = nav.did || '';
     const navHandle = nav.handle || '';
 
@@ -45,7 +47,8 @@
     console.log('[Track Detail] Hydrating from navigation state');
 
     item = navTrack;
-    allTracks = [navTrack];
+    // Use the full track list from navigation if available, otherwise just the single track
+    allTracks = navTracks.length > 0 ? navTracks : [navTrack];
 
     if (navDid) {
       did = navDid;
@@ -75,11 +78,16 @@
       did = resolvedDid;
       displayHandle = currentHandle;
 
-      const trackData = await getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`);
+      // Load both the specific track and all profile tracks in parallel
+      const [trackData, profileTracks] = await Promise.all([
+        getTrackByUri(`at://${resolvedDid}/com.radio4000.track/${currentRkey}`),
+        listTracksByDid(resolvedDid)
+      ]);
 
       if (requestId === loadRequestId) {
         item = { ...trackData };
-        allTracks = [trackData]; // Just the single track
+        // Use all profile tracks so play works in full context
+        allTracks = profileTracks.tracks || [trackData];
       }
     } catch (e) {
       if (requestId === loadRequestId) status = (e as Error)?.message || t('trackDetail.errorTitle');
@@ -131,11 +139,12 @@
   {:else if item}
     <TrackListItem
       {item}
-      index={0}
+      index={trackIndex >= 0 ? trackIndex : 0}
       items={allTracks}
       {context}
       {editable}
       isDetailView={true}
+      showAuthor={false}
     >
       {#snippet expandedContent()}
         {#if discogsUrl}

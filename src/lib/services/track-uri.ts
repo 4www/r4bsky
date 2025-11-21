@@ -26,14 +26,14 @@ export function buildEditHash(sessionHandle: string | undefined, uri: string): s
   const parsed = parseAtUri(uri)
   if (!parsed) return null
   const { repo, rkey } = parsed
-  if (sessionHandle) return `/@${encodeURIComponent(sessionHandle)}/${encodeURIComponent(rkey)}/edit`
-  return `/${encodeURIComponent(repo)}/${encodeURIComponent(rkey)}/edit`
+  if (sessionHandle) return `/@${encodeURIComponent(sessionHandle)}/tracks/${encodeURIComponent(rkey)}/edit`
+  return `/${encodeURIComponent(repo)}/tracks/${encodeURIComponent(rkey)}/edit`
 }
 
 export function buildViewHash(sessionHandle: string | undefined, uri: string): string | null {
   const parsed = parseAtUri(uri)
   if (!parsed) return null
   const { repo, rkey } = parsed
-  if (sessionHandle) return `/@${encodeURIComponent(sessionHandle)}/${encodeURIComponent(rkey)}`
-  return `/${encodeURIComponent(repo)}/${encodeURIComponent(rkey)}`
+  if (sessionHandle) return `/@${encodeURIComponent(sessionHandle)}/tracks/${encodeURIComponent(rkey)}`
+  return `/${encodeURIComponent(repo)}/tracks/${encodeURIComponent(rkey)}`
 }

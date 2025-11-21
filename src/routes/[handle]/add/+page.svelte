@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { createTrack } from '$lib/services/r4-service';
+  import { createTrack, getTrackByUri } from '$lib/services/r4-service';
   import TrackForm from '$lib/components/TrackForm.svelte';
+  import TrackListItem from '$lib/components/TrackListItem.svelte';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { parseAtUri } from '$lib/services/track-uri';
   import { CheckCircle2 } from 'lucide-svelte';
@@ -12,6 +13,7 @@
   import { page } from '$app/stores';
 
   let savedUri = $state('');
+  let savedTrack = $state(null);
   const savedAt = $derived(savedUri ? parseAtUri(savedUri) : null);
   const t = (key, vars = {}) => translate($locale, key, vars);
   const userHandle = $derived($session?.handle || '');
@@ -19,12 +21,21 @@
 
   function viewTrack() {
     if (!savedAt || !pageHandle) return;
-    goto(`/@${encodeURIComponent(pageHandle)}/${encodeURIComponent(savedAt.rkey)}`);
+    goto(`/@${encodeURIComponent(pageHandle)}/tracks/${encodeURIComponent(savedAt.rkey)}`);
   }
 
   async function onCreate({ url, title, description, discogs_url }) {
     const res = await createTrack({ url, title, description, discogs_url });
     savedUri = res?.data?.uri || res?.uri || '';
+    if (savedUri) {
+      // Fetch the full track data to display the card
+      try {
+        const trackData = await getTrackByUri(savedUri);
+        savedTrack = trackData;
+      } catch (e) {
+        console.error('Failed to fetch created track:', e);
+      }
+    }
     return res;
   }
 </script>
@@ -40,22 +51,20 @@
     <CardContent>
       <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />
 
-      {#if savedAt}
-        <div class="mt-6">
-          <StateCard
-            icon={CheckCircle2}
-            title={t('add.successTitle')}
-            description={t('add.successDescription')}
-          >
-            {#snippet actions()}
-            <Button
-              variant="outline"
-              onclick={viewTrack}
-            >
-              {t('add.viewTrack')}
-            </Button>
-          {/snippet}
-          </StateCard>
+      {#if savedTrack}
+        <div class="mt-6 space-y-3">
+          <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <CheckCircle2 class="h-4 w-4" />
+            <span>{t('add.successTitle')}</span>
+          </div>
+          <TrackListItem
+            item={savedTrack}
+            index={0}
+            items={[savedTrack]}
+            context={{ type: 'profile', key: savedAt?.repo || '', handle: pageHandle }}
+            editable={true}
+            showAuthor={false}
+          />
         </div>
       {/if}
     </CardContent>

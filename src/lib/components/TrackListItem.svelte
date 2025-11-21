@@ -5,7 +5,6 @@
   import { setPlaylist } from '$lib/player/store';
   import { session } from '$lib/state/session';
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
-  import { createEventDispatcher } from 'svelte';
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause } from 'lucide-svelte';
@@ -16,6 +15,7 @@
   import Link from '$lib/components/Link.svelte';
   import { player } from '$lib/player/store';
   import { onDestroy } from 'svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
 
   const {
     item,
@@ -26,10 +26,13 @@
     expandedContent,
     isDetailView = false,
     onSelectTrack,
-    onEditTrack
+    onEditTrack,
+    onremove,
+    showAuthor = true
   } = $props();
   let message = $state('');
-  const dispatch = createEventDispatcher();
+  let showDeleteConfirm = $state(false);
+  let deleting = $state(false);
 
   const t = (key, vars = {}) => translate($locale, key, vars);
   let menuOpen = $state(false);
@@ -40,13 +43,29 @@
     setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
   }
 
+  function confirmDelete() {
+    showDeleteConfirm = true;
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
+  }
+
   async function remove() {
     message = '';
+    deleting = true;
+    showDeleteConfirm = false;
     try {
       await deleteTrackByUri(item.uri);
-      dispatch('remove', { uri: item.uri });
+      // Call the parent callback to remove from list
+      if (onremove) {
+        onremove({ detail: { uri: item.uri } });
+      }
+      // Don't reset deleting here - component should be unmounted by parent
     } catch (e) {
       message = e?.message || String(e);
+      deleting = false;
+      console.error('Failed to delete track:', e);
     }
   }
 
@@ -164,17 +183,18 @@
 
 <Card
   class={cn(
-    "border border-border bg-background transition-colors shadow-sm hover:bg-muted/20 overflow-visible",
-    isActiveTrack && "border-primary/40 bg-primary/5 shadow-md",
-    isDetailView && !isActiveTrack && "bg-primary/5 shadow-md",
-    isDetailView && isActiveTrack && "border-primary/40 bg-primary/5 shadow-md"
+    "border-0 border-b border-border/50 bg-background transition-colors hover:bg-muted/20 overflow-visible rounded-none",
+    isActiveTrack && "bg-primary/5 border-l-2 border-l-primary",
+    isDetailView && !isActiveTrack && "bg-primary/5",
+    isDetailView && isActiveTrack && "bg-primary/5 border-l-2 border-l-primary",
+    deleting && "opacity-50 pointer-events-none"
   )}
 >
-  <CardHeader class="p-2 pb-1">
-    <div class="flex items-start justify-between gap-1.5">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1 mb-0.5">
-          <CardTitle class="text-sm flex-1 min-w-0 font-semibold">
+  <CardHeader class="p-1.5">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex-1 min-w-0 space-y-1">
+        <div>
+          <CardTitle class="text-sm font-semibold">
             <a
               href={viewHref() || '#'}
               onclick={openDetail}
@@ -183,35 +203,8 @@
               {item.title || t('trackItem.untitled')}
             </a>
           </CardTitle>
-          <div class="flex items-center gap-1 shrink-0">
-            {#if discogsLink}
-              <a
-                href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
-                target="_blank"
-                rel="noopener"
-                class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
-                aria-label="Open Discogs"
-              >
-                <DiscIcon class="h-3.5 w-3.5" />
-              </a>
-            {/if}
-            <a
-              href={
-                safeOpenUrl && safeOpenUrl !== '#'
-                  ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
-                  : '#'
-              }
-              target="_blank"
-              rel="noopener"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
-              aria-label={t('trackItem.openExternal')}
-            >
-              <ExternalLink class="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-        {#if authorHandle}
-            <CardDescription class="text-xs flex items-center gap-1">
+          {#if showAuthor && authorHandle}
+            <CardDescription class="text-xs flex items-center gap-1 mt-0.5">
               <span class="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-foreground text-[0.55rem] font-semibold">
                 @
               </span>
@@ -220,10 +213,43 @@
               </Link>
             </CardDescription>
           {/if}
+        </div>
+        {#if item.description}
+          <div class="rounded-md bg-muted/20 p-1.5">
+            <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug">
+              {item.description}
+            </p>
+          </div>
+        {/if}
       </div>
 
-      <div class="flex items-center gap-1">
-        <Button variant="primary" size="sm" class="h-7 px-2 text-xs" onclick={play}>
+      <div class="flex items-center gap-0.5 shrink-0">
+        {#if discogsLink}
+          <a
+            href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
+            target="_blank"
+            rel="noopener"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
+            aria-label="Open Discogs"
+          >
+            <DiscIcon class="h-3 w-3" />
+          </a>
+        {/if}
+        <a
+          href={
+            safeOpenUrl && safeOpenUrl !== '#'
+              ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
+              : '#'
+          }
+          target="_blank"
+          rel="noopener"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
+          aria-label={t('trackItem.openExternal')}
+        >
+          <ExternalLink class="h-3 w-3" />
+        </a>
+
+        <Button variant="primary" size="sm" class="h-7 px-2 text-xs ml-0.5" onclick={play}>
           <Play class="h-3 w-3 mr-1" />
           {t('trackItem.play')}
         </Button>
@@ -233,7 +259,7 @@
               bind:this={triggerRef}
               type="button"
               class={cn(
-                "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
+                "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all",
                 menuOpen
                   ? "bg-primary/10 border-primary/30 text-foreground shadow-sm"
                   : "border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground"
@@ -242,7 +268,7 @@
               aria-haspopup="menu"
               aria-expanded={menuOpen}
             >
-              <MoreVertical class="h-4 w-4" />
+              <MoreVertical class="h-3.5 w-3.5" />
               <span class="sr-only">{t('trackItem.actions')}</span>
             </button>
             {#if menuOpen}
@@ -252,14 +278,14 @@
                 role="menu"
               >
                 {#if editable && editHref()}
-                  <button
-                    type="button"
+                  <a
+                    href={editHref()}
                     class={menuItemClass}
-                    onclick={() => { closeMenu(); openEdit(); }}
+                    onclick={(e) => { e.preventDefault(); closeMenu(); openEdit(); }}
                   >
                     <Pencil class="h-4 w-4" />
                     {t('trackItem.edit')}
-                  </button>
+                  </a>
                 {/if}
                 <a
                   href={safeOpenUrl && safeOpenUrl !== '#'
@@ -271,7 +297,7 @@
                   onclick={closeMenu}
                 >
                   <ExternalLink class="h-4 w-4" />
-                  {t('trackItem.openUrl')}
+                  Open media URL
                 </a>
                 {#if discogsLink}
                   <a
@@ -290,7 +316,7 @@
                   <button
                     type="button"
                     class={cn(menuItemClass, "text-muted-foreground")}
-                    onclick={() => { closeMenu(); remove(); }}
+                    onclick={() => { closeMenu(); confirmDelete(); }}
                   >
                     <Trash2 class="h-4 w-4" />
                     {t('trackItem.delete')}
@@ -303,18 +329,8 @@
     </div>
   </CardHeader>
 
-  {#if item.description}
-    <CardContent class="pt-0 pb-2 px-2">
-      <div class="rounded-md bg-muted/30 border border-muted/60 p-1.5">
-        <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug">
-          {item.description}
-        </p>
-      </div>
-    </CardContent>
-  {/if}
-
   {#if message}
-    <CardContent class="pt-0 pb-2 px-2">
+    <CardContent class="pt-0 pb-1.5 px-1.5">
       <div class="rounded-md bg-destructive/15 p-1.5 text-xs text-destructive">
         {message}
       </div>
@@ -322,8 +338,26 @@
   {/if}
 
   {#if expandedContent}
-    <CardContent class="pt-0 pb-2 px-2">
+    <CardContent class="pt-0 pb-1.5 px-1.5">
       {@render expandedContent()}
     </CardContent>
   {/if}
 </Card>
+
+{#if showDeleteConfirm}
+  <Dialog title="Delete track" onClose={cancelDelete}>
+    <div class="space-y-4">
+      <p class="text-sm text-muted-foreground">
+        Are you sure you want to delete "{item.title || t('trackItem.untitled')}"? This action cannot be undone.
+      </p>
+      <div class="flex gap-2 justify-end">
+        <Button variant="outline" onclick={cancelDelete}>
+          Cancel
+        </Button>
+        <Button variant="destructive" onclick={remove}>
+          Delete
+        </Button>
+      </div>
+    </div>
+  </Dialog>
+{/if}
