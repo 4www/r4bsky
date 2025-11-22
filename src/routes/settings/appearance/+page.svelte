@@ -141,7 +141,7 @@
           <button
             type="button"
             onclick={() => theme.setMode('auto')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'auto' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'auto' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <MonitorSmartphone class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeAuto')}</span>
@@ -149,7 +149,7 @@
           <button
             type="button"
             onclick={() => theme.setMode('light')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'light' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'light' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <Sun class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeLight')}</span>
@@ -157,7 +157,7 @@
           <button
             type="button"
             onclick={() => theme.setMode('dark')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'dark' ? 'border-primary text-foreground' : 'border-border hover:border-primary/50'}"
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'dark' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <Moon class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeDark')}</span>

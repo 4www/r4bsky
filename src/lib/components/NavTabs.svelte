@@ -20,23 +20,22 @@
 
   // Container styles based on variant
   const containerClass = $derived(cn(
-    'inline-flex gap-1.5 overflow-x-auto',
+    'inline-flex overflow-x-auto',
     variant === 'pills' && 'rounded-full bg-background/95 backdrop-blur-xl border-2 border-border',
     variant === 'pills-muted' && 'rounded-full bg-muted/40 border border-muted',
-    variant === 'sidebar' && 'flex-col gap-2 overflow-x-visible',
+    variant === 'sidebar' && 'flex-col overflow-x-visible',
     className
   ));
 
   // Link styles based on variant
   const linkClass = (active: boolean) => cn(
-    'flex items-center gap-1 text-sm font-medium transition-all duration-200 border-2',
-    variant === 'pills' && 'gap-1.5 px-3 py-2 rounded-full',
-    variant === 'pills-muted' && 'gap-1.5 px-3 py-1.5 rounded-full',
+    'flex items-center gap-1 text-sm font-medium transition-all duration-200',
+    variant === 'pills' && 'gap-1.5 px-3 py-2',
+    variant === 'pills-muted' && 'gap-1.5 px-3 py-2',
     variant === 'sidebar' && 'px-3 py-2 rounded-md whitespace-nowrap',
     active
-      ? 'text-background bg-foreground border-foreground shadow-sm'
-      : 'text-foreground border-transparent hover:border-foreground hover:text-foreground hover:bg-transparent',
-    variant === 'sidebar' && !active && 'hover:bg-muted/50'
+      ? 'text-background bg-foreground border border-foreground hover:border-transparent'
+      : 'text-foreground border border-border hover:bg-foreground hover:text-background hover:border-transparent'
   );
 
   const iconClass = $derived(cn(

@@ -113,7 +113,7 @@
     extraClass
   )}
 >
-  <CardHeader class="pb-2">
+  <CardHeader class="p-1">
     <div class="flex flex-wrap items-center justify-between gap-3">
       {#if clickable}
         <Link

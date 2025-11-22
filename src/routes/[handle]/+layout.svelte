@@ -118,7 +118,7 @@
       </div>
     {:else}
       <div class="space-y-6">
-        <div class="sticky top-2 lg:top-4 z-20 bg-background pb-2">
+        <div class="sticky top-2 lg:top-4 z-20 bg-background">
           <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
               {#snippet children()}
                 <div class="flex gap-3 flex-wrap">

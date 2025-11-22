@@ -448,7 +448,7 @@
     <section
       class="flex flex-col flex-1 min-h-0 gap-0 border border-foreground bg-card/95 shadow rounded-3xl p-0 w-full overflow-hidden"
     >
-      <div class="flex flex-col gap-3 flex-1 min-h-0">
+      <div class="flex flex-col gap-0 flex-1 min-h-0">
         <div class={cn("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <Avatar
@@ -534,7 +534,7 @@
         </div>
 
         <div
-          class="grid gap-3 flex-1 min-h-0 w-full"
+          class="grid gap-0 flex-1 min-h-0 w-full"
           style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"
         >
           <div class="flex flex-col min-h-0 min-w-[16rem] flex-1">
@@ -562,8 +562,8 @@
             {/if}
           </div>
 
-          <div class="flex flex-col min-h-0 min-w-[14rem] space-y-2 h-full">
-            <div class="px-3">
+          <div class="flex flex-col min-h-0 min-w-[14rem] h-full">
+            <div class="p-3">
               <div class="relative">
                 <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -584,8 +584,7 @@
                 <a
                   href={trackHref || '#'}
                   class={cn(
-                    "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start",
-                    originalIdx !== state.index && "hover:bg-foreground/10"
+                    "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group"
                   )}
                   onclick={(e) => {
                     if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
@@ -599,10 +598,10 @@
                   </span>
                   <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                   <span class={cn(
-                      "truncate text-sm font-medium leading-tight transition-colors px-1.5 py-0.5 rounded",
+                      "truncate text-sm font-medium leading-tight transition-colors px-1.5 py-0.5 rounded underline-offset-4",
                       originalIdx === state.index
                         ? "bg-foreground text-background"
-                        : "text-foreground"
+                        : "text-foreground group-hover:underline"
                     )}>
                       {track.title || t('trackItem.untitled')}
                     </span>

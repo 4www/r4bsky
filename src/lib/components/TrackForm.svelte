@@ -252,7 +252,7 @@
     </div>
   {/if}
 
-  <Button type="submit" class="w-full" disabled={submitting}>
+  <Button type="submit" class="w-full" disabled={submitting} variant="primary">
     {#if submitting}
       <Loader2 class="mr-2 h-4 w-4 animate-spin" />
       {t('settings.appearanceSaving')}

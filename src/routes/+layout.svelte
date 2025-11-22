@@ -230,24 +230,20 @@
   <div class="min-h-screen bg-background flex flex-col">
     <div class="flex-1 px-0.5 sm:px-1 lg:px-2">
       <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-center lg:gap-4">
+        {#if !playbackCollapsed}
         <section
-          class={cn(
-            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg",
-            playbackCollapsed
-              ? "max-h-0 overflow-hidden opacity-0 pointer-events-none lg:w-0 lg:min-w-0 lg:max-w-0"
-              : "h-screen"
-          )}
+          class="layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg h-screen"
           aria-label="layout-playback"
-          aria-hidden={playbackCollapsed}
         >
           <div class="h-full rounded-xl bg-background/95 p-2 lg:p-3 shadow-sm">
             <Player
-              visible={!playbackCollapsed}
+              visible={true}
               bind:mobilePanelOpen={mobilePanelOpen}
               class="w-full h-full"
             />
           </div>
         </section>
+        {/if}
 
         <section
           class={cn(

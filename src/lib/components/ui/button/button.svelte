@@ -8,8 +8,8 @@
 		variants: {
 			variant: {
 				default: "bg-background text-foreground border border-foreground hover:bg-foreground hover:text-background shadow-sm",
-				primary: "bg-foreground text-background border border-foreground shadow-sm",
-				destructive: "bg-foreground text-background border border-foreground shadow-sm",
+				primary: "bg-foreground text-background border border-foreground hover:bg-background hover:text-foreground shadow-sm",
+				destructive: "bg-foreground text-background border border-foreground hover:bg-background hover:text-foreground shadow-sm",
 				outline:
 					"border border-foreground bg-background hover:bg-foreground hover:text-background",
 				secondary: "bg-background text-foreground border border-foreground hover:bg-foreground hover:text-background",
