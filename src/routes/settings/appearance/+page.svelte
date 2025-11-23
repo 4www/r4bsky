@@ -8,11 +8,20 @@
   import { Label } from '$lib/components/ui/label';
   import { Loader2, Palette, Sun, Moon, MonitorSmartphone, RotateCcw } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   let themeSaving = $state(false);
   let themeSaved = $state(false);
   let themeError = $state('');
   const t = (key, vars = {}) => translate($locale, key, vars);
+
+  // Redirect to account page if not authenticated
+  onMount(() => {
+    if (!$session?.did) {
+      goto('/settings/account');
+    }
+  });
 
   // Helper function to convert HSL string to hex color
   function hslToHex(hsl: string): string {
@@ -141,7 +150,8 @@
           <button
             type="button"
             onclick={() => theme.setMode('auto')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'auto' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            disabled={$theme.mode === 'auto'}
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'auto' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <MonitorSmartphone class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeAuto')}</span>
@@ -149,7 +159,8 @@
           <button
             type="button"
             onclick={() => theme.setMode('light')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'light' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            disabled={$theme.mode === 'light'}
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'light' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <Sun class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeLight')}</span>
@@ -157,7 +168,8 @@
           <button
             type="button"
             onclick={() => theme.setMode('dark')}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all {$theme.mode === 'dark' ? 'border-foreground text-background bg-foreground hover:bg-transparent hover:text-foreground hover:border-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            disabled={$theme.mode === 'dark'}
+            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'dark' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
           >
             <Moon class="h-5 w-5" />
             <span class="text-xs font-medium">{t('settings.appearanceModeDark')}</span>
@@ -201,48 +213,46 @@
             </span>
           {/if}
         </div>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-2">
-              <Label for="current-bg">{t('settings.appearanceBackground')}</Label>
-              <div class="flex gap-2">
-                <input
-                  id="current-bg"
-                  type="color"
-                  bind:value={currentBg}
-                  onchange={saveTheme}
-                  class="h-10 w-16 rounded border border-border cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  bind:value={currentBg}
-                  onchange={saveTheme}
-                  placeholder={effectiveMode === 'dark' ? '#000000' : '#ffffff'}
-                  class="flex-1 font-mono text-xs"
-                />
-              </div>
-            </div>
-            <div class="space-y-2">
-              <Label for="current-fg">{t('settings.appearanceForeground')}</Label>
-              <div class="flex gap-2">
-                <input
-                  id="current-fg"
-                  type="color"
-                  bind:value={currentFg}
-                  onchange={saveTheme}
-                  class="h-10 w-16 rounded border border-border cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  bind:value={currentFg}
-                  onchange={saveTheme}
-                  placeholder={effectiveMode === 'dark' ? '#ffffff' : '#000000'}
-                  class="flex-1 font-mono text-xs"
-                />
-              </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="space-y-2">
+            <Label for="current-bg">{t('settings.appearanceBackground')}</Label>
+            <div class="flex gap-2">
+              <input
+                id="current-bg"
+                type="color"
+                bind:value={currentBg}
+                onchange={saveTheme}
+                class="h-10 w-16 rounded border border-border cursor-pointer"
+              />
+              <Input
+                type="text"
+                bind:value={currentBg}
+                onchange={saveTheme}
+                placeholder={effectiveMode === 'dark' ? '#000000' : '#ffffff'}
+                class="flex-1 font-mono text-xs"
+              />
             </div>
           </div>
           <div class="space-y-2">
+            <Label for="current-fg">{t('settings.appearanceForeground')}</Label>
+            <div class="flex gap-2">
+              <input
+                id="current-fg"
+                type="color"
+                bind:value={currentFg}
+                onchange={saveTheme}
+                class="h-10 w-16 rounded border border-border cursor-pointer"
+              />
+              <Input
+                type="text"
+                bind:value={currentFg}
+                onchange={saveTheme}
+                placeholder={effectiveMode === 'dark' ? '#ffffff' : '#000000'}
+                class="flex-1 font-mono text-xs"
+              />
+            </div>
+          </div>
+          <div class="space-y-2 md:col-span-2">
             <Label for="current-accent">{t('settings.appearanceAccentColor')}</Label>
             <div class="flex gap-2">
               <input
@@ -288,9 +298,6 @@
             {/if}
           </Button>
         </div>
-        <p class="text-xs text-muted-foreground">
-          {t('settings.appearanceColorHint')}
-        </p>
       </div>
 
       {#if themeError}
@@ -298,10 +305,6 @@
           {themeError}
         </div>
       {/if}
-
-      <p class="text-xs text-muted-foreground">
-        {t('settings.appearanceColorFootnote')}
-      </p>
     </CardContent>
   </Card>
 </div>

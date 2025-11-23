@@ -1,42 +1,19 @@
 <script lang="ts">
-  import { bskyOAuth } from '$lib/services/bsky-oauth';
   import { session } from '$lib/state/session';
   import { getProfile, listR4FavoritesByDid, getProfiles } from '$lib/services/r4-service';
-  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
-  import { Music4, Loader2, Users } from 'lucide-svelte';
+  import SignInForm from '$lib/components/SignInForm.svelte';
+  import { Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
-  let handle = $state('');
-  let error = $state('');
-  let signingIn = $state(false);
   let myProfile = $state(null);
   let follows = $state([]);
   let followProfiles = $state(new Map());
   let loadingHome = $state(false);
   const t = (key, vars = {}) => translate($locale, key, vars);
-
-  async function handleSignIn() {
-    if (!handle.trim()) {
-      error = t('home.errorRequired');
-      return;
-    }
-
-    error = '';
-    signingIn = true;
-
-    try {
-      await bskyOAuth.signIn(handle.trim());
-    } catch (err) {
-      error = t('home.errorMessage', { message: (err as Error)?.message || 'Unknown error' });
-      signingIn = false;
-    }
-  }
 
   async function loadHomeData() {
     if (!$session?.did || !$session?.handle) return;
@@ -136,32 +113,6 @@
       <p class="text-lg text-muted-foreground">{t('home.subtitle')}</p>
     </div>
 
-    <Card class="border-2 shadow-xl">
-      <CardContent class="pt-6">
-        <form onsubmit={(e) => { e.preventDefault(); handleSignIn(); }} class="space-y-6">
-          <div class="space-y-2">
-            <Label for="handle" class="text-base">{t('home.handleLabel')}</Label>
-            <Input
-              id="handle"
-              type="text"
-              placeholder={t('home.handlePlaceholder')}
-              bind:value={handle}
-              disabled={signingIn}
-              class="h-12 text-base"
-            />
-          </div>
-
-          {#if error}
-            <div class="rounded-lg bg-destructive/15 border border-destructive/20 p-4 text-sm text-destructive">
-              {error}
-            </div>
-          {/if}
-
-          <Button type="submit" class="w-full h-12 text-base" disabled={signingIn}>
-            {signingIn ? t('home.submitting') : t('home.submit')}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <SignInForm variant="default" />
   </div>
 {/if}

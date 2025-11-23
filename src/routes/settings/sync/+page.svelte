@@ -5,6 +5,8 @@
   import { Button } from '$lib/components/ui/button';
   import { RefreshCw, Database, CheckCircle2, AlertCircle } from 'lucide-svelte';
   import { locale as localeStore, translate } from '$lib/i18n';
+  import { session } from '$lib/state/session';
+  import { goto } from '$app/navigation';
   import {
     getR4SyncConfig,
     setR4SyncConfig,
@@ -34,11 +36,22 @@
   let importErrors = $state<string[]>([]);
 
   onMount(async () => {
-    const config = await getR4SyncConfig();
-    if (config) {
-      apiEndpoint = config.apiEndpoint;
-      apiKey = config.apiKey;
-      channelSlug = config.channelSlug;
+    // Redirect to account page if not authenticated
+    if (!$session?.did) {
+      goto('/settings/account');
+      return;
+    }
+
+    try {
+      const config = await getR4SyncConfig();
+      if (config) {
+        apiEndpoint = config.apiEndpoint;
+        apiKey = config.apiKey;
+        channelSlug = config.channelSlug;
+      }
+    } catch (err) {
+      // Ignore auth errors on mount
+      console.error('Failed to load sync config:', err);
     }
   });
 
