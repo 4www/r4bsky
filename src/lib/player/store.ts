@@ -1,4 +1,5 @@
-// Minimal player store for Svelte 5 app (no external store dependency)
+// Player store for Svelte 5 app
+// Now integrated with centralized tracks database
 
 interface Track {
   url: string
@@ -6,11 +7,20 @@ interface Track {
   [key: string]: any
 }
 
+interface PlayerContext {
+  type: 'profile' | 'discogs' | 'author'
+  key: string    // DID or resource ID
+  handle?: string
+}
+
 interface PlayerState {
-  playlist: Track[]
+  // Reference to the source of tracks (DID for profile, or custom for discogs/etc)
+  context: PlayerContext | null
+  // For profile/author context, tracks come from centralized store
+  // For discogs/custom context, tracks are stored here directly
+  customPlaylist: Track[] | null
   index: number
   playing: boolean
-  context: any
   originalPlaylist?: Track[]
   isShuffled: boolean
 }
@@ -47,23 +57,41 @@ function createStore(initial: PlayerState): Store {
   }
 }
 
-export const player = createStore({ playlist: [], index: -1, playing: false, context: null, isShuffled: false })
+export const player = createStore({
+  context: null,
+  customPlaylist: null,
+  index: -1,
+  playing: false,
+  isShuffled: false
+})
 
-export function setPlaylist(items: Track[], startIndex: number = 0, context: any = null): void {
-  player.set({ playlist: items || [], index: startIndex ?? 0, playing: true, context, isShuffled: false })
+/**
+ * Set playlist from tracks array
+ * Always stores the provided items initially, then Player component can sync with centralized store
+ */
+export function setPlaylist(items: Track[], startIndex: number = 0, context: PlayerContext | null = null): void {
+  player.set({
+    context,
+    customPlaylist: items || [],
+    index: startIndex ?? 0,
+    playing: true,
+    isShuffled: false
+  })
 }
 
-export function play(tracks: Track[], startIndex: number = 0, context: any = null): void {
+export function play(tracks: Track[], startIndex: number = 0, context: PlayerContext | null = null): void {
   if (!tracks?.length) return
   const index = Math.max(0, Math.min(startIndex ?? 0, tracks.length - 1))
   setPlaylist(tracks, index, context)
 }
 
+/**
+ * Play a specific index in the current playlist
+ * Note: playlist length is determined in the Player component based on context
+ */
 export function playIndex(idx: number): void {
   const s = player.get()
-  if (!s.playlist?.length) return
-  const i = Math.max(0, Math.min(idx, s.playlist.length - 1))
-  player.set({ ...s, index: i, playing: true })
+  player.set({ ...s, index: idx, playing: true })
 }
 
 export function toggle(): void {
@@ -72,54 +100,30 @@ export function toggle(): void {
   player.set({ ...s, playing: !s.playing })
 }
 
+/**
+ * Go to next track
+ * The Player component will handle bounds checking
+ */
 export function next(): void {
   const s = player.get()
-  if (!s.playlist?.length) return
-  const i = (s.index + 1) % s.playlist.length
-  player.set({ ...s, index: i, playing: true })
+  player.set({ ...s, index: s.index + 1, playing: true })
 }
 
+/**
+ * Go to previous track
+ * The Player component will handle bounds checking
+ */
 export function prev(): void {
   const s = player.get()
-  if (!s.playlist?.length) return
-  const i = (s.index - 1 + s.playlist.length) % s.playlist.length
-  player.set({ ...s, index: i, playing: true })
+  const newIndex = Math.max(0, s.index - 1)
+  player.set({ ...s, index: newIndex, playing: true })
 }
 
+/**
+ * Toggle shuffle mode
+ * Shuffle is now handled in the Player component with live playlist
+ */
 export function toggleShuffle(): void {
   const s = player.get()
-  if (!s.playlist?.length) return
-
-  if (s.isShuffled) {
-    const original = s.originalPlaylist ? [...s.originalPlaylist] : [...s.playlist]
-    const current = s.playlist[s.index]
-    const newIndex = original.findIndex((track) => track === current)
-    player.set({
-      ...s,
-      playlist: original,
-      originalPlaylist: undefined,
-      isShuffled: false,
-      index: newIndex >= 0 ? newIndex : Math.min(s.index, original.length - 1),
-      playing: s.playing
-    })
-  } else {
-    const original = [...s.playlist]
-    const current = original[s.index]
-    const remaining = original.filter((_, idx) => idx !== s.index)
-    for (let i = remaining.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[remaining[i], remaining[j]] = [remaining[j], remaining[i]]
-    }
-    const before = remaining.slice(0, s.index)
-    const after = remaining.slice(s.index)
-    const shuffled = [...before, current, ...after]
-    player.set({
-      ...s,
-      playlist: shuffled,
-      originalPlaylist: original,
-      isShuffled: true,
-      index: s.index,
-      playing: s.playing
-    })
-  }
+  player.set({ ...s, isShuffled: !s.isShuffled })
 }

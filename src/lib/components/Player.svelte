@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { player, toggle, next, prev, playIndex, toggleShuffle } from '$lib/player/store';
+  import { useLiveQuery } from '@tanstack/svelte-db';
+  import { tracksCollection, removeTrack } from '$lib/stores/tracks-db';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -15,7 +17,6 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { Pencil, Trash2 } from 'lucide-svelte';
-  import { deleteTrackByUri } from '$lib/services/r4-service';
   let {
     class: classProp = '',
     visible: visibleProp = true,
@@ -24,8 +25,36 @@
   const extraClass = $derived(classProp);
   const visible = $derived(visibleProp);
 
-  let state = $state({ playlist: [], index: -1, playing: false });
+  let state = $state({ context: null, customPlaylist: null, index: -1, playing: false, isShuffled: false });
   let current = $state(null);
+
+  // Use live query to get tracks from centralized store when context is profile/author
+  const tracksQuery = useLiveQuery(
+    (q) => q.from({ tracks: tracksCollection }),
+    []
+  );
+
+  // Derive the actual playlist based on context
+  const playlist = $derived.by(() => {
+    const ctx = state.context;
+    if (!ctx) return [];
+
+    // For profile/author contexts, merge customPlaylist with centralized store
+    // This ensures we have tracks immediately, but can also get updates from the store
+    if (ctx.type === 'profile' || ctx.type === 'author') {
+      const allTracks = tracksQuery.data || [];
+      const centralizedTracks = allTracks.filter(track => track.authorDid === ctx.key);
+
+      // Use centralized tracks if available and non-empty, otherwise fall back to customPlaylist
+      if (centralizedTracks.length > 0) {
+        return centralizedTracks;
+      }
+      return state.customPlaylist || [];
+    }
+
+    // For other contexts (discogs), use custom playlist
+    return state.customPlaylist || [];
+  });
   let iframeSrc = $state('');
   let iframeProvider = $state('');
   let ytPlayer = $state(null);
@@ -64,13 +93,15 @@
 
   async function deleteTrack(uri: string) {
     try {
-      await deleteTrackByUri(uri);
+      await removeTrack(uri);
       closeTrackMenu();
-      // Remove from playlist
-      player.update(s => ({
-        ...s,
-        playlist: s.playlist.filter(t => t.uri !== uri)
-      }));
+      // For custom playlists, also remove from the playlist
+      if (state.customPlaylist) {
+        player.update(s => ({
+          ...s,
+          customPlaylist: s.customPlaylist ? s.customPlaylist.filter(t => t.uri !== uri) : null
+        }));
+      }
     } catch (err) {
       console.error('Failed to delete track:', err);
     }
@@ -166,10 +197,36 @@
 
   const unsub = player.subscribe((s) => {
     state = s;
-    current = s.playlist?.[s.index] || null;
-    if (s.index !== lastIndex) {
+
+    // Compute current playlist directly (can't rely on derived in subscription)
+    const ctx = s.context;
+    let currentPlaylist = [];
+
+    if (ctx) {
+      if (ctx.type === 'profile' || ctx.type === 'author') {
+        const allTracks = tracksQuery.data || [];
+        const centralizedTracks = allTracks.filter(track => track.authorDid === ctx.key);
+        currentPlaylist = centralizedTracks.length > 0 ? centralizedTracks : (s.customPlaylist || []);
+      } else {
+        currentPlaylist = s.customPlaylist || [];
+      }
+    }
+
+    // Handle playlist bounds - wrap around
+    let actualIndex = s.index;
+    if (currentPlaylist.length > 0) {
+      if (actualIndex >= currentPlaylist.length) {
+        actualIndex = actualIndex % currentPlaylist.length;
+        // Update the store with corrected index
+        player.update(state => ({ ...state, index: actualIndex }));
+      }
+    }
+
+    // Get current track from computed playlist
+    current = currentPlaylist?.[actualIndex] || null;
+    if (actualIndex !== lastIndex) {
       cleanupProviders();
-      lastIndex = s.index;
+      lastIndex = actualIndex;
     }
     if (current) {
       const meta = parseTrackUrl(current.url);
@@ -394,13 +451,13 @@
   );
 
   const discogsUrl = $derived(current?.discogsUrl ?? current?.discogs_url ?? '');
-  const queueCount = $derived(state.playlist?.length ?? 0);
+  const queueCount = $derived(playlist?.length ?? 0);
   const filteredPlaylist = $derived.by(() => {
     if (!searchQuery.trim()) {
-      return (state.playlist || []).map((track, idx) => ({ track, originalIdx: idx }));
+      return (playlist || []).map((track, idx) => ({ track, originalIdx: idx }));
     }
     const query = searchQuery.toLowerCase();
-    return (state.playlist || [])
+    return (playlist || [])
       .map((track, idx) => ({ track, originalIdx: idx }))
       .filter(({ track }) => {
         const title = (track?.title || '').toLowerCase();

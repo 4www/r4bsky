@@ -23,7 +23,7 @@
   let hasDesktopPlayer = $state(false);
   let playerVisible = $state(true);
   let mobilePanelOpen = $state(true);
-  let playerState = $state({ playing: false, playlist: [] });
+  let playerState = $state({ playing: false, customPlaylist: [], context: null, index: -1, isShuffled: false });
   // Legacy modal placeholders to avoid runtime errors from stale navigation state
   let viewModal = $state(null);
   let editModal = $state(null);
@@ -147,7 +147,7 @@
   onMount(() => {
     initOAuth().catch(console.error);
     const unsubscribe = player.subscribe((state) => {
-      hasDesktopPlayer = state.playlist?.length > 0 && state.index >= 0;
+      hasDesktopPlayer = state.customPlaylist?.length > 0 && state.index >= 0;
       playerState = state;
     });
 
@@ -212,7 +212,7 @@
 
     return baseItems;
   });
-  const hasPlayback = $derived(playerState.playlist?.length > 0);
+  const hasPlayback = $derived(playerState.customPlaylist?.length > 0 || playerState.context !== null);
   const playbackCollapsed = $derived(!hasPlayback || !playerVisible);
 </script>
 

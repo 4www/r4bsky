@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { listTracksByDid } from '$lib/services/r4-service';
+  import { useLiveQuery } from '@tanstack/svelte-db';
+  import { tracksCollection, loadTracksForDid, loadMoreTracksForDid, getPaginationState, removeTrack } from '$lib/stores/tracks-db';
   import { getContext, tick } from 'svelte';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import DiscogsResource from '$lib/components/DiscogsResource.svelte';
@@ -19,8 +20,6 @@
   const profile = $derived(profileContext?.profile);
   const did = $derived(profileContext?.did);
 
-  let items = $state([]);
-  let cursor = $state(undefined);
   let status = $state('');
   let loading = $state(false);
   let selectedTrackUri = $state<string | null>(null);
@@ -28,39 +27,64 @@
   let editingTrackUri = $state<string | null>(null);
   let lastLoadedDid = $state<string>('');
   const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' });
-  let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
+
+  // Use live query to get tracks for this DID
+  const tracksQuery = useLiveQuery(
+    (q) => q.from({ tracks: tracksCollection }),
+    []
+  );
+
+  // Derive items from query, filtering by DID
+  const items = $derived.by(() => {
+    if (!did) return [];
+    const allTracks = tracksQuery.data || [];
+    return allTracks.filter(track => track.authorDid === did);
+  });
+  const paginationState = $derived(did ? getPaginationState(did) : { cursor: undefined, hasMore: false, loading: false });
+  const cursor = $derived(paginationState.cursor);
+  const hasMore = $derived(paginationState.hasMore);
 
   const selectedTrack = $derived(items.find(t => t.uri === selectedTrackUri) || null);
   const editingTrack = $derived(items.find(t => t.uri === editingTrackUri) || null);
   const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
 
-  function refreshTracks() {
-    if (did) {
-      loadTracks(did);
+  async function refreshTracks() {
+    if (!did) return;
+    loading = true;
+    status = '';
+
+    try {
+      // Explicitly reset and reload from API
+      await loadTracksForDid(did, { reset: true });
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
+    } finally {
+      loading = false;
     }
   }
 
   async function loadTracks(targetDid: string) {
-    const requestId = ++loadRequestId;
+    // Check if we already have tracks for this DID
+    const existingTracks = items.length;
+
+    // If we already have tracks, don't reload (preserves pagination state)
+    if (existingTracks > 0) {
+      return;
+    }
+
     loading = true;
     status = '';
-    items = [];
-    cursor = undefined;
 
-    (async () => {
-      try {
-        const tracksData = await listTracksByDid(targetDid);
-        if (requestId !== loadRequestId) return;
-        items = tracksData.tracks;
-        cursor = tracksData.cursor;
-      } catch (err) {
-        if (requestId === loadRequestId) status = (err as Error)?.message || String(err);
-      } finally {
-        if (requestId === loadRequestId) loading = false;
-      }
-    })();
+    try {
+      // Load first page only (no reset - preserves any existing tracks)
+      await loadTracksForDid(targetDid);
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
+    } finally {
+      loading = false;
+    }
   }
 
   $effect(() => {
@@ -97,26 +121,32 @@
 
   function onTrackSaved() {
     closeEditDialog();
-    // Optionally refresh tracks to get updated data
+    // Refresh tracks to get updated data
     if (did) {
-      loadTracks(did);
+      refreshTracks();
     }
   }
 
-  function handleTrackRemoved(event) {
+  async function handleTrackRemoved(event) {
     const { uri } = event.detail;
-    items = items.filter(track => track.uri !== uri);
-    // If the removed track was selected, clear selection
-    if (selectedTrackUri === uri) {
-      selectedTrackUri = null;
+    try {
+      await removeTrack(uri);
+      // If the removed track was selected, clear selection
+      if (selectedTrackUri === uri) {
+        selectedTrackUri = null;
+      }
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
     }
   }
 
   async function more() {
     if (!cursor || !did) return;
-    const { tracks, cursor: c } = await listTracksByDid(did, { cursor });
-    items = [...items, ...tracks];
-    cursor = c;
+    try {
+      await loadMoreTracksForDid(did);
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
+    }
   }
 </script>
 
@@ -185,10 +215,10 @@
       {/if}
     {/each}
   </div>
-  {#if cursor}
+  {#if hasMore}
     <div class="mt-4 text-center">
-      <Button variant="outline" onclick={more}>
-        {t('profile.loadMore')}
+      <Button variant="outline" onclick={more} disabled={paginationState.loading}>
+        {paginationState.loading ? t('profile.loading') : t('profile.loadMore')}
       </Button>
     </div>
   {/if}
