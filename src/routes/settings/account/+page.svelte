@@ -5,13 +5,36 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import { LogOut, Loader2 } from 'lucide-svelte';
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from '$lib/components/ui/dialog';
+  import { LogOut, Loader2, Download, Trash2, AlertCircle } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { locale, translate } from '$lib/i18n';
+  import {
+    listTracksByDid,
+    getMyDid,
+    deleteAllTracks,
+    getR4Profile,
+  } from '$lib/services/r4-service';
+  import { AtUri } from '@atproto/api';
 
   let working = $state(false);
   let handle = $state('');
+  let isExporting = $state(false);
+  let isDeleting = $state(false);
+  let showDeleteDialog = $state(false);
+  let tracksToDelete = $state<any[]>([]);
+  let isCountingTracks = $state(false);
+  let deleteProgress = $state<{ current: number; total: number } | null>(null);
+  let deleteErrors = $state<string[]>([]);
+
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   async function signOut() {
@@ -41,10 +64,193 @@
       }
     }
   }
+
+  async function handleExport() {
+    isExporting = true;
+    try {
+      const myDid = await getMyDid();
+
+      // Fetch all tracks
+      let allTracks = [];
+      let cursor = undefined;
+      do {
+        const result = await listTracksByDid(myDid, { cursor, limit: 100 });
+        allTracks.push(...result.tracks);
+        cursor = result.cursor;
+      } while (cursor);
+
+      // Fetch profile
+      let profile = null;
+      try {
+        profile = await getR4Profile(myDid);
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+
+      // Format backup similar to radio4000 format
+      const backup = {
+        version: 'r4atproto.v20251122',
+        exported: new Date().toISOString(),
+        channel: {
+          did: myDid,
+          handle: $session.handle,
+          ...(profile && {
+            mode: profile.mode,
+            lightBackground: profile.lightBackground,
+            lightForeground: profile.lightForeground,
+            lightAccent: profile.lightAccent,
+            darkBackground: profile.darkBackground,
+            darkForeground: profile.darkForeground,
+            darkAccent: profile.darkAccent,
+          }),
+        },
+        tracks: allTracks.map(track => ({
+          url: track.url,
+          title: track.title,
+          body: track.description || '',
+          discogsUrl: track.discogsUrl || track.discogs_url,
+          created: track.createdAt || track.created_at,
+          updated: track.updatedAt || track.updated_at,
+          uri: track.uri,
+          rkey: track.rkey,
+        })),
+      };
+
+      // Download as JSON
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `r4atproto-backup-${$session.handle}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert(t('settings.exportTracksSuccess', { count: allTracks.length }));
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert(`Export failed: ${err.message}`);
+    } finally {
+      isExporting = false;
+    }
+  }
+
+  async function openDeleteDialog() {
+    // Open dialog immediately
+    showDeleteDialog = true;
+    isCountingTracks = true;
+    tracksToDelete = [];
+    deleteErrors = [];
+
+    try {
+      const myDid = await getMyDid();
+      let allTracks = [];
+      let cursor = undefined;
+
+      // Fetch all tracks once
+      do {
+        const result = await listTracksByDid(myDid, { cursor, limit: 100 });
+        allTracks.push(...result.tracks);
+        cursor = result.cursor;
+      } while (cursor);
+
+      tracksToDelete = allTracks;
+    } catch (err) {
+      console.error('Failed to load tracks:', err);
+      deleteErrors = [`Failed to load tracks: ${(err as Error).message}`];
+    } finally {
+      isCountingTracks = false;
+    }
+  }
+
+  async function handleDelete() {
+    isDeleting = true;
+    deleteProgress = null;
+    deleteErrors = [];
+
+    try {
+      const agent = bskyOAuth.agent;
+      if (!agent) throw new Error('Not authenticated');
+
+      const myDid = agent.accountDid!;
+      const total = tracksToDelete.length;
+      let deleted = 0;
+
+      // Process in batches of 200
+      const BATCH_SIZE = 200;
+
+      for (let i = 0; i < tracksToDelete.length; i += BATCH_SIZE) {
+        const batch = tracksToDelete.slice(i, i + BATCH_SIZE);
+
+        try {
+          // Build delete operations
+          const writes = batch.map(track => {
+            const uri = new AtUri(track.uri);
+            return {
+              $type: 'com.atproto.repo.applyWrites#delete',
+              collection: uri.collection,
+              rkey: uri.rkey,
+            };
+          });
+
+          // Execute batch delete
+          await agent.com.atproto.repo.applyWrites({
+            repo: myDid,
+            writes,
+          });
+
+          deleted += batch.length;
+          deleteProgress = { current: Math.min(i + BATCH_SIZE, total), total };
+
+          // Delay between batches
+          if (i + BATCH_SIZE < tracksToDelete.length) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (err) {
+          const errorMsg = `Failed to delete batch: ${(err as Error).message}`;
+          console.error(errorMsg);
+          deleteErrors = [...deleteErrors, errorMsg];
+        }
+      }
+
+      showDeleteDialog = false;
+      alert(t('settings.deleteTracksSuccess', { count: deleted }));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      deleteErrors = [...deleteErrors, `Delete failed: ${(err as Error).message}`];
+    } finally {
+      isDeleting = false;
+      deleteProgress = null;
+    }
+  }
 </script>
 
 {#if $session?.did}
   <div class="space-y-6">
+    <Card>
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <LogOut class="h-5 w-5" />
+          {t('settings.signOutTitle')}
+        </CardTitle>
+        <CardDescription>
+          {t('settings.signOutDescription')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
+          {#if working}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            {t('settings.signOutWorking')}
+          {:else}
+            <LogOut class="mr-2 h-4 w-4" />
+            {t('settings.signOutButton')}
+          {/if}
+        </Button>
+      </CardContent>
+    </Card>
+
     <Card>
       <CardHeader>
         <CardTitle>{t('settings.accountTitle')}</CardTitle>
@@ -68,27 +274,78 @@
 
     <Card>
       <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <LogOut class="h-5 w-5" />
-          {t('settings.signOutTitle')}
-        </CardTitle>
-        <CardDescription>
-          {t('settings.signOutDescription')}
-        </CardDescription>
+        <CardTitle>{t('settings.accountActionsTitle')}</CardTitle>
+        <CardDescription>{t('settings.accountActionsDescription')}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Button onclick={signOut} disabled={working} variant="destructive" class="w-full">
-          {#if working}
+      <CardContent class="space-y-3">
+        <Button onclick={handleExport} disabled={isExporting} variant="outline" class="w-full">
+          {#if isExporting}
             <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-            {t('settings.signOutWorking')}
+            {t('settings.exportTracksWorking')}
           {:else}
-            <LogOut class="mr-2 h-4 w-4" />
-            {t('settings.signOutButton')}
+            <Download class="mr-2 h-4 w-4" />
+            {t('settings.exportTracksButton')}
           {/if}
+        </Button>
+
+        <Button onclick={openDeleteDialog} disabled={isDeleting} variant="destructive" class="w-full">
+          <Trash2 class="mr-2 h-4 w-4" />
+          {t('settings.deleteTracksButton')}
         </Button>
       </CardContent>
     </Card>
   </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <Dialog bind:open={showDeleteDialog}>
+    <DialogContent class="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <AlertCircle class="h-5 w-5 text-destructive" />
+          {t('settings.deleteTracksConfirmTitle')}
+        </DialogTitle>
+        <DialogDescription>
+          {#if isCountingTracks}
+            <div class="flex items-center gap-2">
+              <Loader2 class="h-4 w-4 animate-spin" />
+              Loading tracks...
+            </div>
+          {:else}
+            {t('settings.deleteTracksConfirmDescription', { count: tracksToDelete.length })}
+          {/if}
+        </DialogDescription>
+      </DialogHeader>
+
+      {#if deleteErrors.length > 0}
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-destructive">Errors ({deleteErrors.length}):</h4>
+          <div class="max-h-40 overflow-y-auto border rounded-md p-3 bg-destructive/5">
+            {#each deleteErrors as error}
+              <div class="text-xs text-destructive mb-1">{error}</div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <DialogFooter>
+        <Button variant="outline" onclick={() => showDeleteDialog = false} disabled={isDeleting || isCountingTracks}>
+          Cancel
+        </Button>
+        <Button variant="destructive" onclick={handleDelete} disabled={isDeleting || isCountingTracks || tracksToDelete.length === 0}>
+          {#if isDeleting}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            {#if deleteProgress}
+              Deleting ({deleteProgress.current}/{deleteProgress.total})
+            {:else}
+              {t('settings.deleteTracksWorking')}
+            {/if}
+          {:else}
+            {t('settings.deleteTracksConfirmButton')}
+          {/if}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 {:else}
   <Card>
     <CardHeader>

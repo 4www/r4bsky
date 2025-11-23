@@ -51,10 +51,6 @@
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
           <div class="border-l-2 border-border pl-2">
-            <p class="font-mono text-foreground">app.bsky.graph.follow</p>
-            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
-          </div>
-          <div class="border-l-2 border-border pl-2">
             <p class="font-mono text-foreground">com.radio4000.profile</p>
             <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>

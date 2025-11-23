@@ -1,10 +1,57 @@
 import {bskyOAuth} from './bsky-oauth'
 import {parseTrackUrl} from './url-patterns'
 import { Agent, AtUri } from '@atproto/api'
+import { TID } from '@atproto/syntax'
 
 export const R4_COLLECTION = 'com.radio4000.track'
 export const R4_FAVORITE_COLLECTION = 'com.radio4000.favorite'
 export const R4_PROFILE_COLLECTION = 'com.radio4000.profile'
+export const R4_SYNC_COLLECTION = 'com.radio4000.sync'
+
+interface RateLimitInfo {
+	limit: number
+	remaining: number
+	reset: number // Unix timestamp
+	policy: string
+}
+
+/**
+ * Extract rate limit info from AT Protocol response headers
+ */
+function extractRateLimitInfo(error: any): RateLimitInfo | null {
+	try {
+		const headers = error?.headers || error?.response?.headers
+		if (!headers) return null
+
+		const limit = headers.get?.('ratelimit-limit') || headers['ratelimit-limit']
+		const remaining = headers.get?.('ratelimit-remaining') || headers['ratelimit-remaining']
+		const reset = headers.get?.('ratelimit-reset') || headers['ratelimit-reset']
+		const policy = headers.get?.('ratelimit-policy') || headers['ratelimit-policy']
+
+		if (limit !== undefined && remaining !== undefined && reset !== undefined) {
+			return {
+				limit: parseInt(limit),
+				remaining: parseInt(remaining),
+				reset: parseInt(reset),
+				policy: policy || '',
+			}
+		}
+	} catch (e) {
+		// Ignore parsing errors
+	}
+	return null
+}
+
+/**
+ * Format rate limit info as a human-readable message
+ */
+function formatRateLimitMessage(info: RateLimitInfo): string {
+	const resetDate = new Date(info.reset * 1000)
+	const now = new Date()
+	const minutesUntilReset = Math.ceil((resetDate.getTime() - now.getTime()) / 1000 / 60)
+
+	return `Rate limit exceeded (${info.remaining}/${info.limit} remaining). Resets in ${minutesUntilReset} minutes at ${resetDate.toLocaleTimeString()}.`
+}
 
 function favoriteRkey(subjectDid: string): string {
 	return subjectDid.replace(/[^a-z0-9._-]/gi, '-').toLowerCase()
@@ -19,6 +66,7 @@ interface Track {
 	description?: string
 	discogsUrl?: string
 	discogs_url?: string
+	r4SupabaseId?: string
 	createdAt?: string
 	created_at?: string
 	authorDid?: string
@@ -29,6 +77,7 @@ interface CreateTrackParams {
 	title: string
 	description?: string
 	discogs_url?: string
+	r4SupabaseId?: string
 }
 
 interface ListTracksOptions {
@@ -77,6 +126,33 @@ interface R4ProfileRecord {
 	darkAccent: string
 	createdAt?: string
 	updatedAt?: string
+}
+
+interface R4SyncRecord {
+	uri?: string
+	cid?: string
+	apiEndpoint: string
+	apiKey: string
+	channelSlug: string
+	createdAt?: string
+	updatedAt?: string
+}
+
+interface Radio4000Track {
+	id: string
+	url: string
+	title: string
+	description?: string | null
+	discogs_url?: string | null
+	created_at: string
+	updated_at?: string
+}
+
+interface Radio4000Channel {
+	id: string
+	slug: string
+	name: string
+	description?: string | null
 }
 
 function assertAgent(): Agent {
@@ -134,14 +210,16 @@ export async function resolveHandle(handle: string): Promise<string | undefined>
   return res.data?.did
 }
 
-export async function createTrack({url, title, description, discogs_url}: CreateTrackParams): Promise<any> {
+export async function createTrack({url, title, description, discogs_url, r4SupabaseId}: CreateTrackParams): Promise<any> {
   const agent = assertAgent()
   // Save to the custom collection only (no feed posting)
   const record = {
+    $type: R4_COLLECTION,
     url,
     title,
     description: description || undefined,
     discogsUrl: discogs_url || undefined,
+    r4SupabaseId: r4SupabaseId || undefined,
     createdAt: new Date().toISOString(),
   }
   try {
@@ -161,7 +239,7 @@ export async function createTrack({url, title, description, discogs_url}: Create
   }
 }
 
-export async function listTracksByDid(did: string, {cursor, limit = 30}: ListTracksOptions = {}): Promise<ListTracksResult> {
+export async function listTracksByDid(did: string, {cursor, limit = 100}: ListTracksOptions = {}): Promise<ListTracksResult> {
   // Use authenticated agent for own repo; public appview for others
   let useAuth = false
   let my: Agent | undefined
@@ -283,6 +361,7 @@ export async function createR4Favorite(subjectDid: string): Promise<any> {
 	const repo = agent.accountDid!
 	const rkey = favoriteRkey(subjectDid)
 	const record = {
+		$type: R4_FAVORITE_COLLECTION,
 		subject: subjectDid,
 		createdAt: new Date().toISOString(),
 	}
@@ -551,6 +630,7 @@ export async function updateTrackByUri(uri: string, changes: Partial<Track>): Pr
   }))
   const record = existing.data?.value || {}
   const updated = {
+    $type: collection,
     ...record,
     ...changes,
   }
@@ -760,6 +840,7 @@ export async function setR4Profile(profile: Omit<R4ProfileRecord, 'uri' | 'cid' 
 	}
 
 	const record = {
+		$type: R4_PROFILE_COLLECTION,
 		mode: profile.mode,
 		lightBackground: profile.lightBackground,
 		lightForeground: profile.lightForeground,
@@ -797,4 +878,343 @@ export async function setR4Profile(profile: Omit<R4ProfileRecord, 'uri' | 'cid' 
 		}
 		throw err
 	}
+}
+
+// Radio4000 Sync functions
+export async function getR4SyncConfig(): Promise<R4SyncRecord | null> {
+	const agent = assertAgent()
+	const did = agent.accountDid!
+	try {
+		const res = await withDpopRetry(() => agent.com.atproto.repo.listRecords({
+			repo: did,
+			collection: R4_SYNC_COLLECTION,
+			limit: 1,
+		}))
+		if (res.data.records.length === 0) return null
+		const record = res.data.records[0]
+		return { uri: record.uri, cid: record.cid, ...record.value } as R4SyncRecord
+	} catch (err) {
+		console.error('Failed to get sync config:', err)
+		return null
+	}
+}
+
+export async function setR4SyncConfig(config: { apiEndpoint: string; apiKey: string; channelSlug: string }): Promise<void> {
+	const agent = assertAgent()
+	const did = agent.accountDid!
+	const existing = await getR4SyncConfig()
+
+	if (existing?.uri) {
+		const at = new AtUri(existing.uri)
+		const record = {
+			$type: R4_SYNC_COLLECTION,
+			...config,
+			updatedAt: new Date().toISOString(),
+		}
+		await withDpopRetry(() => agent.com.atproto.repo.putRecord({
+			repo: did,
+			collection: R4_SYNC_COLLECTION,
+			rkey: at.rkey!,
+			record,
+		}))
+	} else {
+		const record = {
+			$type: R4_SYNC_COLLECTION,
+			...config,
+			createdAt: new Date().toISOString(),
+		}
+		await withDpopRetry(() => agent.com.atproto.repo.createRecord({
+			repo: did,
+			collection: R4_SYNC_COLLECTION,
+			record,
+		}))
+	}
+}
+
+export async function fetchRadio4000Channel(apiEndpoint: string, apiKey: string, channelSlug: string): Promise<Radio4000Channel | null> {
+	const url = `${apiEndpoint}/rest/v1/channels?slug=eq.${encodeURIComponent(channelSlug)}&select=id,slug,name,description`
+	const res = await fetch(url, {
+		headers: {
+			'apikey': apiKey,
+			'accept': 'application/json',
+		},
+	})
+	if (!res.ok) throw new Error(`Failed to fetch channel: ${res.statusText}`)
+	const data = await res.json()
+	if (!Array.isArray(data) || data.length === 0) return null
+	return data[0]
+}
+
+export async function fetchRadio4000Tracks(apiEndpoint: string, apiKey: string, channelSlug: string): Promise<Radio4000Track[]> {
+	// First get the channel to get its ID
+	const channel = await fetchRadio4000Channel(apiEndpoint, apiKey, channelSlug)
+	if (!channel) throw new Error('Channel not found')
+
+	// Now fetch tracks for this channel with proper ordering
+	// Order by channel_track.created_at to preserve the order tracks were added to the channel
+	const url = `${apiEndpoint}/rest/v1/channels?slug=eq.${encodeURIComponent(channelSlug)}&select=tracks:channel_track(created_at,track:tracks(id,url,title,description,discogs_url,created_at,updated_at))&tracks.order=created_at.asc`
+	const res = await fetch(url, {
+		headers: {
+			'apikey': apiKey,
+			'accept': 'application/json',
+		},
+	})
+	if (!res.ok) throw new Error(`Failed to fetch tracks: ${res.statusText}`)
+	const data = await res.json()
+	if (!Array.isArray(data) || data.length === 0) return []
+
+	const channelData = data[0]
+	if (!channelData.tracks || !Array.isArray(channelData.tracks)) return []
+
+	// Extract tracks from the nested structure
+	// Tracks are already ordered by created_at ascending (oldest first)
+	return channelData.tracks.map((item: any) => item.track).filter(Boolean)
+}
+
+export async function importRadio4000Tracks(
+	apiEndpoint: string,
+	apiKey: string,
+	channelSlug: string,
+	onProgress?: (current: number, total: number, skipped: number) => void,
+	onError?: (error: string) => void
+): Promise<{ imported: number; skipped: number }> {
+	const agent = assertAgent()
+	const myDid = agent.accountDid!
+
+	// Get all radio4000 tracks (ordered chronologically)
+	const r4Tracks = await fetchRadio4000Tracks(apiEndpoint, apiKey, channelSlug)
+
+	// Get existing tracks to check for duplicates
+	const existingTracks = await listAllTracksByDid(myDid)
+	const existingUrls = new Set(existingTracks.map(t => t.url.toLowerCase().trim()))
+
+	// Filter out duplicates
+	const tracksToImport = r4Tracks.filter(track => {
+		const normalizedUrl = track.url.toLowerCase().trim()
+		return !existingUrls.has(normalizedUrl)
+	})
+
+	const skipped = r4Tracks.length - tracksToImport.length
+	let imported = 0
+
+	// Process in batches of 200 (AT Protocol limit per applyWrites call)
+	const BATCH_SIZE = 200
+
+	for (let i = 0; i < tracksToImport.length; i += BATCH_SIZE) {
+		const batch = tracksToImport.slice(i, i + BATCH_SIZE)
+
+		try {
+			// Build create operations for this batch
+			const writes = batch.map(track => {
+				// Generate TID from original created_at to preserve chronological order
+				const createdDate = new Date(track.created_at)
+				const rkey = TID.fromTime(createdDate.getTime())
+
+				return {
+					$type: 'com.atproto.repo.applyWrites#create',
+					collection: R4_COLLECTION,
+					rkey: rkey.toString(),
+					value: {
+						$type: R4_COLLECTION,
+						url: track.url,
+						title: track.title,
+						description: track.description || undefined,
+						discogsUrl: track.discogs_url || undefined,
+						r4SupabaseId: track.id, // Save Radio4000 Supabase ID
+						createdAt: track.created_at, // Preserve original created timestamp
+						updatedAt: track.updated_at, // Preserve original updated timestamp
+					},
+				}
+			})
+
+			// Execute batch create with retry logic
+			await withRetry(() =>
+				agent.com.atproto.repo.applyWrites({
+					repo: myDid,
+					writes,
+				})
+			)
+
+			imported += batch.length
+			if (onProgress) onProgress(skipped + Math.min(i + BATCH_SIZE, tracksToImport.length), r4Tracks.length, skipped)
+
+			// Small delay between batches to be respectful
+			if (i + BATCH_SIZE < tracksToImport.length) {
+				await sleep(500)
+			}
+		} catch (err) {
+			const errorMsg = `Failed to import batch ${Math.floor(i / BATCH_SIZE) + 1}: ${(err as Error).message}`
+			console.error(errorMsg)
+			if (onError) onError(errorMsg)
+
+			// Try individual imports for this batch as fallback
+			for (let j = 0; j < batch.length; j++) {
+				const track = batch[j]
+				try {
+					// Generate TID from original created_at to preserve chronological order
+					const createdDate = new Date(track.created_at)
+					const rkey = TID.fromTime(createdDate.getTime())
+
+					const record = {
+						$type: R4_COLLECTION,
+						url: track.url,
+						title: track.title,
+						description: track.description || undefined,
+						discogsUrl: track.discogs_url || undefined,
+						r4SupabaseId: track.id, // Save Radio4000 Supabase ID
+						createdAt: track.created_at,
+						updatedAt: track.updated_at,
+					}
+
+					await withRetry(async () => {
+						return withDpopRetry(() => agent.com.atproto.repo.createRecord({
+							repo: myDid,
+							collection: R4_COLLECTION,
+							rkey: rkey.toString(),
+							record,
+						}))
+					})
+
+					imported++
+					if (onProgress) onProgress(skipped + i + j + 1, r4Tracks.length, skipped)
+					await sleep(100)
+				} catch (err2) {
+					const fallbackError = `Failed to import "${track.title}": ${(err2 as Error).message}`
+					console.error(fallbackError)
+					if (onError) onError(fallbackError)
+				}
+			}
+		}
+	}
+
+	return { imported, skipped }
+}
+
+// Helper to get all tracks (not exported, internal use)
+async function listAllTracksByDid(did: string): Promise<Track[]> {
+	const allTracks: Track[] = []
+	let cursor: string | undefined
+
+	do {
+		const result = await listTracksByDid(did, { cursor, limit: 100 })
+		allTracks.push(...result.tracks)
+		cursor = result.cursor
+	} while (cursor)
+
+	return allTracks
+}
+
+// Helper to delay execution (avoid rate limits)
+function sleep(ms: number): Promise<void> {
+	return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Helper to retry with exponential backoff
+async function withRetry<T>(
+	fn: () => Promise<T>,
+	maxRetries = 3,
+	delayMs = 1000
+): Promise<T> {
+	let lastError: any
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		try {
+			return await fn()
+		} catch (err) {
+			lastError = err
+			const msg = String((err as Error)?.message || err)
+
+			// Check if it's a rate limit error
+			if (msg.includes('RateLimitExceeded') || msg.includes('Rate Limit')) {
+				// Extract rate limit info from headers
+				const rateLimitInfo = extractRateLimitInfo(err)
+
+				if (rateLimitInfo) {
+					// Enhance error with rate limit details
+					const enhancedError = new Error(formatRateLimitMessage(rateLimitInfo)) as any
+					enhancedError.rateLimitInfo = rateLimitInfo
+					enhancedError.originalError = err
+					lastError = enhancedError
+				}
+
+				const backoffDelay = delayMs * Math.pow(2, attempt)
+				console.warn(`Rate limited, retrying in ${backoffDelay}ms (attempt ${attempt + 1}/${maxRetries})`)
+				await sleep(backoffDelay)
+				continue
+			}
+
+			// If not a rate limit error, throw immediately
+			throw err
+		}
+	}
+	throw lastError
+}
+
+// Delete all tracks for current user using batch operations
+export async function deleteAllTracks(
+	onProgress?: (current: number, total: number) => void,
+	onError?: (error: string) => void
+): Promise<number> {
+	const agent = assertAgent()
+	const myDid = agent.accountDid!
+
+	// Get all tracks
+	const tracks = await listAllTracksByDid(myDid)
+	const total = tracks.length
+	let deleted = 0
+
+	// Process in batches of 200 (AT Protocol limit per applyWrites call)
+	const BATCH_SIZE = 200
+
+	for (let i = 0; i < tracks.length; i += BATCH_SIZE) {
+		const batch = tracks.slice(i, i + BATCH_SIZE)
+
+		try {
+			// Build delete operations for this batch
+			const writes = batch.map(track => {
+				const uri = new AtUri(track.uri)
+				return {
+					$type: 'com.atproto.repo.applyWrites#delete',
+					collection: uri.collection,
+					rkey: uri.rkey,
+				}
+			})
+
+			// Execute batch delete with retry logic
+			await withRetry(() =>
+				agent.com.atproto.repo.applyWrites({
+					repo: myDid,
+					writes,
+				})
+			)
+
+			deleted += batch.length
+			if (onProgress) onProgress(Math.min(i + BATCH_SIZE, total), total)
+
+			// Small delay between batches to be respectful
+			if (i + BATCH_SIZE < tracks.length) {
+				await sleep(500)
+			}
+		} catch (err) {
+			const errorMsg = `Failed to delete batch ${Math.floor(i / BATCH_SIZE) + 1}: ${(err as Error).message}`
+			console.error(errorMsg)
+			if (onError) onError(errorMsg)
+
+			// Try individual deletes for this batch as fallback
+			for (let j = 0; j < batch.length; j++) {
+				const track = batch[j]
+				try {
+					await withRetry(() => deleteTrackByUri(track.uri))
+					deleted++
+					if (onProgress) onProgress(i + j + 1, total)
+					await sleep(100)
+				} catch (err2) {
+					const fallbackError = `Failed to delete "${track.title}": ${(err2 as Error).message}`
+					console.error(fallbackError)
+					if (onError) onError(fallbackError)
+				}
+			}
+		}
+	}
+
+	return deleted
 }

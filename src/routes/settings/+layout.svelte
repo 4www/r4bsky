@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import NavTabs from '$lib/components/NavTabs.svelte';
-  import { User, Palette, Shield, Languages } from 'lucide-svelte';
+  import { User, Palette, Shield, Languages, RefreshCw } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
   const { children } = $props();
@@ -14,6 +14,7 @@
     { href: '/settings/appearance', label: t('settings.nav.appearance'), icon: Palette, isActive: currentPath.startsWith('/settings/appearance') },
     { href: '/settings/permissions', label: t('settings.nav.permissions'), icon: Shield, isActive: currentPath.startsWith('/settings/permissions') },
     { href: '/settings/language', label: t('settings.nav.language'), icon: Languages, isActive: currentPath.startsWith('/settings/language') },
+    { href: '/settings/sync', label: t('settings.nav.sync'), icon: RefreshCw, isActive: currentPath.startsWith('/settings/sync') },
   ]);
 </script>
 

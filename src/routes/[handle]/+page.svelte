@@ -185,7 +185,7 @@
       {/if}
     {/each}
   </div>
-  {#if cursor && items.length >= 30}
+  {#if cursor}
     <div class="mt-4 text-center">
       <Button variant="outline" onclick={more}>
         {t('profile.loadMore')}
