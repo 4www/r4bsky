@@ -1,7 +1,6 @@
 import {bskyOAuth} from './bsky-oauth'
 import {parseTrackUrl} from './url-patterns'
 import { Agent, AtUri } from '@atproto/api'
-import { TID } from '@atproto/syntax'
 
 export const R4_COLLECTION = 'com.radio4000.track'
 export const R4_FAVORITE_COLLECTION = 'com.radio4000.favorite'
@@ -281,13 +280,11 @@ export async function listTracksByDid(did: string, {cursor, limit = 100}: ListTr
     }
   }
   const items = (res.data?.records || []).map((r: any) => ({uri: r.uri, cid: r.cid, rkey: r.uri?.split('/').pop(), ...r.value}))
-  // Only keep items that have a parsable URL
-  const tracks = items.filter((it: Track) => parseTrackUrl(it.url))
-  // Ensure latest-first ordering (by createdAt, fallback to rkey/TID)
+  // Show all tracks (player will skip unplayable ones)
+  const tracks = items
+  // Sort by rkey descending (newest first)
+  // Sequential rkeys (r4-0000000001, r4-0000000002...) preserve Radio4000 order
   tracks.sort((a: Track, b: Track) => {
-    const ad = Date.parse(a.createdAt || a.created_at || '')
-    const bd = Date.parse(b.createdAt || b.created_at || '')
-    if (!Number.isNaN(ad) && !Number.isNaN(bd)) return bd - ad
     const ar = a.rkey || ''
     const br = b.rkey || ''
     return String(br).localeCompare(String(ar))
@@ -967,8 +964,16 @@ export async function fetchRadio4000Tracks(apiEndpoint: string, apiKey: string, 
 	if (!channelData.tracks || !Array.isArray(channelData.tracks)) return []
 
 	// Extract tracks from the nested structure
-	// Tracks are already ordered by created_at ascending (oldest first)
-	return channelData.tracks.map((item: any) => item.track).filter(Boolean)
+	// Tracks are already ordered by channel_track.created_at ascending (oldest first)
+	// Preserve the channel_track.created_at as that's when the track was added to the channel
+	return channelData.tracks.map((item: any) => {
+		if (!item.track) return null
+		return {
+			...item.track,
+			// Override track.created_at with channel_track.created_at to preserve add order
+			created_at: item.created_at,
+		}
+	}).filter(Boolean)
 }
 
 export async function importRadio4000Tracks(
@@ -1005,15 +1010,16 @@ export async function importRadio4000Tracks(
 
 		try {
 			// Build create operations for this batch
-			const writes = batch.map(track => {
-				// Generate TID from original created_at to preserve chronological order
-				const createdDate = new Date(track.created_at)
-				const rkey = TID.fromTime(createdDate.getTime())
+			// Use sequential rkeys to preserve Radio4000 order (sortable by rkey)
+			const writes = batch.map((track, batchIndex) => {
+				// Generate zero-padded sequential rkey (e.g., "r4-0000000001")
+				const sequenceNum = i + batchIndex
+				const rkey = `r4-${sequenceNum.toString().padStart(10, '0')}`
 
 				return {
 					$type: 'com.atproto.repo.applyWrites#create',
 					collection: R4_COLLECTION,
-					rkey: rkey.toString(),
+					rkey: rkey,
 					value: {
 						$type: R4_COLLECTION,
 						url: track.url,
@@ -1051,9 +1057,9 @@ export async function importRadio4000Tracks(
 			for (let j = 0; j < batch.length; j++) {
 				const track = batch[j]
 				try {
-					// Generate TID from original created_at to preserve chronological order
-					const createdDate = new Date(track.created_at)
-					const rkey = TID.fromTime(createdDate.getTime())
+					// Generate zero-padded sequential rkey
+					const sequenceNum = i + j
+					const rkey = `r4-${sequenceNum.toString().padStart(10, '0')}`
 
 					const record = {
 						$type: R4_COLLECTION,
@@ -1070,7 +1076,7 @@ export async function importRadio4000Tracks(
 						return withDpopRetry(() => agent.com.atproto.repo.createRecord({
 							repo: myDid,
 							collection: R4_COLLECTION,
-							rkey: rkey.toString(),
+							rkey: rkey,
 							record,
 						}))
 					})

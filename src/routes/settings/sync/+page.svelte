@@ -215,20 +215,20 @@
             <h3 class="text-sm font-medium">{t('settings.syncComparisonTitle')}</h3>
             <div class="flex gap-4 text-sm">
               <div class="flex items-center gap-2">
-                <CheckCircle2 class="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span class="text-green-600 dark:text-green-400">
+                <CheckCircle2 class="h-4 w-4" />
+                <span>
                   {t('settings.syncStatusImported', { count: comparison.imported })}
                 </span>
               </div>
               <div class="flex items-center gap-2">
                 {#if comparison.missing > 0}
-                  <AlertCircle class="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                  <span class="text-orange-600 dark:text-orange-400">
+                  <AlertCircle class="h-4 w-4" />
+                  <span>
                     {t('settings.syncStatusMissing', { count: comparison.missing })}
                   </span>
                 {:else}
-                  <CheckCircle2 class="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span class="text-green-600 dark:text-green-400">
+                  <CheckCircle2 class="h-4 w-4" />
+                  <span>
                     {t('settings.syncAllImported')}
                   </span>
                 {/if}

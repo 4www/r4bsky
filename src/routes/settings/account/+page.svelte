@@ -149,15 +149,31 @@
     deleteErrors = [];
 
     try {
-      const myDid = await getMyDid();
+      const agent = bskyOAuth.agent;
+      if (!agent) throw new Error('Not authenticated');
+
+      const myDid = agent.accountDid!;
       let allTracks = [];
       let cursor = undefined;
 
-      // Fetch all tracks once
+      // Fetch ALL records directly from repo (no filtering)
       do {
-        const result = await listTracksByDid(myDid, { cursor, limit: 100 });
-        allTracks.push(...result.tracks);
-        cursor = result.cursor;
+        const result = await agent.com.atproto.repo.listRecords({
+          repo: myDid,
+          collection: 'com.radio4000.track',
+          limit: 100,
+          cursor,
+        });
+
+        const records = (result.data?.records || []).map((r: any) => ({
+          uri: r.uri,
+          cid: r.cid,
+          rkey: r.uri?.split('/').pop(),
+          title: r.value?.title || 'Untitled',
+        }));
+
+        allTracks.push(...records);
+        cursor = result.data?.cursor;
       } while (cursor);
 
       tracksToDelete = allTracks;
