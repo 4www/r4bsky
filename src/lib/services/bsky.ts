@@ -121,3 +121,4 @@ class BskyService {
 }
 
 export const bsky = new BskyService()
+export { BskyService }

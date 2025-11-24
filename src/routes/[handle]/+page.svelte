@@ -22,6 +22,8 @@
 
   let status = $state('');
   let loading = $state(false);
+  let loadingAll = $state(false);
+  let loadProgress = $state({ current: 0, total: 0 });
   let selectedTrackUri = $state<string | null>(null);
   let selectedTrackRef = $state<HTMLElement | null>(null);
   let editingTrackUri = $state<string | null>(null);
@@ -41,6 +43,48 @@
     const allTracks = tracksQuery.data || [];
     return allTracks.filter(track => track.authorDid === did);
   });
+
+  // Group tracks by Year Month (newest first) - i18n aware
+  const groupedTracks = $derived.by(() => {
+    const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
+
+    items.forEach(track => {
+      if (!track.createdAt) return;
+
+      try {
+        const date = new Date(track.createdAt);
+        const year = date.getFullYear();
+        const monthNum = date.getMonth(); // 0-11
+        // Use current locale for month name
+        const monthName = date.toLocaleDateString($locale, { month: 'long' });
+        const key = `${year} ${monthName}`;
+
+        if (!groups.has(key)) {
+          groups.set(key, { tracks: [], year, month: monthNum });
+        }
+        groups.get(key)!.tracks.push(track);
+      } catch (e) {
+        // Invalid date, skip grouping
+      }
+    });
+
+    // Sort groups by year and month (newest first), then sort tracks within each group
+    return Array.from(groups.entries())
+      .map(([key, data]) => ({
+        key,
+        tracks: data.tracks.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA; // Newest first within group
+        }),
+        year: data.year,
+        month: data.month,
+        // Sort key: combine year and month for proper ordering
+        sortKey: data.year * 100 + data.month
+      }))
+      .sort((a, b) => b.sortKey - a.sortKey); // Sort groups by year-month (newest first)
+  });
+
   const paginationState = $derived(did ? getPaginationState(did) : { cursor: undefined, hasMore: false, loading: false });
   const cursor = $derived(paginationState.cursor);
   const hasMore = $derived(paginationState.hasMore);
@@ -148,6 +192,42 @@
       status = (err as Error)?.message || String(err);
     }
   }
+
+  async function loadAll() {
+    if (!did || loadingAll) return;
+
+    loadingAll = true;
+    status = '';
+
+    try {
+      let hasMore = true;
+      let totalLoaded = items.length;
+
+      while (hasMore) {
+        const state = getPaginationState(did);
+        if (!state.cursor) {
+          hasMore = false;
+          break;
+        }
+
+        await loadMoreTracksForDid(did);
+
+        // Update progress
+        totalLoaded = items.length;
+        loadProgress = { current: totalLoaded, total: totalLoaded };
+
+        // Small delay to prevent overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      loadProgress = { current: 0, total: 0 };
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
+      loadProgress = { current: 0, total: 0 };
+    } finally {
+      loadingAll = false;
+    }
+  }
 </script>
 
 {#if status}
@@ -175,51 +255,79 @@
     />
   </div>
 {:else if items.length}
-  <div class="rounded-xl border border-foreground divide-y overflow-visible">
-    {#each items as item, idx (item.uri || idx)}
-      {@const isSelected = item.uri === selectedTrackUri}
-      {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
-      {#if isSelected && discogsUrl}
-        <div bind:this={selectedTrackRef}>
-          <TrackListItem
-            {item}
-            index={idx}
-            items={items}
-            {context}
-            {editable}
-            isDetailView={true}
-            flat={true}
-            onSelectTrack={selectTrack}
-            onEditTrack={openEditDialog}
-            onremove={handleTrackRemoved}
-            showAuthor={false}
-          >
-            {#snippet expandedContent()}
-              <DiscogsResource url={discogsUrl} {handle} />
-            {/snippet}
-          </TrackListItem>
+  <div class="space-y-6">
+    {#each groupedTracks as group (group.key)}
+      <div class="space-y-1">
+        <!-- Group Header -->
+        <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-1">
+          <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+            {group.key}
+            <span class="ml-2 text-xs font-normal text-muted-foreground">
+              ({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})
+            </span>
+          </h3>
         </div>
-      {:else}
-        <TrackListItem
-          {item}
-          index={idx}
-          items={items}
-          {context}
-          {editable}
-          flat={true}
-          onSelectTrack={selectTrack}
-          onEditTrack={openEditDialog}
-          onremove={handleTrackRemoved}
-          showAuthor={false}
-        />
-      {/if}
+
+        <!-- Tracks in Group -->
+        <div class="rounded-xl border border-foreground divide-y overflow-visible">
+          {#each group.tracks as item (item.uri)}
+            {@const globalIdx = items.findIndex(t => t.uri === item.uri)}
+            {@const isSelected = item.uri === selectedTrackUri}
+            {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
+            {#if isSelected && discogsUrl}
+              <div bind:this={selectedTrackRef}>
+                <TrackListItem
+                  {item}
+                  index={globalIdx}
+                  items={items}
+                  {context}
+                  {editable}
+                  isDetailView={true}
+                  flat={true}
+                  onSelectTrack={selectTrack}
+                  onEditTrack={openEditDialog}
+                  onremove={handleTrackRemoved}
+                  showAuthor={false}
+                >
+                  {#snippet expandedContent()}
+                    <DiscogsResource url={discogsUrl} {handle} />
+                  {/snippet}
+                </TrackListItem>
+              </div>
+            {:else}
+              <TrackListItem
+                {item}
+                index={globalIdx}
+                items={items}
+                {context}
+                {editable}
+                flat={true}
+                onSelectTrack={selectTrack}
+                onEditTrack={openEditDialog}
+                onremove={handleTrackRemoved}
+                showAuthor={false}
+              />
+            {/if}
+          {/each}
+        </div>
+      </div>
     {/each}
   </div>
   {#if hasMore}
-    <div class="mt-4 text-center">
-      <Button variant="outline" onclick={more} disabled={paginationState.loading}>
-        {paginationState.loading ? t('profile.loading') : t('profile.loadMore')}
-      </Button>
+    <div class="mt-4 flex flex-col gap-2 items-center">
+      <div class="flex gap-2">
+        <Button variant="outline" onclick={more} disabled={paginationState.loading || loadingAll}>
+          {paginationState.loading ? t('profile.loading') : t('profile.loadMore')}
+        </Button>
+        <Button variant="default" onclick={loadAll} disabled={loadingAll || paginationState.loading}>
+          {loadingAll ? `Loading all... (${loadProgress.current} tracks)` : 'Load All Tracks'}
+        </Button>
+      </div>
+      {#if loadingAll}
+        <p class="text-xs text-muted-foreground">
+          Loading all remaining tracks... {loadProgress.current} loaded so far
+        </p>
+      {/if}
     </div>
   {/if}
 {:else}

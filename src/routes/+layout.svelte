@@ -147,7 +147,8 @@
   onMount(() => {
     initOAuth().catch(console.error);
     const unsubscribe = player.subscribe((state) => {
-      hasDesktopPlayer = state.customPlaylist?.length > 0 && state.index >= 0;
+      // Player is active if we have a context (profile/author/discogs) or custom playlist
+      hasDesktopPlayer = (state.context !== null || state.customPlaylist?.length > 0) && state.index >= 0;
       playerState = state;
     });
 
@@ -212,7 +213,10 @@
 
     return baseItems;
   });
-  const hasPlayback = $derived(playerState.customPlaylist?.length > 0 || playerState.context !== null);
+  const hasPlayback = $derived(
+    (playerState.customPlaylist?.length > 0 || playerState.context !== null) &&
+    playerState.index >= 0
+  );
   const playbackCollapsed = $derived(!hasPlayback || !playerVisible);
 </script>
 
@@ -230,14 +234,17 @@
   <div class="min-h-screen bg-background flex flex-col">
     <div class="flex-1 px-0.5 sm:px-1 lg:px-2">
       <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-center lg:gap-4">
-        {#if !playbackCollapsed}
+        {#if hasPlayback}
         <section
-          class="layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg h-screen"
+          class={cn(
+            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg h-screen",
+            playbackCollapsed && "hidden"
+          )}
           aria-label="layout-playback"
         >
           <div class="h-full rounded-xl bg-background/95 p-2 lg:p-3 shadow-sm">
             <Player
-              visible={true}
+              visible={!playbackCollapsed}
               bind:mobilePanelOpen={mobilePanelOpen}
               class="w-full h-full"
             />
@@ -260,7 +267,7 @@
             <div class="flex items-center justify-center gap-2 flex-wrap">
               <NavTabs items={navItems} variant="pills" />
 
-              {#if playerState.playlist?.length > 0}
+              {#if hasPlayback}
                 <div class="inline-flex gap-1 rounded-full bg-background/95 backdrop-blur-xl border border-border">
                   <button
                     type="button"

@@ -198,6 +198,8 @@ const en = {
 		viewProfile: "View profile",
 		openInBluesky: "Open in Bluesky",
 		copyLink: "Copy profile link",
+		track: "track",
+		tracks: "tracks",
 	},
 	profileNav: {
 		tracks: "Tracks",

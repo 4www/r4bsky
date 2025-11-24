@@ -187,7 +187,7 @@ export async function createTrack(track: Omit<Track, 'uri' | 'cid' | 'rkey'> & {
       url: track.url,
       title: track.title,
       description: track.description,
-      discogsUrl: track.discogsUrl || track.discogs_url
+      discogs_url: track.discogsUrl || track.discogs_url
     })
 
     // Add to collection

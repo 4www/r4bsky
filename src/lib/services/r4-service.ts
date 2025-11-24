@@ -113,7 +113,7 @@ interface ListR4FavoriteResult {
 	cursor?: string
 }
 
-interface R4ProfileRecord {
+export interface R4ProfileRecord {
 	uri?: string
 	cid?: string
 	mode: 'light' | 'dark' | 'auto'
@@ -573,9 +573,9 @@ export async function findFollowUri(subjectDid: string): Promise<string | null> 
       actor: agent.accountDid!,
       others: [subjectDid],
     })
-    const entry = rel.data?.relationships?.find((r: any) => r.did === subjectDid && typeof r.following === 'string')
+    const entry = rel.data?.relationships?.find((r: any) => r.did === subjectDid && r.following && typeof r.following === 'string')
     if (entry && typeof (entry as any).following === 'string') {
-      return entry.following as string
+      return (entry as any).following as string
     }
   } catch {
     // fall through to repo scan
@@ -747,7 +747,7 @@ export async function getR4Profile(did: string): Promise<R4ProfileRecord | null>
 	// Try public agent first
 	try {
 		const res = await fetchWith(getPublicAgent())
-		const value = res.data?.value
+		const value = res.data?.value as unknown as R4ProfileRecord | undefined
 		if (!value) return null
 		return {
 			uri: res.data?.uri,
@@ -768,7 +768,7 @@ export async function getR4Profile(did: string): Promise<R4ProfileRecord | null>
 			const pds = await getPdsForDid(did)
 			const remote = new Agent({ service: pds })
 			const res = await fetchWith(remote)
-			const value = res.data?.value
+			const value = res.data?.value as unknown as R4ProfileRecord | undefined
 			if (!value) return null
 			return {
 				uri: res.data?.uri,
@@ -788,7 +788,7 @@ export async function getR4Profile(did: string): Promise<R4ProfileRecord | null>
 			try {
 				const auth = assertAgent()
 				const res = await fetchWith(auth)
-				const value = res.data?.value
+				const value = res.data?.value as unknown as R4ProfileRecord | undefined
 				if (!value) return null
 				return {
 					uri: res.data?.uri,
@@ -1025,12 +1025,12 @@ export async function importRadio4000Tracks(
 						url: track.url,
 						title: track.title,
 						description: track.description || undefined,
-						discogsUrl: track.discogs_url || undefined,
+						discogs_url: track.discogs_url || undefined,
 						r4SupabaseId: track.id, // Save Radio4000 Supabase ID
 						createdAt: track.created_at, // Preserve original created timestamp
 						updatedAt: track.updated_at, // Preserve original updated timestamp
 					},
-				}
+				} as any
 			})
 
 			// Execute batch create with retry logic
@@ -1182,7 +1182,7 @@ export async function deleteAllTracks(
 					$type: 'com.atproto.repo.applyWrites#delete',
 					collection: uri.collection,
 					rkey: uri.rkey,
-				}
+				} as any
 			})
 
 			// Execute batch delete with retry logic

@@ -1,6 +1,6 @@
 // Cloudflare Workers script for serving the SPA
 export default {
-	async fetch(request, env) {
+	async fetch(request: Request, env: Env) {
 		const url = new URL(request.url);
 
 		// Try to get the asset from the ASSETS binding
@@ -18,3 +18,10 @@ export default {
 		return response;
 	},
 };
+
+// Add types for Cloudflare Workers environment
+interface Env {
+	ASSETS: {
+		fetch: (request: Request) => Promise<Response>;
+	};
+}
