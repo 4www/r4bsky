@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fetchOEmbed } from '$lib/services/oembed';
-  import { parseUrl as parseDiscogsUrl, fetchDiscogs, extractSuggestions } from '$lib/services/discogs';
+  import { parseDiscogsUrl, fetchDiscogs, extractSuggestions } from '$lib/services/discogs.service';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';

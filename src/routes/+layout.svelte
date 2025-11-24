@@ -17,6 +17,7 @@
   import NavTabs from '$lib/components/NavTabs.svelte';
   import { base } from '$app/paths';
   import { browser } from '$app/environment';
+  import ToastContainer from '$lib/components/ui/toast/ToastContainer.svelte';
 
   let { children } = $props();
   let ready = $state(false);
@@ -317,3 +318,6 @@
     </div>
   </div>
 {/if}
+
+<!-- Toast Notifications -->
+<ToastContainer />

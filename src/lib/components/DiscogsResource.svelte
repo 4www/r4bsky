@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { parseDiscogsUrl, fetchDiscogs, resourceTrackToR4Track } from '$lib/services/discogs-service';
+  import { parseDiscogsUrl, fetchDiscogs, resourceTrackToR4Track } from '$lib/services/discogs.service';
   import { play } from '$lib/player/store';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';

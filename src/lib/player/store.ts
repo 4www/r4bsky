@@ -120,10 +120,56 @@ export function prev(): void {
 }
 
 /**
+ * Shuffle an array using Fisher-Yates algorithm
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+/**
  * Toggle shuffle mode
- * Shuffle is now handled in the Player component with live playlist
+ * When shuffling: saves original playlist and shuffles customPlaylist
+ * When un-shuffling: restores original playlist
  */
 export function toggleShuffle(): void {
   const s = player.get()
-  player.set({ ...s, isShuffled: !s.isShuffled })
+
+  if (!s.isShuffled) {
+    // Turning shuffle ON
+    // Save current playlist as original and create shuffled version
+    if (s.customPlaylist && s.customPlaylist.length > 0) {
+      const shuffled = shuffleArray(s.customPlaylist)
+      player.set({
+        ...s,
+        originalPlaylist: s.customPlaylist,
+        customPlaylist: shuffled,
+        isShuffled: true,
+        // Reset index to start of shuffled playlist
+        index: 0
+      })
+    } else {
+      // No playlist to shuffle, just toggle the flag
+      player.set({ ...s, isShuffled: true })
+    }
+  } else {
+    // Turning shuffle OFF
+    // Restore original playlist if it exists
+    if (s.originalPlaylist) {
+      player.set({
+        ...s,
+        customPlaylist: s.originalPlaylist,
+        originalPlaylist: undefined,
+        isShuffled: false,
+        // Reset index to start
+        index: 0
+      })
+    } else {
+      player.set({ ...s, isShuffled: false })
+    }
+  }
 }

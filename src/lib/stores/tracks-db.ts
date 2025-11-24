@@ -191,9 +191,21 @@ export async function createTrack(track: Omit<Track, 'uri' | 'cid' | 'rkey'> & {
     })
 
     // Add to collection
+    const resultData = result as unknown as {uri: string; cid: string}
+
+    // Extract rkey from URI (at://did/collection/rkey)
+    const rkey = resultData.uri?.split('/').pop()
+
     const newTrack: Track = {
-      ...result,
-      authorDid: track.authorDid
+      uri: resultData.uri,
+      cid: resultData.cid,
+      rkey,
+      url: track.url,
+      title: track.title,
+      description: track.description,
+      discogsUrl: track.discogsUrl || track.discogs_url,
+      authorDid: track.authorDid,
+      createdAt: new Date().toISOString() // Set current timestamp
     }
     tracksCollection.insert(newTrack)
 
