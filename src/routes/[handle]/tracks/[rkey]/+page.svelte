@@ -8,6 +8,7 @@
   import { Button } from '$lib/components/ui/button';
   import { locale, translate } from '$lib/i18n';
   import { browser } from '$app/environment';
+  import SeoHead from '$lib/components/SeoHead.svelte';
 
   let { data } = $props();
   const _handle = $derived(data?.handle || '');
@@ -27,6 +28,10 @@
   let currentKey = $state('');
   const t = (key, vars = {}) => translate($locale, key, vars);
   const trackIndex = $derived(item ? allTracks.findIndex(t => t.uri === item.uri) : 0);
+  const trackTitle = $derived(item
+    ? `${item.title || t('trackItem.untitled')} — @${displayHandle || handle}`
+    : t('trackDetail.loadingTitle'));
+  const trackDescription = $derived(item?.description || t('trackDetail.loadingDescription'));
 
   function refreshTrack() {
     loadTrack(handle, rkey);
@@ -111,6 +116,11 @@
     }
   });
 </script>
+
+<SeoHead
+  title={trackTitle}
+  description={trackDescription}
+/>
 
 <div class="max-w-4xl mx-auto px-4 py-6">
   {#if loading}

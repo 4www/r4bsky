@@ -8,6 +8,7 @@
   import SignInForm from '$lib/components/SignInForm.svelte';
   import { Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
+  import SeoHead from '$lib/components/SeoHead.svelte';
 
   let myProfile = $state(null);
   let follows = $state([]);
@@ -52,6 +53,8 @@
     }
   });
 </script>
+
+<SeoHead title={t('home.title')} description={t('home.subtitle')} />
 
 {#if isAuthenticated}
   <div class="container max-w-4xl py-4 space-y-6">
