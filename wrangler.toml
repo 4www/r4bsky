@@ -1,3 +1,7 @@
 name = "r4atproto"
 compatibility_date = "2025-11-19"
-# pages_build_output_dir = "dist"
+# pages_build_output_dir = "dist" # legacy
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
