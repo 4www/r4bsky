@@ -10,7 +10,7 @@
     "build:cloudflare": "node scripts/generate-client-metadata.js && R4_BASE='' npm run build",
     "build:github": "cp -f static/client-metadata.github.json static/client-metadata.json && npm run build",
     "preview": "vite preview",
-    "deploy:wrangler": "wrangler deploy dist",
+    "deploy:wrangler": "wrangler deploy --assets=./dist",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
