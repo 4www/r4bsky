@@ -1,8 +1,5 @@
 <script lang="ts">
 	import Avatar from './Avatar.svelte'
-	import { Card, CardHeader, CardTitle, CardDescription } from './ui/card'
-	import { Button } from './ui/button'
-	import { cn, menuItemClass, menuTriggerClass } from '$lib/utils'
 	import Link from '$lib/components/Link.svelte'
 	import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye, Star } from 'lucide-svelte'
 	import {
@@ -23,7 +20,6 @@
 		profile,
 		handle,
 		size = 'lg',
-		class: extraClass = '',
 		clickable = true,
 		children,
 	} = $props()
@@ -31,12 +27,12 @@
 	const t = (key, vars = {}) => translate($locale, key, vars)
 
 	const sizeMap = {
-		sm: { avatar: 'md', title: 'text-xl', description: 'text-sm' },
-		md: { avatar: 'lg', title: 'text-2xl', description: 'text-base' },
-		lg: { avatar: 'xl', title: 'text-3xl', description: 'text-base' },
+		sm: 'md',
+		md: 'lg',
+		lg: 'xl',
 	}
 
-	const sizes = sizeMap[size] || sizeMap.lg
+	const avatarSize = sizeMap[size] || sizeMap.lg
 
 	let loadingTracks = $state(false)
 	let playerState = $state(player.get())
@@ -166,173 +162,240 @@
 	})
 </script>
 
-<Card
-	class={cn(
-		'border border-border bg-card animate-in transition-colors shadow-sm hover:bg-muted/20 relative',
-		extraClass,
-	)}
->
+<article class="profile-header" class:has-banner={hasBanner}>
 	{#if hasBanner}
-		<div
-			class="absolute inset-0 bg-cover bg-center"
-			style={`background-image: url(${profile.banner})`}
-		></div>
-
+		<div class="banner" style:background-image="url({profile.banner})"></div>
 	{/if}
-	<CardHeader class={cn('p-2.5 relative')}>
-		<div class="flex items-center justify-between gap-3">
-			{#if clickable}
-				                <Link
-									href={`/@${handle}`}
-									class="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
-								>
-									<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
-									<div class="min-w-0 flex-1">
-										<CardTitle class={cn('flex items-center gap-2', sizes.title)}>
-											<span
-												class={cn(
-													'inline-block px-1 py-0.5 rounded transition-colors bg-background',
-													isActiveProfile ? 'bg-primary text-background' : '',
-												)}
-											>
-												{profile?.displayName || handle}
-											</span>
-										</CardTitle>
-										<CardDescription class={cn(sizes.description, 'mt-0')}>
-											<span class="inline-block px-1 py-0.5 rounded bg-background">
-												@{handle}
-											</span>
-										</CardDescription>
-										{#if profile?.description && size === 'lg'}
-											<p class="text-sm px-1 py-0.5 rounded bg-background text-muted-foreground mt-2 max-w-xl">
-												{profile.description}
-											</p>
-										{/if}
-									</div>
-				</Link>
-			{:else}
-				<div class="flex items-center gap-3 min-w-0 flex-1">
-					<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
-					<div class="min-w-0 flex-1">
-						<CardTitle class={cn('flex items-center gap-2', sizes.title)}>
-							<span
-								class={cn(
-									'inline-block px-1 py-0.5 rounded transition-colors bg-background',
-									isActiveProfile ? 'bg-primary text-background' : '',
-								)}
-							>
-								{profile?.displayName || handle}
-							</span>
-						</CardTitle>
-						<CardDescription class={cn(sizes.description, 'mt-0')}>
-							<span class="inline-block px-1 py-0.5 rounded bg-background">
-								@{handle}
-							</span>
-						</CardDescription>
-						{#if profile?.description && size === 'lg'}
-							<p class="text-sm px-1 py-0.5 rounded bg-background text-muted-foreground mt-2 max-w-xl">
-								{profile.description}
-							</p>
-						{/if}
-					</div>
+
+	<div class="profile-content">
+		{#if clickable}
+			<Link href={`/@${handle}`} class="profile-link">
+				<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={avatarSize} />
+				<div class="profile-info">
+					<h2 class:active={isActiveProfile}>{profile?.displayName || handle}</h2>
+					<p class="handle">@{handle}</p>
+					{#if profile?.description && size === 'lg'}
+						<p class="description">{profile.description}</p>
+					{/if}
 				</div>
-			{/if}
-
-			<div class="flex gap-2 items-center shrink-0">
-				{#if children}
-					{@render children()}
-				{/if}
-
-				<div class="flex flex-col gap-1 ml-auto">
-					<button
-						bind:this={triggerRef}
-						type="button"
-						class={cn(menuTriggerClass(menuOpen), 'h-9 w-9')}
-						onclick={toggleMenu}
-						aria-haspopup="menu"
-						aria-expanded={menuOpen}
-						title={t('profile.actions')}
-						aria-label={t('profile.actions')}
-					>
-						<MoreVertical class="h-4 w-4 text-current" />
-					</button>
-					<button
-						type="button"
-						class={cn(menuTriggerClass(false), 'h-9 w-9', loadingTracks && 'opacity-50 pointer-events-none')}
-						onclick={playAll}
-						disabled={loadingTracks || isActiveProfile}
-						title={t('trackItem.play')}
-						aria-label={t('trackItem.play')}
-					>
-						{#if loadingTracks}
-							<Loader2 class="h-4 w-4 animate-spin text-current" />
-						{:else}
-							<PlayCircle class="h-4 w-4 text-current" />
-						{/if}
-					</button>
-					{#if menuOpen}
-						<div
-							bind:this={menuRef}
-							class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-							role="menu"
-						>
-							<button
-								type="button"
-								class={cn(menuItemClass, loadingTracks && 'opacity-50 pointer-events-none')}
-								onclick={() => {
-									playAll();
-									closeMenu();
-								}}
-								disabled={loadingTracks || isActiveProfile}
-							>
-								{#if loadingTracks}
-									<Loader2 class="h-4 w-4 animate-spin" />
-								{:else if isActiveProfile}
-									<PlayCircle class="h-4 w-4" />
-								{:else}
-									<PlayCircle class="h-4 w-4" />
-								{/if}
-								{t('trackItem.play')}
-							</button>
-							{#if $session?.did}
-								<button
-									type="button"
-									class={cn(menuItemClass, favoriteLoading && 'opacity-50 pointer-events-none')}
-									onclick={toggleFavorite}
-									disabled={favoriteLoading}
-								>
-									{#if favoriteLoading}
-										<Loader2 class="h-4 w-4 animate-spin" />
-									{:else if followUri}
-										<Star class="h-4 w-4 fill-current" />
-									{:else}
-										<Star class="h-4 w-4" />
-									{/if}
-									{followUri ? 'Unfavorite' : 'Favorite'}
-								</button>
-							{/if}
-							<a href={`/@${normalizedHandle}`} class={menuItemClass} onclick={closeMenu}>
-								<Eye class="h-4 w-4" />
-								{t('profile.viewProfile')}
-							</a>
-							<a
-								href={`https://bsky.app/profile/${normalizedHandle}`}
-								target="_blank"
-								rel="noopener noreferrer"
-								class={menuItemClass}
-								onclick={closeMenu}
-							>
-								<ExternalLink class="h-4 w-4" />
-								{t('profile.openInBluesky')}
-							</a>
-							<button type="button" class={menuItemClass} onclick={copyProfileUrl}>
-								<Copy class="h-4 w-4" />
-								{t('profile.copyLink')}
-							</button>
-						</div>
+			</Link>
+		{:else}
+			<div class="profile-link">
+				<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={avatarSize} />
+				<div class="profile-info">
+					<h2 class:active={isActiveProfile}>{profile?.displayName || handle}</h2>
+					<p class="handle">@{handle}</p>
+					{#if profile?.description && size === 'lg'}
+						<p class="description">{profile.description}</p>
 					{/if}
 				</div>
 			</div>
+		{/if}
+
+		<div class="actions">
+			{#if children}
+				{@render children()}
+			{/if}
+
+			<div class="action-buttons">
+				<button
+					bind:this={triggerRef}
+					type="button"
+					class="menu-trigger"
+					class:active={menuOpen}
+					onclick={toggleMenu}
+					aria-haspopup="menu"
+					aria-expanded={menuOpen}
+					title={t('profile.actions')}
+					aria-label={t('profile.actions')}
+				>
+					<MoreVertical size={16} />
+				</button>
+
+				<button
+					type="button"
+					class="menu-trigger"
+					onclick={playAll}
+					disabled={loadingTracks || isActiveProfile}
+					title={t('trackItem.play')}
+					aria-label={t('trackItem.play')}
+				>
+					{#if loadingTracks}
+						<Loader2 size={16} class="spin" />
+					{:else}
+						<PlayCircle size={16} />
+					{/if}
+				</button>
+
+				{#if menuOpen}
+					<div bind:this={menuRef} class="dropdown-content menu" role="menu">
+						<button
+							type="button"
+							class="menu-item"
+							onclick={() => { playAll(); closeMenu(); }}
+							disabled={loadingTracks || isActiveProfile}
+						>
+							{#if loadingTracks}
+								<Loader2 size={16} class="spin" />
+							{:else}
+								<PlayCircle size={16} />
+							{/if}
+							{t('trackItem.play')}
+						</button>
+
+						{#if $session?.did}
+							<button
+								type="button"
+								class="menu-item"
+								onclick={toggleFavorite}
+								disabled={favoriteLoading}
+							>
+								{#if favoriteLoading}
+									<Loader2 size={16} class="spin" />
+								{:else if followUri}
+									<Star size={16} fill="currentColor" />
+								{:else}
+									<Star size={16} />
+								{/if}
+								{followUri ? 'Unfavorite' : 'Favorite'}
+							</button>
+						{/if}
+
+						<a href={`/@${normalizedHandle}`} class="menu-item" onclick={closeMenu}>
+							<Eye size={16} />
+							{t('profile.viewProfile')}
+						</a>
+
+						<a
+							href={`https://bsky.app/profile/${normalizedHandle}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="menu-item"
+							onclick={closeMenu}
+						>
+							<ExternalLink size={16} />
+							{t('profile.openInBluesky')}
+						</a>
+
+						<button type="button" class="menu-item" onclick={copyProfileUrl}>
+							<Copy size={16} />
+							{t('profile.copyLink')}
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
-	</CardHeader>
-</Card>
+	</div>
+</article>
+
+<style>
+	.profile-header {
+		position: relative;
+		overflow: hidden;
+		margin-block-end: var(--size-3);
+	}
+
+	.profile-header.has-banner {
+		min-height: 80px;
+	}
+
+	.banner {
+		position: absolute;
+		inset: 0;
+		background-size: cover;
+		background-position: center;
+		opacity: 0.3;
+	}
+
+	.profile-content {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--size-3);
+		padding: var(--size-3);
+	}
+
+	.profile-link {
+		display: flex;
+		align-items: center;
+		gap: var(--size-3);
+		min-width: 0;
+		flex: 1;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	a.profile-link:hover {
+		opacity: 0.8;
+	}
+
+	.profile-info {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.profile-info h2 {
+		display: inline-block;
+		padding: var(--size-1);
+		background: var(--background);
+		border-radius: var(--radius-1);
+		font-size: var(--font-size-3);
+	}
+
+	.profile-info h2.active {
+		background: var(--foreground);
+		color: var(--background);
+	}
+
+	.handle {
+		display: inline-block;
+		padding: var(--size-1);
+		margin-top: var(--size-1);
+		background: var(--background);
+		border-radius: var(--radius-1);
+		color: var(--muted-foreground);
+		font-size: var(--font-size-1);
+	}
+
+	.description {
+		margin-top: var(--size-2);
+		padding: var(--size-1);
+		background: var(--background);
+		border-radius: var(--radius-1);
+		color: var(--muted-foreground);
+		font-size: var(--font-size-1);
+		max-width: 40ch;
+	}
+
+	.actions {
+		display: flex;
+		align-items: center;
+		gap: var(--size-2);
+		flex-shrink: 0;
+	}
+
+	.action-buttons {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-1);
+	}
+
+	.menu {
+		position: absolute;
+		right: 0;
+		top: 100%;
+		margin-top: var(--size-1);
+		width: 12rem;
+	}
+
+	.spin {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+</style>

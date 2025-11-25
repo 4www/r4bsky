@@ -158,7 +158,6 @@
     set('--accent', colors.foreground);
     set('--primary', colors.foreground);
     set('--destructive', colors.foreground);
-    set('--border', colors.foreground);
     set('--input', colors.foreground);
     set('--ring', colors.foreground);
 
@@ -283,7 +282,7 @@
             {@render children()}
           </main>
 
-          <nav class="bottom-nav card">
+          <nav class="bottom-nav">
             <div class="nav-inner">
               <NavTabs items={navItems} variant="pills" />
 
@@ -349,7 +348,8 @@
 
   .app-container {
     flex: 1;
-    padding-inline: var(--size-1);
+    padding-block-start: var(--size-3);
+    padding-inline: var(--size-3);
   }
 
   .layout-grid {

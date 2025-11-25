@@ -26,8 +26,13 @@
   header {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: var(--layer-5);
     padding: var(--size-3);
+    background: var(--gray-0);
+  }
+
+  :global(.dark) header {
+    background: var(--gray-12);
   }
 
   .pill-nav {

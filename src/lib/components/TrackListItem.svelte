@@ -1,20 +1,17 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { parseTrackUrl } from '$lib/services/url-patterns';
   import { deleteTrackByUri } from '$lib/services/r4-service';
-  import { setPlaylist } from '$lib/player/store';
+  import { setPlaylist, player } from '$lib/player/store';
   import { session } from '$lib/state/session';
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
   import { Button } from '$lib/components/ui/button';
-  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
-  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
+  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Eye } from 'lucide-svelte';
+  import { cn } from '$lib/utils';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
   import Link from '$lib/components/Link.svelte';
-  import { player } from '$lib/player/store';
-  import { onDestroy } from 'svelte';
   import Dialog from '$lib/components/ui/Dialog.svelte';
 
   const {
@@ -31,49 +28,23 @@
     onremove,
     showAuthor = true
   } = $props();
+
   let message = $state('');
   let showDeleteConfirm = $state(false);
   let deleting = $state(false);
-
-  const t = (key, vars = {}) => translate($locale, key, vars);
   let menuOpen = $state(false);
   let menuRef = $state<HTMLElement | null>(null);
   let triggerRef = $state<HTMLElement | null>(null);
 
-  function play() {
-    setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
-  }
+  const t = (key, vars = {}) => translate($locale, key, vars);
 
-  function confirmDelete() {
-    showDeleteConfirm = true;
-  }
+  let playerState = $state(player.get());
+  const unsubscribe = player.subscribe((value) => {
+    playerState = value;
+  });
+  onDestroy(() => unsubscribe?.());
 
-  function cancelDelete() {
-    showDeleteConfirm = false;
-  }
-
-  async function remove() {
-    message = '';
-    deleting = true;
-    showDeleteConfirm = false;
-    try {
-      await deleteTrackByUri(item.uri);
-      // Call the parent callback to remove from list
-      if (onremove) {
-        onremove({ detail: { uri: item.uri } });
-      }
-      // Don't reset deleting here - component should be unmounted by parent
-    } catch (e) {
-      message = e?.message || String(e);
-      deleting = false;
-      console.error('Failed to delete track:', e);
-    }
-  }
-
-  function editHref() {
-    const handle = $session?.handle;
-    return buildEditHash(handle, item.uri);
-  }
+  const isActiveTrack = $derived.by(() => playerState?.playlist?.[playerState.index]?.uri === item?.uri);
 
   const safeOpenUrl = $derived.by(() => {
     try {
@@ -88,37 +59,40 @@
     const raw = context?.handle || item.authorHandle || item.author_handle || null;
     return raw?.replace?.(/^@/, '') ?? raw;
   });
+
   const discogsLink = $derived(item?.discogs_url ?? '');
-  let playerState = $state(player.get());
-  const unsubscribe = player.subscribe((value) => {
-    playerState = value;
-  });
-  onDestroy(() => unsubscribe?.());
-  const isActiveTrack = $derived.by(() => playerState?.playlist?.[playerState.index]?.uri === item?.uri);
+
+  function play() {
+    setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
+  }
+
+  function editHref() {
+    const handle = $session?.handle;
+    return buildEditHash(handle, item.uri);
+  }
 
   function viewHref() {
     return buildViewHash(authorHandle, item.uri);
   }
 
   function openEdit() {
-    // If onEditTrack callback is provided, use it instead of navigation
     if (onEditTrack) {
       onEditTrack(item.uri);
       return;
     }
-
-    // Otherwise, navigate to edit page (legacy behavior)
     const href = editHref();
     if (href) {
-      const payload = {
-        uri: item.uri,
-        url: item.url,
-        title: item.title,
-        description: item.description,
-        discogs_url: item.discogs_url || '',
-      };
       goto(resolve(href), {
-        state: { track: payload, returnTo: window.location.pathname },
+        state: {
+          track: {
+            uri: item.uri,
+            url: item.url,
+            title: item.title,
+            description: item.description,
+            discogs_url: item.discogs_url || '',
+          },
+          returnTo: window.location.pathname
+        },
         replaceState: false,
         noScroll: true,
         keepFocus: false,
@@ -128,27 +102,21 @@
 
   function openDetail(event?: Event, opts?: { forceNavigate?: boolean }) {
     event?.preventDefault?.();
-
-    // If onSelectTrack callback is provided, use it instead of navigation
     if (onSelectTrack && !opts?.forceNavigate) {
       onSelectTrack(item.uri);
       return;
     }
-
-    // Otherwise, navigate to detail page (legacy behavior)
     const href = viewHref();
     if (href) {
-      // Clone objects to avoid Svelte proxy serialization issues
-      const navState: any = {
-        returnTo: window.location.pathname,
-        tracks: items ? JSON.parse(JSON.stringify(items)) : [],
-        track: item ? JSON.parse(JSON.stringify(item)) : null,
-        index,
-        did: context?.key || item.authorDid || '',
-        handle: authorHandle || (context?.handle?.replace?.(/^@/, '') ?? '')
-      };
       goto(resolve(href), {
-        state: navState,
+        state: {
+          returnTo: window.location.pathname,
+          tracks: items ? JSON.parse(JSON.stringify(items)) : [],
+          track: item ? JSON.parse(JSON.stringify(item)) : null,
+          index,
+          did: context?.key || item.authorDid || '',
+          handle: authorHandle || (context?.handle?.replace?.(/^@/, '') ?? '')
+        },
         replaceState: false,
         noScroll: true,
         keepFocus: false,
@@ -156,18 +124,31 @@
     }
   }
 
-  function toggleMenu() {
-    menuOpen = !menuOpen;
-  }
-
+  function toggleMenu() { menuOpen = !menuOpen; }
   function closeMenu() { menuOpen = false; }
+
+  function confirmDelete() { showDeleteConfirm = true; }
+  function cancelDelete() { showDeleteConfirm = false; }
+
+  async function remove() {
+    message = '';
+    deleting = true;
+    showDeleteConfirm = false;
+    try {
+      await deleteTrackByUri(item.uri);
+      if (onremove) onremove({ detail: { uri: item.uri } });
+    } catch (e) {
+      message = e?.message || String(e);
+      deleting = false;
+      console.error('Failed to delete track:', e);
+    }
+  }
 
   onMount(() => {
     function handleClick(event: MouseEvent) {
       if (!menuOpen) return;
       const target = event.target as Node;
-      if (menuRef && menuRef.contains(target)) return;
-      if (triggerRef && triggerRef.contains(target)) return;
+      if (menuRef?.contains(target) || triggerRef?.contains(target)) return;
       menuOpen = false;
     }
     function handleKey(event: KeyboardEvent) {
@@ -182,219 +163,321 @@
   });
 </script>
 
-<Card
-  class={cn(
-    isDetailView
-      ? (flat
-        ? "border-0 bg-background transition-colors overflow-visible rounded-none shadow-none"
-        : "border border-foreground bg-background transition-colors overflow-visible rounded-lg shadow")
-      : flat
-        ? "border-0 bg-transparent transition-colors rounded-none shadow-none ring-0 rounded-none"
-        : "border border-foreground bg-background transition-colors hover:bg-foreground/10 overflow-visible rounded-lg shadow-none",
-    deleting && "opacity-50 pointer-events-none"
-  )}
->
-  <CardHeader class={cn(
-    flat ? "p-0" : "p-0",
-    isDetailView && !flat && "sm:p-3",
-    flat && "rounded-none",
-    "overflow-visible"
-  )}>
-    <div class={cn(
-      "flex items-center justify-between gap-2",
-      flat && "px-2.5 py-2"
-    )}>
-      <div class="shrink-0 flex items-center">
-        <Button
-          variant="secondary"
-          size="sm"
-          class={cn(
-            "h-7 px-2 text-xs",
-            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
-          )}
-          disabled={isActiveTrack}
-          onclick={play}
-        >
-          <Play class="h-3 w-3" />
-        </Button>
-      </div>
+<article class={cn("track", deleting && "track--deleting", isDetailView && !flat && "track--detail")}>
+  <div class="track-row">
+    <Button
+      variant="secondary"
+      size="sm"
+      class={cn("track-play", isActiveTrack && "track-play--active")}
+      disabled={isActiveTrack}
+      onclick={play}
+    >
+      <Play class="icon" />
+    </Button>
 
-      <div class={cn("flex-1 min-w-0 space-y-1", isDetailView && "sm:space-y-1.5")}>
-        <div class={cn("flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
-          <CardTitle class="text-sm font-semibold">
-            <a
-              href={viewHref() || '#'}
-              onclick={openDetail}
-              class={cn(
-                "transition-colors cursor-pointer py-0.5 inline-block",
-                isActiveTrack
-                  ? "bg-primary text-background rounded"
-                  : "hover:text-primary hover:underline"
-              )}
-            >
-              {item.title || t('trackItem.untitled')}
-            </a>
-          </CardTitle>
-          {#if showAuthor && authorHandle}
-            <CardDescription class={cn(
-              "text-xs flex items-center gap-1",
-              isDetailView && "mt-0 sm:mt-0"
-            )}>
-              <span class="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-foreground text-[0.55rem] font-semibold">
-                @
-              </span>
-              <Link href={`/@${encodeURIComponent(authorHandle)}`} class="hover:text-primary transition-colors">
-                {authorHandle}
-              </Link>
-            </CardDescription>
-          {/if}
-        </div>
-        {#if item.description}
-          <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug !mt-0">
-            {item.description}
-          </p>
-        {/if}
-      </div>
+    <div class="track-info">
+      <a
+        href={viewHref() || '#'}
+        onclick={openDetail}
+        class={cn("track-title", isActiveTrack && "track-title--active")}
+      >
+        {item.title || t('trackItem.untitled')}
+      </a>
+      {#if showAuthor && authorHandle}
+        <Link href={`/@${encodeURIComponent(authorHandle)}`} class="track-author">
+          @{authorHandle}
+        </Link>
+      {/if}
+      {#if item.description}
+        <p class="track-description">{item.description}</p>
+      {/if}
+    </div>
 
-      <div class="flex items-center gap-2 shrink-0 pl-2">
-        {#if discogsLink}
-          <a
-            href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
-            target="_blank"
-            rel="noopener"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
-            aria-label="Open Discogs"
-          >
-            <DiscIcon class="h-3 w-3" />
-          </a>
-        {/if}
+    <div class="track-actions">
+      {#if discogsLink}
         <a
-          href={
-            safeOpenUrl && safeOpenUrl !== '#'
-              ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
-              : '#'
-          }
+          href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
           target="_blank"
           rel="noopener"
-          class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
-          aria-label={t('trackItem.openExternal')}
+          class="icon-btn"
+          aria-label="Open Discogs"
         >
-          <ExternalLink class="h-3 w-3" />
+          <DiscIcon class="icon" />
         </a>
+      {/if}
+      <a
+        href={safeOpenUrl && safeOpenUrl !== '#' ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl)) : '#'}
+        target="_blank"
+        rel="noopener"
+        class="icon-btn"
+        aria-label={t('trackItem.openExternal')}
+      >
+        <ExternalLink class="icon" />
+      </a>
 
-        <Button
-          class="hidden"
-          aria-hidden="true"
-        />
+      <div class="menu-wrapper">
+        <button
+          bind:this={triggerRef}
+          type="button"
+          class={cn("icon-btn", menuOpen && "icon-btn--active")}
+          onclick={toggleMenu}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+        >
+          <MoreVertical class="icon" />
+          <span class="sr-only">{t('trackItem.actions')}</span>
+        </button>
 
-        <div class="relative">
-            <button
-              bind:this={triggerRef}
-              type="button"
-            class={cn(menuTriggerClass(menuOpen), "h-7 w-7")}
-            onclick={() => toggleMenu()}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-          >
-              <MoreVertical class="h-3.5 w-3.5 text-current" />
-              <span class="sr-only">{t('trackItem.actions')}</span>
-            </button>
-            {#if menuOpen}
-              <div
-                bind:this={menuRef}
-                class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-                role="menu"
+        {#if menuOpen}
+          <div bind:this={menuRef} class="menu" role="menu">
+            {#if viewHref()}
+              <button type="button" class="menu-item" onclick={(e) => { e.preventDefault(); e.stopPropagation(); closeMenu(); openDetail(e, { forceNavigate: true }); }}>
+                <Eye class="icon" /> View track
+              </button>
+            {/if}
+            {#if editable && editHref()}
+              <button type="button" class="menu-item" onclick={(e) => { e.preventDefault(); closeMenu(); openEdit(); }}>
+                <Pencil class="icon" /> {t('trackItem.edit')}
+              </button>
+            {/if}
+            <a
+              href={safeOpenUrl && safeOpenUrl !== '#' ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl)) : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="menu-item"
+              onclick={closeMenu}
+            >
+              <ExternalLink class="icon" /> {t('trackItem.openMediaUrl')}
+            </a>
+            {#if discogsLink}
+              <a
+                href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="menu-item"
+                onclick={closeMenu}
               >
-                {#if viewHref()}
-                  <button
-                    type="button"
-                    class={menuItemClass}
-                    onclick={(e) => { e.preventDefault(); e.stopPropagation(); closeMenu(); openDetail(e, { forceNavigate: true }); }}
-                  >
-                    <Eye class="h-4 w-4" />
-                    View track
-                  </button>
-                {/if}
-                {#if editable && editHref()}
-                  <a
-                    href={editHref()}
-                    class={menuItemClass}
-                    onclick={(e) => { e.preventDefault(); closeMenu(); openEdit(); }}
-                  >
-                    <Pencil class="h-4 w-4" />
-                    {t('trackItem.edit')}
-                  </a>
-                {/if}
-                <a
-                  href={safeOpenUrl && safeOpenUrl !== '#'
-                    ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
-                    : '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class={menuItemClass}
-                  onclick={closeMenu}
-                >
-                  <ExternalLink class="h-4 w-4" />
-                  {t('trackItem.openMediaUrl')}
-                </a>
-                {#if discogsLink}
-                  <a
-                    href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class={menuItemClass}
-                    onclick={closeMenu}
-                  >
-                    <DiscIcon class="h-4 w-4" />
-                    Open Discogs
-                  </a>
-                {/if}
-                {#if editable}
-                  <button
-                    type="button"
-                    class={menuItemClass}
-                    onclick={() => { closeMenu(); confirmDelete(); }}
-                  >
-                    <Trash2 class="h-4 w-4" />
-                    {t('trackItem.delete')}
-                  </button>
-                {/if}
-              </div>
+                <DiscIcon class="icon" /> Open Discogs
+              </a>
+            {/if}
+            {#if editable}
+              <button type="button" class="menu-item" onclick={() => { closeMenu(); confirmDelete(); }}>
+                <Trash2 class="icon" /> {t('trackItem.delete')}
+              </button>
             {/if}
           </div>
+        {/if}
       </div>
     </div>
-  </CardHeader>
+  </div>
 
   {#if message}
-    <CardContent class="pt-0 pb-1.5 px-1.5">
-      <div class="rounded-md bg-destructive/15 p-1.5 text-xs text-destructive">
-        {message}
-      </div>
-    </CardContent>
+    <div class="track-error">{message}</div>
   {/if}
 
   {#if expandedContent}
-    <CardContent class="pt-0 pb-1.5 px-1.5">
-      {@render expandedContent()}
-    </CardContent>
+    <div class="track-expanded">{@render expandedContent()}</div>
   {/if}
-</Card>
+</article>
 
 {#if showDeleteConfirm}
   <Dialog title="Delete track" onClose={cancelDelete}>
-    <div class="space-y-4">
-      <p class="text-sm text-muted-foreground">
-        Are you sure you want to delete "{item.title || t('trackItem.untitled')}"? This action cannot be undone.
-      </p>
-      <div class="flex gap-2 justify-end">
-        <Button variant="outline" onclick={cancelDelete}>
-          Cancel
-        </Button>
-        <Button variant="destructive" onclick={remove}>
-          Delete
-        </Button>
+    <div class="dialog-content">
+      <p>Are you sure you want to delete "{item.title || t('trackItem.untitled')}"? This action cannot be undone.</p>
+      <div class="dialog-actions">
+        <Button variant="outline" onclick={cancelDelete}>Cancel</Button>
+        <Button variant="destructive" onclick={remove}>Delete</Button>
       </div>
     </div>
   </Dialog>
 {/if}
+
+<style>
+  .track {
+    padding: var(--size-2) var(--size-3);
+    background: var(--background);
+    transition: background 150ms var(--ease-2);
+  }
+
+  .track--deleting {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .track--detail {
+    padding: var(--size-3);
+  }
+
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  .track-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .track-title {
+    display: block;
+    font-weight: var(--font-weight-6);
+    font-size: var(--font-size-1);
+    color: var(--foreground);
+    text-decoration: none;
+    transition: color 150ms var(--ease-2);
+
+    &:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+  }
+
+  .track-title--active {
+    background: var(--primary);
+    color: var(--background);
+    padding: 0 var(--size-1);
+    border-radius: var(--radius-1);
+  }
+
+  :global(.track-author) {
+    font-size: var(--font-size-0);
+    color: var(--muted-foreground);
+
+    &:hover {
+      color: var(--primary);
+    }
+  }
+
+  .track-description {
+    font-size: var(--font-size-0);
+    color: var(--muted-foreground);
+    white-space: pre-wrap;
+    line-height: var(--font-lineheight-2);
+    margin: 0;
+  }
+
+  .track-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--size-1);
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-6);
+    height: var(--size-6);
+    border-radius: var(--radius-2);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition: all 150ms var(--ease-2);
+
+    &:hover {
+      background: var(--muted);
+      border-color: var(--border);
+      color: var(--foreground);
+    }
+  }
+
+  .icon-btn--active {
+    background: var(--muted);
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+
+  .menu-wrapper {
+    position: relative;
+  }
+
+  .menu {
+    position: absolute;
+    right: 0;
+    z-index: 40;
+    margin-top: var(--size-1);
+    width: 12rem;
+    border-radius: var(--radius-2);
+    border: 1px solid var(--foreground);
+    background: var(--background);
+    box-shadow: var(--shadow-3);
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    width: 100%;
+    padding: var(--size-2) var(--size-3);
+    font-size: var(--font-size-1);
+    color: var(--foreground);
+    background: none;
+    border: none;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 150ms var(--ease-2);
+
+    &:hover {
+      background: var(--muted);
+    }
+  }
+
+  .track-error {
+    margin-top: var(--size-2);
+    padding: var(--size-2);
+    border-radius: var(--radius-2);
+    background: color-mix(in srgb, var(--destructive) 15%, transparent);
+    color: var(--destructive);
+    font-size: var(--font-size-0);
+  }
+
+  .track-expanded {
+    margin-top: var(--size-2);
+  }
+
+  .dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+
+    & p {
+      font-size: var(--font-size-1);
+      color: var(--muted-foreground);
+    }
+  }
+
+  .dialog-actions {
+    display: flex;
+    gap: var(--size-2);
+    justify-content: flex-end;
+  }
+
+  :global(.icon) {
+    width: var(--size-3);
+    height: var(--size-3);
+  }
+
+  :global(.track-play) {
+    flex-shrink: 0;
+  }
+
+  :global(.track-play--active) {
+    background: var(--primary);
+    color: var(--background);
+    border-color: var(--primary);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+</style>

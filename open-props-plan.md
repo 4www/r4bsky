@@ -2,28 +2,23 @@
 
 ## Current State
 
-### Tailwind Dependencies (to remove)
-```json
-"tailwind-merge": "^3.4.0",
-"tailwind-variants": "^0.2.1",
-"tailwindcss": "^3.4.10"
-```
+### Phase 1-4: DONE ✓
+- [x] Tailwind removed from dependencies
+- [x] `tailwind.config.js` deleted
+- [x] `postcss.config.js` simplified
+- [x] Open Props installed and imported
+- [x] `cn()` simplified to just `clsx` wrapper
+- [x] UI components migrated (button, input, label, textarea, skeleton, toast, card, dialog, dropdown-menu)
+- [x] NavBar, NavTabs migrated with scoped CSS
+- [x] Avatar, SearchProfiles migrated
+- [x] Global CSS classes added for buttons, inputs, cards, dialogs, dropdowns, menus
 
-### Related Dependencies
-- `shadcn-svelte` (^1.0.9) - UI components built on Tailwind → **remove**
-- `bits-ui` (^1.8.0) - Headless primitives → **keep** (not Tailwind-specific)
-- `clsx` (^2.1.1) - Class merging → **keep** (useful for conditional classes)
-- `autoprefixer` - **keep** (still useful with Open Props)
-
-### Config Files
-- `tailwind.config.js` → delete
-- `postcss.config.js` → simplify (remove tailwindcss, keep autoprefixer)
-
-### Tailwind Usage Scope
-- **34 files** use Tailwind classes
-- **81 usages** of `cn()` helper
-- **10 shadcn-svelte components** in `src/lib/components/ui/`
-- **5 @apply directives** in `src/app.css`
+### Phase 5: IN PROGRESS
+- [ ] ProfileHeader, Player, TrackListItem - still have Tailwind class strings (non-functional)
+- [ ] Route pages (~10 files) - still have Tailwind class strings (non-functional)
+- [ ] Define semantic tokens in app.css (currently commented out)
+- [ ] Test responsive behavior
+- [ ] Audit dark mode
 
 ---
 
@@ -295,7 +290,7 @@ Update `src/app.css`:
 ```css
 /* Use CSS container queries or media queries */
 .card {
-  padding: var(--size-fluid-2); /* Fluid sizing */
+  /*padding: var(--size-fluid-1); /* Fluid sizing */*/
 }
 
 @media (min-width: 768px) {
