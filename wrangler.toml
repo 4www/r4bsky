@@ -1,7 +1,6 @@
 name = "r4atproto"
 compatibility_date = "2025-11-19"
-main = "src/index.js"
+pages_build_output_dir = "dist"
 
-[assets]
-directory = "./dist"
-binding = "ASSETS"
+# This is for Cloudflare Pages, not Workers
+# The middleware in /functions will handle dynamic client-metadata.json
