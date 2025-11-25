@@ -1,27 +1,38 @@
 @import "open-props/style";
 @import "open-props/normalize";
 @import "open-props/buttons";
+@import "open-props/theme.light.switch.min.css";
+@import "open-props/theme.dark.switch.min.css";
+
+/* Full black/white theme overrides */
+[data-theme="dark"] {
+	--surface-1: black;
+	--surface-2: var(--gray-12);
+	--surface-3: var(--gray-11);
+	--surface-4: var(--gray-10);
+	--text-1: white;
+	--text-2: var(--gray-3);
+	--border: var(--gray-0);
+}
+
+[data-theme="light"] {
+	--surface-1: white;
+	--text-1: black;
+	--border: var(--gray-12);
+}
 
 :root {
 	/* r4 custom props */
-	--r4-font-size: 1rem;
-	--r4-border-size: 1px;
+	--r4-border-size: var(--border-size-2);
 
-	/* Semantic tokens - light mode */
-	--background: white;
-	--foreground: black;
-	--border: var(--gray-12);
-	--muted: var(--gray-2);
-	--muted-foreground: var(--gray-7);
-	--primary: black;
+	/* Map r4 tokens to open-props semantic tokens */
+	--background: var(--surface-1);
+	--foreground: var(--text-1);
+	--muted: var(--surface-2);
+	--muted-foreground: var(--text-2);
+	--primary: var(--text-1);
 	--destructive: var(--red-7);
 	--radius: var(--radius-2);
-}
-
-.dark {
-	--background: black;
-	--foreground: white;
-	--border: var(--gray-0);
 }
 
 * {
@@ -32,11 +43,15 @@ body {
 	/*background: var(--background);*/
 	color: var(--foreground);
 	font-family: var(--font-system-ui);
-	font-size: var(--r4-font-size);
+	font-size: var(--font-size-2);
 }
 
-h1, h2, h3, h4, h5, h6 {
-	font-size: inherit;
+h1, h2, h3 {
+	font-size: var(--font-size-2);
+	font-weight: var(--font-weight-7);
+}
+
+h4, h5, h6 {
 	font-weight: var(--font-weight-7);
 }
 
@@ -60,15 +75,13 @@ textarea::placeholder {
 	animation: var(--animation-fade-in) 0.3s var(--ease-out-2);
 }
 
-/* Profile header */
 .profile-header {
-	border: 1px solid var(--border);
+	border: var(--r4-border-size) solid var(--border);
 	border-radius: var(--radius-3);
 	position: relative;
 	transition: background 150ms var(--ease-2);
 }
 
-/* Track list */
 .track-list {
 	display: flex;
 	flex-direction: column;
@@ -76,7 +89,7 @@ textarea::placeholder {
 }
 
 .track-list > * {
-	border: 1px solid var(--border);
+	border: var(--r4-border-size) solid var(--border);
 	border-bottom: none;
 }
 
@@ -90,7 +103,7 @@ textarea::placeholder {
 }
 
 .track-list > *:only-child {
-	border: 1px solid var(--border);
+	border: var(--r4-border-size) solid var(--border);
 	border-radius: var(--radius-3);
 }
 
@@ -111,7 +124,6 @@ textarea::placeholder {
 }
 
 .sticky-header h3 {
-	font-size: var(--font-size-0);
 	font-weight: var(--font-weight-6);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
@@ -120,7 +132,6 @@ textarea::placeholder {
 
 .sticky-header h3 span {
 	margin-left: var(--size-2);
-	font-size: var(--font-size-00);
 	font-weight: var(--font-weight-4);
 	color: var(--muted-foreground);
 }
@@ -132,7 +143,6 @@ textarea::placeholder {
 	justify-content: center;
 	gap: var(--size-2);
 	border-radius: var(--radius-3);
-	font-size: var(--font-size-1);
 	font-weight: var(--font-weight-5);
 	white-space: nowrap;
 	transition: all 0.15s var(--ease-2);
@@ -209,12 +219,9 @@ textarea::placeholder {
 
 .btn-sm {
 	padding: var(--size-1) var(--size-2);
-	font-size: var(--font-size-0);
 }
 
 .btn-lg {
-	padding: var(--size-3) var(--size-5);
-	font-size: var(--font-size-2);
 }
 
 .btn-icon {
@@ -231,8 +238,7 @@ textarea::placeholder {
 	background: var(--background);
 	color: var(--foreground);
 	border: var(--r4-border-size) solid var(--border);
-	border-radius: var(--radius);
-	font-size: var(--font-size-1);
+	border-radius: var(--radius-3);
 	transition: outline 0.15s var(--ease-2);
 }
 
@@ -253,30 +259,23 @@ textarea::placeholder {
 	resize: vertical;
 }
 
-/* Label */
-.label {
-	font-size: var(--font-size-1);
-	font-weight: var(--font-weight-5);
-	line-height: 1;
-}
-
 /* Skeleton */
 .skeleton {
 	animation: var(--animation-pulse);
-	border-radius: var(--radius);
+	border-radius: var(--radius-3);
 	background: var(--muted);
 }
 
 /* Card */
 .card {
-	border: var(--border-size-2) solid var(--border);
+	border: var(--r4-border-size) solid var(--border);
 	border-radius: var(--radius-3);
 }
 
 .card-header,
 .card-content,
 .card-footer {
-	padding: 	var(--size-fluid-2);
+	padding: var(--size-fluid-2);
 }
 
 .card-header {
@@ -307,7 +306,7 @@ textarea::placeholder {
 	padding: var(--size-5);
 	background: var(--background);
 	border: var(--r4-border-size) solid var(--border);
-	border-radius: var(--radius);
+	border-radius: var(--radius-3);
 	box-shadow: var(--shadow-5);
 }
 
@@ -336,7 +335,7 @@ textarea::placeholder {
 	padding: var(--size-1);
 	background: var(--background);
 	border: var(--r4-border-size) solid var(--border);
-	border-radius: var(--radius);
+	border-radius: var(--radius-3);
 	box-shadow: var(--shadow-3);
 }
 
@@ -422,7 +421,7 @@ textarea::placeholder {
 	background: var(--background);
 	color: var(--foreground);
 	border: var(--r4-border-size) solid var(--border);
-	border-radius: var(--radius);
+	border-radius: var(--radius-3);
 	transition: all 0.15s var(--ease-2);
 	cursor: pointer;
 }

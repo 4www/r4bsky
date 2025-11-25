@@ -164,7 +164,7 @@
   }
 
   .load-more {
-    margin-top: var(--size-fluid-3);
+    margin-top: var(--size-fluid-2);
     text-align: center;
   }
 </style>

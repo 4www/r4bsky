@@ -75,14 +75,14 @@
   .add-page {
     max-width: 42rem;
     margin-inline: auto;
-    padding: var(--size-fluid-3);
+    padding: var(--size-fluid-2);
   }
 
   .success-section {
     display: flex;
     flex-direction: column;
     gap: var(--size-3);
-    margin-top: var(--size-fluid-3);
+    margin-top: var(--size-fluid-2);
   }
 
   .success-message {

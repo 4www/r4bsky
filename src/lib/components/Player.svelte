@@ -6,10 +6,8 @@
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle, MoreVertical, Eye, Search } from 'lucide-svelte';
+  import { Play, Pause, SkipForward, SkipBack, ExternalLink, Disc as DiscIcon, Shuffle, MoreVertical, Eye, Search } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
-  import { clsx } from 'clsx';
-  import { menuItemClass, menuTriggerClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { profilesCollection, loadProfile, getProfileFromCache } from '$lib/stores/profiles-db';
@@ -17,7 +15,7 @@
   import { session } from '$lib/state/session';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { Pencil, Trash2 } from 'lucide-svelte';
+  import TrackListItemSimple from '$lib/components/TrackListItemSimple.svelte';
   let {
     class: classProp = '',
     visible: visibleProp = true,
@@ -522,79 +520,73 @@
 
 {#if current}
   <aside
-    class={clsx(
-      extraClass,
-      "flex flex-col transition-all duration-300 px-1 lg:px-0 h-full",
-      !visible ? "h-0 w-0 m-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
-    )}
+    class="player {extraClass}"
+    class:player--hidden={!visible}
     style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
-    <section
-      class="flex flex-col flex-1 min-h-0 gap-0 border border-foreground bg-card/95 shadow rounded-3xl p-0 w-full overflow-hidden relative"
-    >
+    <section>
       {#if hasBanner}
         <div
-          class="absolute inset-0 bg-cover bg-center rounded-3xl blur-sm"
+          class="player-banner"
           style={`background-image: url(${profileData.banner})`}
         ></div>
-
       {/if}
-      <div class={clsx("flex flex-col gap-0 flex-1 min-h-0 relative")}>
-        <div class={clsx("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
-          <div class="flex items-center gap-3 min-w-0 flex-1">
+      <div class="player-inner">
+        <header class="player-header">
+          <div class="player-header-info">
             <Avatar
               src={profileData?.avatar || ''}
               alt={currentProfileName}
               size={isDesktop ? "md" : "sm"}
-              class="shadow-lg shrink-0"
             />
-            <div class="min-w-0 flex-1">
+            <div class="player-track-meta">
               {#if currentTrackHref}
-                <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-foreground transition-colors">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
+                <Link href={currentTrackHref} class="player-track-title">
+                  <span>{currentTrackTitle}</span>
                 </Link>
               {:else}
-                <p class="text-sm font-semibold truncate">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
+                <p class="player-track-title">
+                  <span>{currentTrackTitle}</span>
                 </p>
               {/if}
               {#if currentHandle}
-                <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-foreground transition-colors truncate block">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{currentHandle}</span>
+                <Link href={`/@${currentHandle}`} class="player-track-author">
+                  <span>@{currentHandle}</span>
                 </Link>
               {:else if state.context?.handle}
-                <span class="text-xs text-muted-foreground truncate block">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{state.context.handle}</span>
+                <span class="player-track-author">
+                  <span>@{state.context.handle}</span>
                 </span>
               {/if}
             </div>
           </div>
-          <div class="flex items-center gap-0.5 shrink-0 pr-3">
-            <div class="relative">
+          <div class="player-header-actions">
+            <div class="menu-wrapper">
               <button
                 bind:this={triggerRef}
                 type="button"
-                  class={clsx(menuTriggerClass(menuOpen), "h-7 w-7")}
-                  onclick={() => toggleMenu()}
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                >
-                <MoreVertical class="h-3.5 w-3.5 text-current" />
-                  <span class="sr-only">Track options</span>
-                </button>
+                class="menu-trigger"
+                class:active={menuOpen}
+                onclick={() => toggleMenu()}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                <MoreVertical class="icon" />
+                <span class="sr-only">Track options</span>
+              </button>
               {#if menuOpen}
                 <div
                   bind:this={menuRef}
-                  class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
+                  class="menu"
                   role="menu"
                 >
                   {#if currentHandle && current?.uri}
                     <a
                       href={buildViewHash(currentHandle, current.uri) || '#'}
-                      class={menuItemClass}
+                      class="menu-item"
                       onclick={closeMenu}
                     >
-                      <Eye class="h-4 w-4" />
+                      <Eye class="icon" />
                       View track
                     </a>
                   {/if}
@@ -603,10 +595,10 @@
                       href={current.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class={menuItemClass}
+                      class="menu-item"
                       onclick={closeMenu}
                     >
-                      <ExternalLink class="h-4 w-4" />
+                      <ExternalLink class="icon" />
                       Open media URL
                     </a>
                   {/if}
@@ -615,10 +607,10 @@
                       href={discogsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class={menuItemClass}
+                      class="menu-item"
                       onclick={closeMenu}
                     >
-                      <DiscIcon class="h-4 w-4" />
+                      <DiscIcon class="icon" />
                       Open Discogs
                     </a>
                   {/if}
@@ -626,24 +618,20 @@
               {/if}
             </div>
           </div>
-        </div>
+        </header>
 
-        <div
-          class="grid gap-0 flex-1 min-h-0 w-full"
-          style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"
-        >
-          <div class="flex flex-col min-h-0 min-w-[16rem] flex-1">
+        <div class="player-grid">
+          <div class="player-embed">
             {#if parseTrackUrl(current.url)?.provider === 'file'}
-              <div class="bg-background flex-1 min-h-[220px]">
+              <div class="player-media">
                 <audio
                   bind:this={playerAudio}
                   onended={next}
                   controls
-                  class="w-full h-full"
                 ></audio>
               </div>
             {:else if iframeSrc}
-              <div class="bg-background flex-1 min-h-[220px]">
+              <div class="player-media">
                 <iframe
                   bind:this={playerIframe}
                   src={iframeSrc}
@@ -651,181 +639,42 @@
                   allow="autoplay; encrypted-media"
                   allowfullscreen
                   onload={onIframeLoad}
-                  class="w-full h-full"
                 ></iframe>
               </div>
             {/if}
           </div>
 
-          <div class="flex flex-col min-h-0 min-w-[14rem] h-full">
-            <div class="p-3">
-              <div class="relative">
-                <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder={t('player.searchPlaceholder')}
-                  bind:value={searchQuery}
-                  class="h-9 pl-9 pr-3 text-sm"
-                />
-              </div>
+          <div class="track-list-container">
+            <div class="track-list-search">
+              <Search class="track-list-search-icon" />
+              <Input
+                type="text"
+                placeholder={t('player.searchPlaceholder')}
+                bind:value={searchQuery}
+              />
             </div>
-            <div class="flex-1 min-h-0 overflow-y-auto rounded-none border-t border-foreground border-l-0 border-r-0 divide-y bg-background">
+            <div class="track-list">
               {#each filteredPlaylist as { track, originalIdx }}
-                {@const trackHandle = (track?.authorHandle || track?.author_handle || state.context?.handle || '').replace(/^@/, '')}
-                {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
-                {@const trackDid = track?.authorDid || track?.author_did || ''}
-                {@const isEditable = $session?.did && trackDid && $session.did === trackDid}
-                {@const discogsLink = track?.discogsUrl || track?.discogs_url || ''}
-                <a
-                  href={trackHref || '#'}
-                  class={clsx(
-                    "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group"
-                  )}
-                  onclick={(e) => {
-                    if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
-                      e.preventDefault();
-                      playIndex(originalIdx);
-                    }
-                  }}
-                >
-                  <span class="text-[12px] text-muted-foreground font-semibold shrink-0 w-5 text-left pt-0.5">
-                    {originalIdx + 1}
-                  </span>
-                  <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <span class={clsx(
-                      "truncate text-sm font-medium leading-tight transition-colors py-0.5 rounded underline-offset-4",
-                      originalIdx === state.index
-                        ? "bg-foreground text-background px-1.5"
-                        : "text-foreground group-hover:underline"
-                    )}>
-                      {track.title || t('trackItem.untitled')}
-                    </span>
-                    {#if track.description}
-                      <span class="truncate text-[12px] text-muted-foreground leading-tight">
-                        {track.description}
-                      </span>
-                    {/if}
-                  </div>
-                  <div class="relative shrink-0">
-                    <button
-                      data-track-menu-trigger
-                      type="button"
-                      class={clsx(menuTriggerClass(trackMenuOpen === originalIdx), "h-7 w-7")}
-                      onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
-                      aria-haspopup="menu"
-                      aria-expanded={trackMenuOpen === originalIdx}
-                    >
-                      <MoreVertical class="h-3.5 w-3.5 text-current" />
-                      <span class="sr-only">{t('player.trackOptions')}</span>
-                    </button>
-                    {#if trackMenuOpen === originalIdx}
-                      <div
-                        data-track-menu
-                        class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-                        role="menu"
-                      >
-                        <button
-                          type="button"
-                          class={menuItemClass}
-                          onclick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            closeTrackMenu();
-                            if (trackHref) {
-                              goto(resolve(trackHref));
-                            }
-                          }}
-                        >
-                          <Eye class="h-4 w-4" />
-                          {t('trackItem.view')}
-                        </button>
-                        {#if isEditable && track.uri && trackHandle}
-                          <button
-                            type="button"
-                            class={menuItemClass}
-                            onclick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              closeTrackMenu();
-                              // Navigate to edit page
-                              if (track.uri && trackHandle) {
-                                const href = buildEditHash(trackHandle, track.uri);
-                                if (href) goto(resolve(href));
-                              }
-                            }}
-                          >
-                            <Pencil class="h-4 w-4" />
-                            {t('trackItem.edit')}
-                          </button>
-                        {/if}
-                        {#if track.url}
-                          <button
-                            type="button"
-                            class={menuItemClass}
-                            onclick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              closeTrackMenu();
-                              window.open(track.url, '_blank', 'noopener');
-                            }}
-                          >
-                            <ExternalLink class="h-4 w-4" />
-                            {t('trackItem.openMediaUrl')}
-                          </button>
-                        {/if}
-                        {#if discogsLink}
-                          <button
-                            type="button"
-                            class={menuItemClass}
-                            onclick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              closeTrackMenu();
-                              window.open(discogsLink, '_blank', 'noopener');
-                            }}
-                          >
-                            <DiscIcon class="h-4 w-4" />
-                            Open Discogs
-                          </button>
-                        {/if}
-                        {#if isEditable}
-                          <button
-                            type="button"
-                            class={clsx(menuItemClass, "text-destructive hover:text-destructive")}
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              if (confirm(`Delete "${track.title || 'Untitled'}"?`)) {
-                                deleteTrack(track.uri);
-                              } else {
-                                closeTrackMenu();
-                              }
-                            }}
-                          >
-                            <Trash2 class="h-4 w-4" />
-                            {t('trackItem.delete')}
-                          </button>
-                        {/if}
-                      </div>
-                    {/if}
-                  </div>
-                </a>
+                <TrackListItemSimple
+                  {track}
+                  index={originalIdx}
+                  isActive={originalIdx === state.index}
+                  context={state.context}
+                  onplay={() => playIndex(originalIdx)}
+                  ondelete={deleteTrack}
+                />
               {/each}
             </div>
           </div>
         </div>
       </div>
 
-        <div class={clsx("flex items-center justify-center gap-2 py-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
-          <button
-            type="button"
-            class={clsx(
-            "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
-            state.isShuffled
-              ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
-              : "text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
-          )}
+      <div class="player-controls" class:player-controls--mobile={!isDesktop}>
+        <button
+          type="button"
+          class="player-btn player-btn--sm"
+          class:player-btn--active={state.isShuffled}
           onclick={() => {
-            // If turning shuffle on and we don't have a customPlaylist yet, shuffle the current playlist
             if (!state.isShuffled && playlist.length > 0) {
               shuffleCurrentPlaylist(playlist)
             } else {
@@ -834,42 +683,322 @@
           }}
           aria-label="Shuffle"
         >
-          <Shuffle class="h-3.5 w-3.5" />
+          <Shuffle class="icon-sm" />
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
+          class="player-btn player-btn--sm"
           onclick={prev}
           aria-label={t('player.previous')}
         >
-          <SkipBack class="h-3.5 w-3.5" />
+          <SkipBack class="icon-sm" />
         </button>
         <button
           type="button"
-          class={clsx(
-            "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
-            state.playing
-              ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
-              : "text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
-          )}
+          class="player-btn player-btn--lg"
+          class:player-btn--active={state.playing}
           onclick={toggle}
           aria-label={t('player.toggle')}
         >
           {#if state.playing}
-            <Pause class="h-4 w-4" />
+            <Pause class="icon" />
           {:else}
-            <Play class="h-4 w-4" />
+            <Play class="icon" />
           {/if}
         </button>
         <button
           type="button"
-          class="flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
+          class="player-btn player-btn--sm"
           onclick={next}
           aria-label={t('player.next')}
         >
-          <SkipForward class="h-3.5 w-3.5" />
+          <SkipForward class="icon-sm" />
         </button>
       </div>
     </section>
   </aside>
 {/if}
+
+<style>
+  .player {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-inline: var(--size-1);
+    transition: all 300ms;
+    opacity: 1;
+  }
+
+  .player--hidden {
+    height: 0;
+    width: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .player > section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--surface-2);
+    border-radius: var(--radius-3);
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @media (min-width: 1024px) {
+    .player {
+      padding-inline: 0;
+    }
+  }
+
+  .player-banner {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    border-radius: var(--radius-3);
+    filter: blur(4px);
+  }
+
+  .player-inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  .player-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--size-3);
+    padding: var(--size-3);
+    padding-block-end: var(--size-2);
+    border-block-end: 1px solid var(--foreground);
+  }
+
+  .player-header-info {
+    display: flex;
+    align-items: center;
+    gap: var(--size-3);
+    min-width: 0;
+    flex: 1;
+  }
+
+  .player-track-meta {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .player-track-title {
+    display: block;
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+    color: inherit;
+    margin: 0;
+  }
+
+  .player-track-title:hover {
+    color: var(--foreground);
+  }
+
+  .player-track-title span,
+  .player-track-author span {
+    display: inline-block;
+    padding: var(--size-1);
+    border-radius: var(--radius-2);
+    background: var(--background);
+  }
+
+  .player-track-author {
+    display: block;
+    font-size: var(--font-size-0);
+    color: var(--muted-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .player-track-author:hover {
+    text-decoration: underline;
+    color: var(--foreground);
+  }
+
+  .player-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--size-1);
+    flex-shrink: 0;
+  }
+
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .player-embed {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 16rem;
+    flex: 1;
+  }
+
+  .player-media {
+    background: var(--background);
+    flex: 1;
+    min-height: 220px;
+  }
+
+  .player-media audio,
+  .player-media iframe {
+    width: 100%;
+    height: 100%;
+  }
+
+  .track-list-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 14rem;
+    max-height: 50vh;
+  }
+
+  @media (min-width: 1024px) {
+    .track-list-container {
+      max-height: none;
+      height: 100%;
+    }
+  }
+
+  .track-list-search {
+    position: relative;
+    padding: var(--size-3);
+  }
+
+  .track-list-search :global(input) {
+    padding-inline-start: var(--size-7);
+  }
+
+  .track-list-search-icon {
+    position: absolute;
+    left: var(--size-5);
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--size-4);
+    height: var(--size-4);
+    color: var(--muted-foreground);
+  }
+
+  .track-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border-block-start: 1px solid var(--foreground);
+    background: var(--background);
+    margin-block: 0;
+  }
+
+  .track-list > :global(*) {
+    border-radius: 0;
+    border-inline: none;
+  }
+
+  .player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-2);
+    padding-block: var(--size-2);
+    border-block-start: 1px solid var(--foreground);
+    background: var(--background);
+    position: relative;
+    z-index: 10;
+  }
+
+  .player-controls--mobile {
+    flex-shrink: 0;
+  }
+
+  .player-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    font-weight: var(--font-weight-5);
+    transition: all 200ms var(--ease-2);
+    border: 2px solid var(--foreground);
+    background: var(--background);
+    color: var(--foreground);
+    cursor: pointer;
+  }
+
+  .player-btn:hover {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--background);
+  }
+
+  .player-btn--sm {
+    width: var(--size-7);
+    height: var(--size-7);
+  }
+
+  .player-btn--lg {
+    width: var(--size-8);
+    height: var(--size-8);
+  }
+
+  .player-btn--active {
+    background: var(--foreground);
+    color: var(--background);
+    box-shadow: var(--shadow-2);
+  }
+
+  .player-btn--active:hover {
+    border-color: var(--background);
+  }
+
+  .player-btn :global(svg) {
+    width: var(--size-3);
+    height: var(--size-3);
+    stroke: currentColor !important;
+    color: currentColor !important;
+  }
+
+  .player-btn--lg :global(svg) {
+    width: var(--size-4);
+    height: var(--size-4);
+  }
+
+  .menu-wrapper {
+    position: relative;
+  }
+
+  .menu {
+    position: absolute;
+    right: 0;
+    z-index: 40;
+    margin-block-start: var(--size-1);
+    width: 12rem;
+    border-radius: var(--radius-2);
+    border: 1px solid var(--foreground);
+    background: var(--background);
+    box-shadow: var(--shadow-3);
+  }
+</style>

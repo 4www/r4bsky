@@ -16,11 +16,21 @@
     <DialogOverlay />
     <DialogContent>
       <DialogHeader>
-        <DialogTitle class="text-lg font-semibold">{title}</DialogTitle>
+        <DialogTitle class="dialog-title">{title}</DialogTitle>
       </DialogHeader>
-      <div class="mt-4">
+      <div class="dialog-body">
         {@render children()}
       </div>
     </DialogContent>
   </DialogPortal>
 </DialogRoot>
+
+<style>
+  .dialog-title {
+    font-size: var(--font-size-2);
+    font-weight: var(--font-weight-6);
+  }
+  .dialog-body {
+    margin-top: var(--size-4);
+  }
+</style>

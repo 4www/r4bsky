@@ -322,7 +322,6 @@
   .track-title {
     display: block;
     font-weight: var(--font-weight-6);
-    font-size: var(--font-size-1);
     color: var(--foreground);
     text-decoration: none;
     transition: color 150ms var(--ease-2);
@@ -341,7 +340,6 @@
   }
 
   :global(.track-author) {
-    font-size: var(--font-size-0);
     color: var(--muted-foreground);
 
     &:hover {
@@ -350,7 +348,6 @@
   }
 
   .track-description {
-    font-size: var(--font-size-0);
     color: var(--muted-foreground);
     white-space: pre-wrap;
     line-height: var(--font-lineheight-2);
@@ -412,7 +409,6 @@
     gap: var(--size-2);
     width: 100%;
     padding: var(--size-2) var(--size-3);
-    font-size: var(--font-size-1);
     color: var(--foreground);
     background: none;
     border: none;
@@ -431,7 +427,6 @@
     border-radius: var(--radius-2);
     background: color-mix(in srgb, var(--destructive) 15%, transparent);
     color: var(--destructive);
-    font-size: var(--font-size-0);
   }
 
   .track-expanded {
@@ -444,7 +439,6 @@
     gap: var(--size-4);
 
     & p {
-      font-size: var(--font-size-1);
       color: var(--muted-foreground);
     }
   }

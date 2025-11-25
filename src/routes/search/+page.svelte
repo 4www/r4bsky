@@ -18,10 +18,10 @@
   .search-page {
     max-width: 56rem;
     margin-inline: auto;
-    padding: var(--size-fluid-3);
+    padding: var(--size-fluid-2);
     display: flex;
     flex-direction: column;
-    gap: var(--size-fluid-3);
+    gap: var(--size-fluid-2);
   }
 
   .search-page > header {
@@ -32,7 +32,6 @@
   }
 
   .search-page > header h1 {
-    font-size: var(--font-size-fluid-3);
     font-weight: var(--font-weight-7);
   }
 

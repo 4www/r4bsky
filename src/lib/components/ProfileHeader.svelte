@@ -292,7 +292,6 @@
 	.profile-header {
 		position: relative;
 		overflow: hidden;
-		margin-block-end: var(--size-3);
 	}
 
 	.profile-header.has-banner {
@@ -340,7 +339,6 @@
 		padding: var(--size-1);
 		background: var(--background);
 		border-radius: var(--radius-1);
-		font-size: var(--font-size-3);
 	}
 
 	.profile-info h2.active {
@@ -355,7 +353,6 @@
 		background: var(--background);
 		border-radius: var(--radius-1);
 		color: var(--muted-foreground);
-		font-size: var(--font-size-1);
 	}
 
 	.description {
@@ -364,7 +361,6 @@
 		background: var(--background);
 		border-radius: var(--radius-1);
 		color: var(--muted-foreground);
-		font-size: var(--font-size-1);
 		max-width: 40ch;
 	}
 

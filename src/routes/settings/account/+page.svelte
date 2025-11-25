@@ -424,7 +424,7 @@
   .settings-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--size-fluid-3);
+    gap: var(--size-fluid-2);
   }
 
   .card-title-icon {

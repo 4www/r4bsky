@@ -378,7 +378,6 @@
   }
 
   .load-more-status {
-    font-size: var(--font-size-0);
     color: var(--muted-foreground);
   }
 </style>

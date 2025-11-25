@@ -72,9 +72,12 @@
 		padding: var(--size-3);
 		border-radius: var(--radius-round);
 		background: var(--muted);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.state-card-icon.loading {
+	.state-card-icon.loading :global(svg) {
 		animation: var(--animation-spin);
 	}
 

@@ -117,17 +117,13 @@
   .page {
     max-width: 56rem;
     margin-inline: auto;
-    padding: var(--size-4);
     display: grid;
-    gap: var(--size-4);
+    gap: var(--size-fluid-2);
   }
   .container {
-    max-width: 42rem;
-    margin-inline: auto;
-    margin-block-start: var(--size-8);
-    padding: var(--size-4);
     display: grid;
-    gap: var(--size-4);
+    gap: var(--size-fluid-2);
+    padding: var(--size-fluid-2);
   }
   .center {
     display: grid;

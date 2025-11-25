@@ -32,7 +32,7 @@
   .nav-tabs {
     display: inline-flex;
     overflow-x: auto;
-    border-radius: var(--radius-round);
+    border-radius: var(--radius-3);
     border: var(--r4-border-size) solid var(--border);
     background: var(--background);
   }
@@ -42,7 +42,6 @@
     align-items: center;
     gap: var(--size-2);
     padding: var(--size-2) var(--size-3);
-    font-size: var(--font-size-1);
     font-weight: var(--font-weight-5);
     white-space: nowrap;
     transition: all 0.2s var(--ease-2);

@@ -56,11 +56,11 @@
         }
 
         if (useFallback) {
-          clientId = buildLoopbackClientId(window.location);
+          clientId = buildLoopbackClientId(new URL(window.location.origin));
         }
       } else {
         // For HTTP (localhost), always use loopback client
-        clientId = buildLoopbackClientId(window.location);
+        clientId = buildLoopbackClientId(new URL(window.location.origin));
       }
 
       await bskyOAuth.init(clientId);
@@ -93,83 +93,27 @@
 
   // Load theme settings from profile
   async function loadThemeFromProfile() {
-    if (!$session?.did) {
-      console.log('[loadThemeFromProfile] No session DID, skipping');
-      return;
-    }
-
-    console.log('[loadThemeFromProfile] Loading profile for DID:', $session.did);
+    if (!$session?.did) return;
 
     try {
       const profile = await getR4Profile($session.did);
-      console.log('[loadThemeFromProfile] Profile loaded:', profile);
-
-      if (profile) {
-        console.log('[loadThemeFromProfile] Applying theme from profile');
+      if (profile?.mode) {
         theme.setMode(profile.mode);
-        theme.setLightColors({
-          background: profile.lightBackground,
-          foreground: profile.lightForeground,
-          accent: profile.lightAccent,
-        });
-        theme.setDarkColors({
-          background: profile.darkBackground,
-          foreground: profile.darkForeground,
-          accent: profile.darkAccent,
-        });
-        console.log('[loadThemeFromProfile] Theme applied successfully');
-      } else {
-        console.log('[loadThemeFromProfile] No profile found, using defaults');
       }
     } catch (error) {
       console.error('[loadThemeFromProfile] Failed to load theme from profile:', error);
     }
   }
 
-  // Apply theme to document using only background/foreground colors
+  // Apply theme to document via data-theme attribute
   function applyTheme() {
-    return; // TEMPORARILY DISABLED - remove this line to re-enable theming
     if (!browser) return;
 
     const effectiveMode = $theme.mode === 'auto'
       ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
       : $theme.mode;
 
-    // Apply dark class
-    if (effectiveMode === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Apply custom colors (only background/foreground)
-    const colors = effectiveMode === 'dark' ? $theme.darkColors : $theme.lightColors;
-
-    const set = (name: string, value: string) => {
-      document.documentElement.style.setProperty(name, value);
-    };
-
-    set('--background', colors.background);
-    set('--foreground', colors.foreground);
-
-    // Map all other tokens to either background or foreground
-    set('--muted', colors.background);
-    set('--card', colors.background);
-    set('--popover', colors.background);
-    set('--secondary', colors.background);
-    set('--accent', colors.foreground);
-    set('--primary', colors.foreground);
-    set('--destructive', colors.foreground);
-    set('--input', colors.foreground);
-    set('--ring', colors.foreground);
-
-    set('--card-foreground', colors.foreground);
-    set('--popover-foreground', colors.foreground);
-    set('--muted-foreground', colors.foreground);
-    set('--secondary-foreground', colors.foreground);
-    set('--accent-foreground', colors.background);
-    set('--primary-foreground', colors.background);
-    set('--destructive-foreground', colors.background);
+    document.documentElement.setAttribute('data-theme', effectiveMode);
   }
 
   onMount(() => {
@@ -188,10 +132,9 @@
       applyTheme();
     });
 
-    // Watch for session changes to load profile (only way to load)
+    // Watch for session changes to load profile
     const sessionUnsubscribe = session.subscribe((s) => {
       if (s?.did) {
-        console.log('[session subscribe] Session updated, loading profile');
         loadThemeFromProfile();
       }
     });
@@ -353,8 +296,8 @@
 
   .app-container {
     flex: 1;
-    padding-block-start: var(--size-3);
-    padding-inline: var(--size-3);
+    padding-block-start: var(--size-fluid-2);
+    padding-inline: var(--size-fluid-2);
   }
 
   .layout-grid {
@@ -376,7 +319,7 @@
     order: 1;
     width: 100%;
     position: sticky;
-    top: 0;
+    top: var(--size-3);
     z-index: 10;
     height: 100vh;
     height: 100dvh;
@@ -398,13 +341,13 @@
     height: 100%;
     border-radius: var(--radius-3);
     background: var(--background);
-    padding: var(--size-2);
+    border: var(--r4-border-size) solid var(--border);
+    /*padding: var(--size-2);*/
     box-shadow: var(--shadow-1);
   }
 
   @media (min-width: 1024px) {
     .playback-inner {
-      padding: var(--size-3);
     }
   }
 
@@ -448,8 +391,7 @@
     left: 0;
     right: 0;
     z-index: 40;
-    padding: var(--size-2);
-    background: var(--background);
+    padding-bottom: var(--size-2);
   }
 
   .nav-inner {
@@ -457,7 +399,7 @@
     align-items: center;
     justify-content: center;
     gap: var(--size-2);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .playback-controls {
@@ -474,7 +416,6 @@
     justify-content: center;
     padding: var(--size-2) var(--size-3);
     border-radius: var(--radius-round);
-    font-size: var(--font-size-0);
     font-weight: var(--font-weight-5);
     transition: all 200ms var(--ease-2);
     color: var(--foreground);

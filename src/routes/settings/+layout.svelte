@@ -28,9 +28,7 @@
     <p>{t('settings.description')}</p>
   </header>
 
-  <nav>
-    <NavTabs items={navItems} />
-  </nav>
+  <NavTabs items={navItems} />
 
   <div>
     {@render children()}
@@ -39,28 +37,11 @@
 
 <style>
   .settings-layout {
+    display: grid;
+    gap: var(--size-fluid-2);
+    flex-direction: column;
+    align-items: center;
     max-width: 56rem;
     margin-inline: auto;
-    padding: var(--size-fluid-3);
-  }
-
-  .settings-layout > header {
-    margin-bottom: var(--size-fluid-3);
-  }
-
-  .settings-layout > header h1 {
-    font-size: var(--font-size-fluid-2);
-    font-weight: var(--font-weight-7);
-  }
-
-  .settings-layout > header p {
-    color: var(--muted-foreground);
-    margin-top: var(--size-1);
-  }
-
-  .settings-layout > nav {
-    display: flex;
-    justify-content: center;
-    margin-bottom: var(--size-fluid-3);
   }
 </style>

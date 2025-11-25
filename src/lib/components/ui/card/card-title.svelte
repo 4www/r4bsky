@@ -6,20 +6,15 @@
 	let {
 		ref = $bindable(null),
 		class: className,
-		level = 3,
 		children,
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
-		level?: 1 | 2 | 3 | 4 | 5 | 6;
-	} = $props();
+	}: WithElementRef<HTMLAttributes<HTMLHeadingElement>> = $props();
 </script>
 
-<div
-	role="heading"
-	aria-level={level}
+<h2
 	bind:this={ref}
 	class={clsx("card-title", className)}
 	{...restProps}
 >
 	{@render children?.()}
-</div>
+</h2>

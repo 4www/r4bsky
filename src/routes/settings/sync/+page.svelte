@@ -289,7 +289,7 @@
   .settings-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--size-fluid-3);
+    gap: var(--size-fluid-2);
   }
 
   .card-title-icon {
@@ -381,11 +381,6 @@
     display: flex;
     gap: var(--size-4);
     color: var(--muted-foreground);
-  }
-
-  .config-details {
-    padding-top: var(--size-4);
-    border-top: var(--border-size-1) solid var(--border);
   }
 
   .config-details summary {

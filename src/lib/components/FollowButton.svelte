@@ -56,17 +56,31 @@
 {#if $session?.did}
   <Button onclick={toggle} disabled={pending} variant={followUri ? 'default' : 'secondary'} size="sm">
     {#if followUri}
-      <Star class="h-4 w-4 mr-1 fill-current" />
+      <Star class="icon fill-current" />
       Unfavorite
     {:else}
-      <Star class="h-4 w-4 mr-1" />
+      <Star class="icon" />
       Favorite
     {/if}
   </Button>
 {:else}
   <Button variant="secondary" size="sm" disabled>
-    <Star class="h-4 w-4 mr-1" />
+    <Star class="icon" />
     Favorite
   </Button>
 {/if}
-{#if error}<div class="mt-2 text-sm text-foreground/70">{error}</div>{/if}
+{#if error}<div class="error-msg">{error}</div>{/if}
+
+<style>
+  .icon {
+    width: 1rem;
+    height: 1rem;
+  }
+  .fill-current {
+    fill: currentColor;
+  }
+  .error-msg {
+    margin-top: var(--size-2);
+    color: var(--muted-foreground);
+  }
+</style>

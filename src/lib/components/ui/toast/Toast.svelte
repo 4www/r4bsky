@@ -48,7 +48,6 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow-4);
 		background: var(--background);
-		font-size: var(--font-size-1);
 		font-weight: var(--font-weight-5);
 	}
 

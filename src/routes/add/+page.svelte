@@ -58,7 +58,7 @@
   .add-page {
     max-width: 42rem;
     margin-inline: auto;
-    padding: var(--size-fluid-3);
+    padding: var(--size-fluid-2);
   }
 
   .success-section {
