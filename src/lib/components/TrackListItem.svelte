@@ -7,7 +7,7 @@
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
   import { Button } from '$lib/components/ui/button';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Eye } from 'lucide-svelte';
-  import { cn } from '$lib/utils';
+  import { clsx } from 'clsx';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
@@ -163,12 +163,12 @@
   });
 </script>
 
-<article class={cn("track", deleting && "track--deleting", isDetailView && !flat && "track--detail")}>
+<article class={clsx("track", deleting && "track--deleting", isDetailView && !flat && "track--detail")}>
   <div class="track-row">
     <Button
       variant="secondary"
       size="sm"
-      class={cn("track-play", isActiveTrack && "track-play--active")}
+      class={clsx("track-play", isActiveTrack && "track-play--active")}
       disabled={isActiveTrack}
       onclick={play}
     >
@@ -179,7 +179,7 @@
       <a
         href={viewHref() || '#'}
         onclick={openDetail}
-        class={cn("track-title", isActiveTrack && "track-title--active")}
+        class={clsx("track-title", isActiveTrack && "track-title--active")}
       >
         {item.title || t('trackItem.untitled')}
       </a>
@@ -219,7 +219,7 @@
         <button
           bind:this={triggerRef}
           type="button"
-          class={cn("icon-btn", menuOpen && "icon-btn--active")}
+          class={clsx("icon-btn", menuOpen && "icon-btn--active")}
           onclick={toggleMenu}
           aria-haspopup="menu"
           aria-expanded={menuOpen}

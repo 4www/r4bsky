@@ -131,12 +131,12 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="settings-stack">
   <!-- Theme Mode -->
   <Card>
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <MonitorSmartphone class="h-5 w-5" />
+      <CardTitle class="card-title-icon">
+        <MonitorSmartphone class="icon" />
         {t('settings.appearanceThemeModeTitle')}
       </CardTitle>
       <CardDescription>
@@ -144,46 +144,49 @@
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <div class="space-y-2">
+      <fieldset class="field-group">
         <Label>{t('settings.appearanceSelectMode')}</Label>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="mode-grid">
           <button
             type="button"
             onclick={() => theme.setMode('auto')}
             disabled={$theme.mode === 'auto'}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'auto' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            class="mode-btn"
+            class:active={$theme.mode === 'auto'}
           >
-            <MonitorSmartphone class="h-5 w-5" />
-            <span class="text-xs font-medium">{t('settings.appearanceModeAuto')}</span>
+            <MonitorSmartphone class="icon" />
+            <span>{t('settings.appearanceModeAuto')}</span>
           </button>
           <button
             type="button"
             onclick={() => theme.setMode('light')}
             disabled={$theme.mode === 'light'}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'light' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            class="mode-btn"
+            class:active={$theme.mode === 'light'}
           >
-            <Sun class="h-5 w-5" />
-            <span class="text-xs font-medium">{t('settings.appearanceModeLight')}</span>
+            <Sun class="icon" />
+            <span>{t('settings.appearanceModeLight')}</span>
           </button>
           <button
             type="button"
             onclick={() => theme.setMode('dark')}
             disabled={$theme.mode === 'dark'}
-            class="flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all disabled:cursor-not-allowed {$theme.mode === 'dark' ? 'border-foreground text-background bg-foreground' : 'border-border hover:text-background hover:bg-foreground hover:border-transparent'}"
+            class="mode-btn"
+            class:active={$theme.mode === 'dark'}
           >
-            <Moon class="h-5 w-5" />
-            <span class="text-xs font-medium">{t('settings.appearanceModeDark')}</span>
+            <Moon class="icon" />
+            <span>{t('settings.appearanceModeDark')}</span>
           </button>
         </div>
-      </div>
+      </fieldset>
     </CardContent>
   </Card>
 
   <!-- Theme Colors -->
   <Card>
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <Palette class="h-5 w-5" />
+      <CardTitle class="card-title-icon">
+        <Palette class="icon" />
         {t('settings.appearanceThemeColorsTitle')}
       </CardTitle>
       <CardDescription>
@@ -191,109 +194,98 @@
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <div class="space-y-3 p-3 rounded-lg bg-muted/30">
-        <div class="flex items-center justify-between">
-          <h3 class="font-medium flex items-center gap-2">
+      <div class="color-panel">
+        <header class="color-panel-header">
+          <h3>
             {#if effectiveMode === 'dark'}
-              <Moon class="h-4 w-4" />
+              <Moon class="icon-sm" />
               {t('settings.appearanceDarkModeColors')}
             {:else}
-              <Sun class="h-4 w-4" />
+              <Sun class="icon-sm" />
               {t('settings.appearanceLightModeColors')}
             {/if}
           </h3>
           {#if themeSaving}
-            <span class="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 class="h-3 w-3 animate-spin" />
+            <span class="status-text">
+              <Loader2 class="icon-sm spin" />
               {t('settings.appearanceSaving')}
             </span>
           {:else if themeSaved}
-            <span class="text-xs text-primary">
+            <span class="status-text success">
               {t('settings.appearanceSaved')}
             </span>
           {/if}
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="space-y-2">
+        </header>
+        <div class="color-grid">
+          <div class="field-group">
             <Label for="current-bg">{t('settings.appearanceBackground')}</Label>
-            <div class="flex gap-2">
+            <div class="color-input-row">
               <input
                 id="current-bg"
                 type="color"
                 bind:value={currentBg}
                 onchange={saveTheme}
-                class="h-10 w-16 rounded border border-border cursor-pointer"
+                class="color-picker"
               />
               <Input
                 type="text"
                 bind:value={currentBg}
                 onchange={saveTheme}
                 placeholder={effectiveMode === 'dark' ? '#000000' : '#ffffff'}
-                class="flex-1 font-mono text-xs"
+                class="color-text"
               />
             </div>
           </div>
-          <div class="space-y-2">
+          <div class="field-group">
             <Label for="current-fg">{t('settings.appearanceForeground')}</Label>
-            <div class="flex gap-2">
+            <div class="color-input-row">
               <input
                 id="current-fg"
                 type="color"
                 bind:value={currentFg}
                 onchange={saveTheme}
-                class="h-10 w-16 rounded border border-border cursor-pointer"
+                class="color-picker"
               />
               <Input
                 type="text"
                 bind:value={currentFg}
                 onchange={saveTheme}
                 placeholder={effectiveMode === 'dark' ? '#ffffff' : '#000000'}
-                class="flex-1 font-mono text-xs"
+                class="color-text"
               />
             </div>
           </div>
-          <div class="space-y-2 md:col-span-2">
+          <div class="field-group full-width">
             <Label for="current-accent">{t('settings.appearanceAccentColor')}</Label>
-            <div class="flex gap-2">
+            <div class="color-input-row">
               <input
                 id="current-accent"
                 type="color"
                 bind:value={currentAccent}
                 onchange={saveTheme}
-                class="h-10 w-16 rounded border border-border cursor-pointer"
+                class="color-picker"
               />
               <Input
                 type="text"
                 bind:value={currentAccent}
                 onchange={saveTheme}
                 placeholder="#8b5cf6"
-                class="flex-1 font-mono text-xs"
+                class="color-text"
               />
             </div>
           </div>
         </div>
-        <div class="flex gap-2">
-          <Button
-            onclick={resetColors}
-            variant="secondary"
-            size="sm"
-            class="flex-1"
-          >
-            <RotateCcw class="mr-2 h-4 w-4" />
+        <div class="button-row">
+          <Button onclick={resetColors} variant="secondary" size="sm">
+            <RotateCcw class="icon-sm" />
             {t('settings.appearanceResetToDefaults')}
           </Button>
-          <Button
-            onclick={saveTheme}
-            variant="default"
-            size="sm"
-            class="flex-1"
-            disabled={themeSaving}
-          >
+          <Button onclick={saveTheme} variant="default" size="sm" disabled={themeSaving}>
             {#if themeSaving}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 class="icon-sm spin" />
               {t('settings.appearanceSaving')}
             {:else}
-              <Palette class="mr-2 h-4 w-4" />
+              <Palette class="icon-sm" />
               {t('settings.appearanceSaveNow')}
             {/if}
           </Button>
@@ -301,10 +293,166 @@
       </div>
 
       {#if themeError}
-        <div class="rounded-md bg-destructive/15 p-3 text-sm text-foreground/70">
+        <div class="error-box">
           {themeError}
         </div>
       {/if}
     </CardContent>
   </Card>
 </div>
+
+<style>
+  .settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-fluid-3);
+  }
+
+  .card-title-icon {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--size-2);
+  }
+
+  .mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--size-2);
+    padding: var(--size-3);
+    border: var(--border-size-2) solid var(--border);
+    border-radius: var(--radius-2);
+    background: transparent;
+    color: var(--foreground);
+    transition: all 0.15s var(--ease-2);
+    cursor: pointer;
+  }
+
+  .mode-btn:hover:not(:disabled) {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: transparent;
+  }
+
+  .mode-btn.active {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--foreground);
+  }
+
+  .mode-btn:disabled {
+    cursor: not-allowed;
+  }
+
+  .mode-btn span {
+    font-weight: var(--font-weight-5);
+  }
+
+  .color-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--muted) 30%, transparent);
+    border-radius: var(--radius-3);
+  }
+
+  .color-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .color-panel-header h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    font-weight: var(--font-weight-5);
+  }
+
+  .status-text {
+    display: flex;
+    align-items: center;
+    gap: var(--size-1);
+    color: var(--muted-foreground);
+  }
+
+  .status-text.success {
+    color: var(--primary);
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--size-3);
+  }
+
+  @media (min-width: 768px) {
+    .color-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .color-grid .full-width {
+      grid-column: span 2;
+    }
+  }
+
+  .color-input-row {
+    display: flex;
+    gap: var(--size-2);
+  }
+
+  .color-picker {
+    width: 4rem;
+    height: 2.5rem;
+    border: var(--border-size-1) solid var(--border);
+    border-radius: var(--radius-2);
+    cursor: pointer;
+  }
+
+  :global(.color-text) {
+    flex: 1;
+    font-family: var(--font-mono);
+  }
+
+  .button-row {
+    display: flex;
+    gap: var(--size-2);
+  }
+
+  .button-row :global(button) {
+    flex: 1;
+  }
+
+  .error-box {
+    margin-top: var(--size-3);
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--destructive) 15%, transparent);
+    border-radius: var(--radius-2);
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .icon-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  :global(.spin) {
+    animation: var(--animation-spin);
+  }
+</style>

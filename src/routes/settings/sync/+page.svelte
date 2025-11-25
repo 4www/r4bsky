@@ -145,60 +145,60 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="settings-stack">
   <Card>
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <Database class="h-5 w-5" />
+      <CardTitle class="card-title-icon">
+        <Database class="icon" />
         {t('settings.syncTitle')}
       </CardTitle>
       <CardDescription>
         {t('settings.syncDescription')}
       </CardDescription>
     </CardHeader>
-    <CardContent class="space-y-4">
+    <CardContent class="content-stack">
       <!-- Error Message -->
       {#if error}
-        <div class="flex items-start gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-          <AlertCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div class="alert alert-error">
+          <AlertCircle class="icon-sm" />
           <span>{t('settings.syncError', { message: error })}</span>
         </div>
       {/if}
 
       <!-- Import Success Message -->
       {#if importResult}
-        <div class="flex items-start gap-2 rounded-md bg-green-500/15 p-3 text-sm text-green-600 dark:text-green-400">
-          <CheckCircle2 class="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div class="alert alert-success">
+          <CheckCircle2 class="icon-sm" />
           <span>{t('settings.syncImportComplete', importResult)}</span>
         </div>
       {/if}
 
       <!-- Import Errors -->
       {#if importErrors.length > 0}
-        <div class="space-y-2">
-          <h4 class="text-sm font-medium text-destructive">Import Errors ({importErrors.length}):</h4>
-          <div class="max-h-40 overflow-y-auto border rounded-md p-3 bg-destructive/5">
+        <div class="field-group">
+          <h4 class="error-title">Import Errors ({importErrors.length}):</h4>
+          <div class="error-list">
             {#each importErrors as errorMsg}
-              <div class="text-xs text-destructive mb-1">{errorMsg}</div>
+              <div class="error-item">{errorMsg}</div>
             {/each}
           </div>
         </div>
       {/if}
 
       <!-- Channel Slug Input -->
-      <div class="space-y-2">
+      <div class="field-group">
         <Label for="channel-slug">{t('settings.syncChannelSlugLabel')}</Label>
-        <div class="flex gap-2">
+        <div class="input-row">
           <Input
             id="channel-slug"
             type="text"
             placeholder={t('settings.syncChannelSlugPlaceholder')}
             bind:value={channelSlug}
-            class="flex-1"
+            class="flex-input"
           />
           <Button onclick={handleLoad} disabled={isLoading || !channelSlug}>
             {#if isLoading}
-              <RefreshCw class="h-4 w-4 mr-2 animate-spin" />
+              <RefreshCw class="icon-sm spin" />
               {t('settings.syncLoading')}
             {:else}
               {t('settings.syncLoadButton')}
@@ -209,20 +209,20 @@
 
       <!-- Channel Info & Import -->
       {#if channelInfo}
-        <div class="border-t pt-4 space-y-4">
+        <div class="channel-section">
           <!-- Channel Name -->
-          <div class="text-sm">
-            <span class="font-medium text-foreground">
+          <div class="channel-info">
+            <span class="channel-name">
               {channelInfo.name}
             </span>
             {#if channelInfo.description}
-              <p class="text-muted-foreground mt-1">{channelInfo.description}</p>
+              <p class="channel-desc">{channelInfo.description}</p>
             {/if}
           </div>
 
           <!-- Comparison Stats (only show if we have data) -->
           {#if comparison && comparison.total > 0}
-            <div class="flex gap-4 text-sm text-muted-foreground">
+            <div class="stats-row">
               <span>{comparison.total} tracks total</span>
               <span>{comparison.imported} imported</span>
               {#if comparison.missing > 0}
@@ -235,7 +235,7 @@
           <div>
             <Button onclick={handleImport} disabled={isImporting}>
               {#if isImporting}
-                <RefreshCw class="h-4 w-4 mr-2 animate-spin" />
+                <RefreshCw class="icon-sm spin" />
                 {#if importProgress}
                   {importProgress.current}/{importProgress.total}
                   {#if importProgress.skipped > 0}
@@ -253,32 +253,30 @@
       {/if}
 
       <!-- Config Details (Collapsed) -->
-      <details class="border-t pt-4">
-        <summary class="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
-          Configuration
-        </summary>
-        <div class="mt-4 space-y-3">
-          <div class="space-y-2">
-            <Label for="api-endpoint" class="text-xs">{t('settings.syncApiEndpoint')}</Label>
+      <details class="config-details">
+        <summary>Configuration</summary>
+        <div class="config-content">
+          <div class="field-group">
+            <Label for="api-endpoint" class="label-xs">{t('settings.syncApiEndpoint')}</Label>
             <Input
               id="api-endpoint"
               type="text"
               bind:value={apiEndpoint}
               readonly
-              class="text-xs"
+              class="input-xs"
             />
           </div>
-          <div class="space-y-2">
-            <Label for="api-key" class="text-xs">{t('settings.syncApiKey')}</Label>
+          <div class="field-group">
+            <Label for="api-key" class="label-xs">{t('settings.syncApiKey')}</Label>
             <Input
               id="api-key"
               type="text"
               bind:value={apiKey}
               readonly
-              class="text-xs font-mono"
+              class="input-xs mono"
             />
           </div>
-          <p class="text-xs text-muted-foreground">
+          <p class="footnote">
             {t('settings.syncConfigNote')}
           </p>
         </div>
@@ -286,3 +284,147 @@
     </CardContent>
   </Card>
 </div>
+
+<style>
+  .settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-fluid-3);
+  }
+
+  .card-title-icon {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  :global(.content-stack) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--size-2);
+    padding: var(--size-3);
+    border-radius: var(--radius-2);
+  }
+
+  .alert-error {
+    background: color-mix(in srgb, var(--destructive) 15%, transparent);
+    color: var(--destructive);
+  }
+
+  .alert-success {
+    background: color-mix(in srgb, var(--green-7) 15%, transparent);
+    color: var(--green-7);
+  }
+
+  :global(.dark) .alert-success {
+    color: var(--green-4);
+  }
+
+  .error-title {
+    font-weight: var(--font-weight-5);
+    color: var(--destructive);
+  }
+
+  .error-list {
+    max-height: 10rem;
+    overflow-y: auto;
+    padding: var(--size-3);
+    border: var(--border-size-1) solid var(--border);
+    border-radius: var(--radius-2);
+    background: color-mix(in srgb, var(--destructive) 5%, transparent);
+  }
+
+  .error-item {
+    color: var(--destructive);
+    margin-bottom: var(--size-1);
+  }
+
+  .input-row {
+    display: flex;
+    gap: var(--size-2);
+  }
+
+  :global(.flex-input) {
+    flex: 1;
+  }
+
+  .channel-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+    padding-top: var(--size-4);
+    border-top: var(--border-size-1) solid var(--border);
+  }
+
+  .channel-name {
+    font-weight: var(--font-weight-5);
+  }
+
+  .channel-desc {
+    color: var(--muted-foreground);
+    margin-top: var(--size-1);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: var(--size-4);
+    color: var(--muted-foreground);
+  }
+
+  .config-details {
+    padding-top: var(--size-4);
+    border-top: var(--border-size-1) solid var(--border);
+  }
+
+  .config-details summary {
+    cursor: pointer;
+    font-weight: var(--font-weight-5);
+    color: var(--muted-foreground);
+  }
+
+  .config-details summary:hover {
+    color: var(--foreground);
+  }
+
+  .config-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+    margin-top: var(--size-4);
+  }
+
+  :global(.input-xs.mono) {
+    font-family: var(--font-mono);
+  }
+
+  .footnote {
+    color: var(--muted-foreground);
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .icon-sm {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  :global(.spin) {
+    animation: var(--animation-spin);
+  }
+</style>

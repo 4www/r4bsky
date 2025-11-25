@@ -27,32 +27,41 @@
   }
 </script>
 
-<div class="container max-w-2xl py-8">
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('add.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />
+<div class="add-page">
+  <Card>
+    <CardHeader>
+      <CardTitle>{t('add.title')}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />
 
-        {#if savedAt}
-          <div class="mt-6">
-            <StateCard
-              icon={CheckCircle2}
-              title={t('add.successTitle')}
-              description={t('add.successDescription')}
-            >
-              {#snippet actions()}
-              <Button
-                variant="outline"
-                onclick={viewTrack}
-              >
-                {t('add.viewTrack')}
-              </Button>
-            {/snippet}
-            </StateCard>
-          </div>
-        {/if}
-      </CardContent>
-    </Card>
-  </div>
+      {#if savedAt}
+        <div class="success-section">
+          <StateCard
+            icon={CheckCircle2}
+            title={t('add.successTitle')}
+            description={t('add.successDescription')}
+          >
+            {#snippet actions()}
+            <Button variant="outline" onclick={viewTrack}>
+              {t('add.viewTrack')}
+            </Button>
+          {/snippet}
+          </StateCard>
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
+</div>
+
+<style>
+  .add-page {
+    max-width: 42rem;
+    margin-inline: auto;
+    padding: var(--size-fluid-3);
+  }
+
+  .success-section {
+    margin-top: var(--size-fluid-3);
+  }
+</style>

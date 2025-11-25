@@ -8,7 +8,8 @@
   import { Input } from '$lib/components/ui/input';
   import { Play, Pause, SkipForward, SkipBack, ExternalLink, ArrowUpRight, Disc as DiscIcon, ListMusic, X, LayoutList, Shuffle, MoreVertical, Eye, Search } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
-  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
+  import { clsx } from 'clsx';
+  import { menuItemClass, menuTriggerClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { profilesCollection, loadProfile, getProfileFromCache } from '$lib/stores/profiles-db';
@@ -521,7 +522,7 @@
 
 {#if current}
   <aside
-    class={cn(
+    class={clsx(
       extraClass,
       "flex flex-col transition-all duration-300 px-1 lg:px-0 h-full",
       !visible ? "h-0 w-0 m-0 opacity-0 pointer-events-none overflow-hidden" : "opacity-100"
@@ -538,8 +539,8 @@
         ></div>
 
       {/if}
-      <div class={cn("flex flex-col gap-0 flex-1 min-h-0 relative")}>
-        <div class={cn("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
+      <div class={clsx("flex flex-col gap-0 flex-1 min-h-0 relative")}>
+        <div class={clsx("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <Avatar
               src={profileData?.avatar || ''}
@@ -573,7 +574,7 @@
               <button
                 bind:this={triggerRef}
                 type="button"
-                  class={cn(menuTriggerClass(menuOpen), "h-7 w-7")}
+                  class={clsx(menuTriggerClass(menuOpen), "h-7 w-7")}
                   onclick={() => toggleMenu()}
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
@@ -677,7 +678,7 @@
                 {@const discogsLink = track?.discogsUrl || track?.discogs_url || ''}
                 <a
                   href={trackHref || '#'}
-                  class={cn(
+                  class={clsx(
                     "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group"
                   )}
                   onclick={(e) => {
@@ -691,7 +692,7 @@
                     {originalIdx + 1}
                   </span>
                   <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <span class={cn(
+                  <span class={clsx(
                       "truncate text-sm font-medium leading-tight transition-colors py-0.5 rounded underline-offset-4",
                       originalIdx === state.index
                         ? "bg-foreground text-background px-1.5"
@@ -709,7 +710,7 @@
                     <button
                       data-track-menu-trigger
                       type="button"
-                      class={cn(menuTriggerClass(trackMenuOpen === originalIdx), "h-7 w-7")}
+                      class={clsx(menuTriggerClass(trackMenuOpen === originalIdx), "h-7 w-7")}
                       onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
                       aria-haspopup="menu"
                       aria-expanded={trackMenuOpen === originalIdx}
@@ -790,7 +791,7 @@
                         {#if isEditable}
                           <button
                             type="button"
-                            class={cn(menuItemClass, "text-destructive hover:text-destructive")}
+                            class={clsx(menuItemClass, "text-destructive hover:text-destructive")}
                             onclick={(e) => {
                               e.stopPropagation();
                               if (confirm(`Delete "${track.title || 'Untitled'}"?`)) {
@@ -814,10 +815,10 @@
         </div>
       </div>
 
-        <div class={cn("flex items-center justify-center gap-2 py-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
+        <div class={clsx("flex items-center justify-center gap-2 py-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
           <button
             type="button"
-            class={cn(
+            class={clsx(
             "flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
             state.isShuffled
               ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
@@ -845,7 +846,7 @@
         </button>
         <button
           type="button"
-          class={cn(
+          class={clsx(
             "flex items-center justify-center h-10 w-10 rounded-full text-sm font-medium transition-all duration-200 border-2 bg-background",
             state.playing
               ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"

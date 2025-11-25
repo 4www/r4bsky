@@ -131,7 +131,7 @@ textarea::placeholder {
 	align-items: center;
 	justify-content: center;
 	gap: var(--size-2);
-	border-radius: var(--radius);
+	border-radius: var(--radius-3);
 	font-size: var(--font-size-1);
 	font-weight: var(--font-weight-5);
 	white-space: nowrap;
@@ -270,7 +270,7 @@ textarea::placeholder {
 /* Card */
 .card {
 	border: var(--border-size-2) solid var(--border);
-	border-radius: var(--radius-2);
+	border-radius: var(--radius-3);
 }
 
 .card-header,

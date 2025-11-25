@@ -33,7 +33,7 @@
 </script>
 
 <nav class="profile-nav">
-  <NavTabs items={navItems} variant="pills-muted" class="border border-foreground rounded-full" />
+  <NavTabs items={navItems} />
 </nav>
 
 <style>

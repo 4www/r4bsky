@@ -112,7 +112,6 @@
     icon={AlertCircle}
     title={t('following.errorTitle')}
     description={status}
-    class="mb-6"
   >
     {#snippet actions()}
       <Button variant="outline" onclick={refreshFollowing}>
@@ -136,7 +135,7 @@
     description={t('following.emptyDescription')}
   />
 {:else if follows.length > 0}
-  <div class="space-y-4">
+  <div class="follows-list">
     {#each follows as follow (follow.uri)}
       {@const followProfile = profiles.get(follow.subject)}
       {@const profileHandle = followProfile?.handle || follow.subject}
@@ -149,10 +148,23 @@
   </div>
 
   {#if cursor && follows.length >= 50}
-    <div class="mt-6 text-center">
+    <div class="load-more">
       <Button variant="outline" onclick={more}>
         {t('following.loadMore')}
       </Button>
     </div>
   {/if}
 {/if}
+
+<style>
+  .follows-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+  }
+
+  .load-more {
+    margin-top: var(--size-fluid-3);
+    text-align: center;
+  }
+</style>

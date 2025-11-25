@@ -128,6 +128,7 @@
 
   // Apply theme to document using only background/foreground colors
   function applyTheme() {
+    return; // TEMPORARILY DISABLED - remove this line to re-enable theming
     if (!browser) return;
 
     const effectiveMode = $theme.mode === 'auto'
@@ -288,7 +289,7 @@
 
           <nav class="bottom-nav">
             <div class="nav-inner">
-              <NavTabs items={navItems} variant="pills" />
+              <NavTabs items={navItems} />
 
               {#if hasPlayback}
                 <div class="playback-controls">

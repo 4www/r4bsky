@@ -22,19 +22,45 @@
   ]);
 </script>
 
-<div class="container max-w-4xl py-6">
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold">{t('settings.title')}</h1>
-    <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
-  </div>
+<div class="settings-layout">
+  <header>
+    <h1>{t('settings.title')}</h1>
+    <p>{t('settings.description')}</p>
+  </header>
 
-  <!-- Settings Navigation -->
-  <div class="mb-6 flex justify-center">
-    <NavTabs items={navItems} variant="pills-muted" class="border border-foreground rounded-full" />
-  </div>
+  <nav>
+    <NavTabs items={navItems} />
+  </nav>
 
-  <!-- Settings Content -->
   <div>
     {@render children()}
   </div>
 </div>
+
+<style>
+  .settings-layout {
+    max-width: 56rem;
+    margin-inline: auto;
+    padding: var(--size-fluid-3);
+  }
+
+  .settings-layout > header {
+    margin-bottom: var(--size-fluid-3);
+  }
+
+  .settings-layout > header h1 {
+    font-size: var(--font-size-fluid-2);
+    font-weight: var(--font-weight-7);
+  }
+
+  .settings-layout > header p {
+    color: var(--muted-foreground);
+    margin-top: var(--size-1);
+  }
+
+  .settings-layout > nav {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--size-fluid-3);
+  }
+</style>

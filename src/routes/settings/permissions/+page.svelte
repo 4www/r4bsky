@@ -27,52 +27,133 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="settings-stack">
   <Card>
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <Shield class="h-5 w-5" />
+      <CardTitle class="card-title-icon">
+        <Shield class="icon" />
         {t('settings.permissionsTitle')}
       </CardTitle>
       <CardDescription>
         {t('settings.permissionsDescription')}
       </CardDescription>
     </CardHeader>
-    <CardContent class="space-y-3">
-      <div class="rounded-lg bg-muted/50 p-3 text-sm space-y-2">
-        <p class="font-semibold mb-2">{t('settings.permissionsAtProtocolLabel')}</p>
-        <div class="space-y-2 text-xs">
-          <div class="border-l-2 border-border pl-2">
-            <p class="font-mono text-foreground">com.radio4000.track</p>
-            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
+    <CardContent class="content-stack-sm">
+      <div class="info-panel">
+        <p class="info-panel-title">{t('settings.permissionsAtProtocolLabel')}</p>
+        <div class="permission-list">
+          <div class="permission-item">
+            <p class="mono">com.radio4000.track</p>
+            <p class="muted">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>
-          <div class="border-l-2 border-border pl-2">
-            <p class="font-mono text-foreground">com.radio4000.favorite</p>
-            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
+          <div class="permission-item">
+            <p class="mono">com.radio4000.favorite</p>
+            <p class="muted">{t('settings.permissionsActionsCreateDelete')}</p>
           </div>
-          <div class="border-l-2 border-border pl-2">
-            <p class="font-mono text-foreground">com.radio4000.profile</p>
-            <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
+          <div class="permission-item">
+            <p class="mono">com.radio4000.profile</p>
+            <p class="muted">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
           </div>
         </div>
       </div>
-      <Button onclick={managePermissions} disabled={working} variant="outline" class="w-full">
+      <Button onclick={managePermissions} disabled={working} variant="outline" class="full-width">
         {#if working}
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 class="icon-sm spin" />
           {t('settings.permissionsWorking')}
         {:else}
-          <Shield class="mr-2 h-4 w-4" />
+          <Shield class="icon-sm" />
           {t('settings.permissionsButton')}
         {/if}
       </Button>
-      <p class="text-xs text-muted-foreground">
+      <p class="footnote">
         {t('settings.permissionsFootnote')}
       </p>
       {#if permissionError}
-        <div class="rounded-md bg-destructive/15 p-3 text-sm text-foreground/70">
+        <div class="error-box">
           {permissionError}
         </div>
       {/if}
     </CardContent>
   </Card>
 </div>
+
+<style>
+  .settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-fluid-3);
+  }
+
+  .card-title-icon {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  :global(.content-stack-sm) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--muted) 50%, transparent);
+    border-radius: var(--radius-3);
+  }
+
+  .info-panel-title {
+    font-weight: var(--font-weight-6);
+    margin-bottom: var(--size-2);
+  }
+
+  .permission-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  .permission-item {
+    padding-left: var(--size-2);
+    border-left: var(--border-size-2) solid var(--border);
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+  }
+
+  .muted {
+    color: var(--muted-foreground);
+  }
+
+  :global(.full-width) {
+    width: 100%;
+  }
+
+  .footnote {
+    color: var(--muted-foreground);
+  }
+
+  .error-box {
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--destructive) 15%, transparent);
+    border-radius: var(--radius-2);
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .icon-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  :global(.spin) {
+    animation: var(--animation-spin);
+  }
+</style>

@@ -11,18 +11,17 @@
 
   interface Props {
     items: NavItem[];
-    variant?: 'pills' | 'pills-muted' | 'sidebar';
   }
 
-  let { items, variant = 'pills' }: Props = $props();
+  let { items }: Props = $props();
 </script>
 
-<nav class="nav-tabs" data-variant={variant}>
+<nav class="nav-tabs">
   {#each items as item (item.href)}
     <Link href={item.href} class={item.isActive ? 'active' : ''}>
       {#if item.icon}
         {@const Icon = item.icon}
-        <Icon size={variant === 'sidebar' ? 16 : 14} />
+        <Icon size={14} />
       {/if}
       <span>{item.label}</span>
     </Link>
@@ -33,18 +32,9 @@
   .nav-tabs {
     display: inline-flex;
     overflow-x: auto;
-  }
-
-  .nav-tabs[data-variant="pills"],
-  .nav-tabs[data-variant="pills-muted"] {
     border-radius: var(--radius-round);
     border: var(--r4-border-size) solid var(--border);
     background: var(--background);
-  }
-
-  .nav-tabs[data-variant="sidebar"] {
-    flex-direction: column;
-    overflow-x: visible;
   }
 
   .nav-tabs :global(a) {
@@ -56,10 +46,7 @@
     font-weight: var(--font-weight-5);
     white-space: nowrap;
     transition: all 0.2s var(--ease-2);
-  }
-
-  .nav-tabs[data-variant="sidebar"] :global(a) {
-    border-radius: var(--radius-2);
+    color: var(--foreground);
   }
 
   .nav-tabs :global(a:hover),
