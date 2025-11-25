@@ -6,7 +6,7 @@
   import { Search, Loader2, User, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
-  import { cn } from '$lib/utils';
+  import { clsx } from 'clsx';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
 
   const props = $props<{ showHeading?: boolean; class?: string }>();
@@ -41,32 +41,32 @@
   }
 </script>
 
-<div class={cn('space-y-8', className)}>
+<div class={clsx('search-profiles', className)}>
   {#if showHeading}
-    <div class="text-center animate-in space-y-3">
-      <h2 class="text-3xl font-bold text-foreground">{t('search.title')}</h2>
-      <p class="text-lg text-muted-foreground max-w-2xl mx-auto">{t('search.description')}</p>
-    </div>
+    <header class="search-header">
+      <h2>{t('search.title')}</h2>
+      <p>{t('search.description')}</p>
+    </header>
   {/if}
 
-  <Card class="border border-border shadow-sm">
-    <CardContent class="pt-6">
-      <form onsubmit={search} class="flex flex-col gap-4 sm:flex-row">
-        <div class="relative flex-1">
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+  <Card>
+    <CardContent>
+      <form onsubmit={search} class="search-form">
+        <div class="search-input-wrap">
+          <Search size={20} class="search-icon" />
           <Input
             id="search-q"
             name="q"
             type="search"
             bind:value={q}
             placeholder={t('search.placeholder')}
-            class="pl-12 h-12 text-base"
+            class="search-input"
             disabled={loading}
           />
         </div>
-        <Button type="submit" size="lg" class="px-8 shadow-sm" disabled={loading || !q.trim()}>
+        <Button type="submit" size="lg" disabled={loading || !q.trim()}>
           {#if loading}
-            <Loader2 class="h-5 w-5 animate-spin" />
+            <Loader2 size={20} class="loading-spin" />
           {:else}
             {t('search.submit')}
           {/if}
@@ -76,11 +76,7 @@
   </Card>
 
   {#if status}
-    <StateCard
-      icon={AlertCircle}
-      title={t('search.errorTitle')}
-      description={status}
-    >
+    <StateCard icon={AlertCircle} title={t('search.errorTitle')} description={status}>
       {#snippet actions()}
         <Button variant="outline" type="button" onclick={executeSearch} disabled={loading}>
           {t('buttons.tryAgain')}
@@ -90,43 +86,71 @@
   {/if}
 
   {#if loading}
-    <StateCard
-      icon={Loader2}
-      loading={true}
-      title={t('search.loadingTitle')}
-      description={t('search.loadingDescription')}
-    />
+    <StateCard icon={Loader2} loading={true} title={t('search.loadingTitle')} description={t('search.loadingDescription')} />
   {:else if results.length > 0}
-    <div class="space-y-4">
+    <div class="results">
       {#each results as actor, idx (actor.did || actor.handle || idx)}
-        <ProfileHeader
-          profile={actor}
-          handle={actor.handle}
-          size="sm"
-          class="border-2"
-        />
+        <ProfileHeader profile={actor} handle={actor.handle} size="sm" />
       {/each}
     </div>
   {:else if hasSearched && !loading}
-    <StateCard
-      icon={User}
-      title={t('search.emptyTitle')}
-      description={t('search.emptyDescription', { query: q })}
-    >
+    <StateCard icon={User} title={t('search.emptyTitle')} description={t('search.emptyDescription', { query: q })}>
       {#snippet actions()}
-        <Button
-          variant="outline"
-          type="button"
-          onclick={() => {
-            q = '';
-            results = [];
-            status = '';
-            hasSearched = false;
-          }}
-        >
+        <Button variant="outline" type="button" onclick={() => { q = ''; results = []; status = ''; hasSearched = false; }}>
           {t('search.clear')}
         </Button>
       {/snippet}
     </StateCard>
   {/if}
 </div>
+
+<style>
+  .search-profiles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-5);
+  }
+
+  .search-header {
+    text-align: center;
+  }
+
+  .search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-input-wrap :global(.search-icon) {
+    position: absolute;
+    left: var(--size-3);
+    top: 50%;
+    translate: 0 -50%;
+    opacity: 0.6;
+  }
+
+  .search-input-wrap :global(.search-input) {
+    padding-left: var(--size-7);
+  }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+  }
+
+  :global(.loading-spin) {
+    animation: var(--animation-spin);
+  }
+
+  @media (min-width: 640px) {
+    .search-form {
+      flex-direction: row;
+    }
+  }
+</style>

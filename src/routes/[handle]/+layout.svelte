@@ -121,10 +121,10 @@
 />
 
 {#if !isEditRoute}
-<div class="max-w-4xl mx-auto w-full">
+<div class="profile-layout">
   {#if handle}
     {#if loading}
-      <div class="flex items-center justify-center min-h-[50vh]">
+      <div class="state-centered">
         <StateCard
           icon={Loader2}
           loading={true}
@@ -133,12 +133,11 @@
         />
       </div>
     {:else if status}
-      <div class="flex items-center justify-center min-h-[50vh]">
+      <div class="state-centered">
         <StateCard
           icon={AlertCircle}
           title={t('profile.errorTitle')}
           description={status}
-          class="mb-6"
         >
           {#snippet actions()}
             <Button variant="outline" onclick={refreshProfile}>
@@ -148,23 +147,23 @@
         </StateCard>
       </div>
     {:else}
-      <div class="space-y-6">
-        <div class="sticky top-2 lg:top-4 z-20 bg-background">
-          <ProfileHeader {profile} {handle} size="lg" class="m-0" clickable={false}>
-              {#snippet children()}
-                <div class="flex gap-3 flex-wrap">
-                  {#if did && $session?.did !== did}
-                    <FollowButton actorDid={did} />
-                  {/if}
-                </div>
-              {/snippet}
-            </ProfileHeader>
-        </div>
+      <div class="profile-content">
+        <header class="profile-sticky-header">
+          <ProfileHeader {profile} {handle} size="lg" clickable={false}>
+            {#snippet children()}
+              <div class="profile-actions">
+                {#if did && $session?.did !== did}
+                  <FollowButton actorDid={did} />
+                {/if}
+              </div>
+            {/snippet}
+          </ProfileHeader>
+        </header>
 
         <ProfileNav {handle} />
 
         {#if !isEditRoute}
-          <div class="pt-2">
+          <div class="profile-main">
             {@render children()}
           </div>
         {/if}
@@ -177,8 +176,8 @@
         <CardDescription>{t('profile.viewFormDescription')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form class="space-y-4">
-          <div class="space-y-2">
+        <form class="profile-form">
+          <div class="field-group">
             <Label for="author-handle">{t('profile.formLabel')}</Label>
             <Input
               id="author-handle"
@@ -188,7 +187,7 @@
               required
             />
           </div>
-          <Button type="submit" class="w-full">
+          <Button type="submit" class="full-width">
             {t('profile.formSubmit')}
           </Button>
         </form>
@@ -208,3 +207,63 @@
     />
   </Dialog>
 {/if}
+
+<style>
+  .profile-layout {
+    max-width: 56rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .state-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+  }
+
+  .profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-fluid-2);
+  }
+
+  .profile-sticky-header {
+    position: sticky;
+    top: var(--size-2);
+    z-index: 20;
+    background: var(--background);
+  }
+
+  @media (min-width: 1024px) {
+    .profile-sticky-header {
+      top: var(--size-4);
+    }
+  }
+
+  .profile-actions {
+    display: flex;
+    gap: var(--size-3);
+    flex-wrap: wrap;
+  }
+
+  .profile-main {
+    padding-top: var(--size-2);
+  }
+
+  .profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  :global(.full-width) {
+    width: 100%;
+  }
+</style>

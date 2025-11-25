@@ -245,7 +245,6 @@
     icon={AlertCircle}
     title={t('profile.errorTitle')}
     description={status}
-    class="mb-6"
   >
     {#snippet actions()}
       <Button variant="outline" onclick={refreshTracks}>
@@ -256,7 +255,7 @@
 {/if}
 
 {#if loading}
-  <div class="flex items-center justify-center min-h-[50vh]">
+  <div class="loading-container">
     <StateCard
       icon={Loader2}
       loading={true}
@@ -265,21 +264,19 @@
     />
   </div>
 {:else if items.length}
-  <div class="space-y-6">
+  <div>
     {#each groupedTracks as group (group.key)}
-      <div class="space-y-1">
+      <div>
         <!-- Group Header -->
-        <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-1">
-          <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+        <div class="sticky-header">
+          <h3>
             {group.key}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">
-              ({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})
-            </span>
+            <span>({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})</span>
           </h3>
         </div>
 
         <!-- Tracks in Group -->
-        <div class="rounded-xl border border-foreground divide-y overflow-visible">
+        <div class="track-list">
           {#each group.tracks as item (item.uri)}
             {@const globalIdx = items.findIndex(t => t.uri === item.uri)}
             {@const isSelected = item.uri === selectedTrackUri}
@@ -324,8 +321,8 @@
     {/each}
   </div>
   {#if hasMore}
-    <div class="mt-4 flex flex-col gap-2 items-center">
-      <div class="flex gap-2">
+    <div class="load-more">
+      <div class="load-more-buttons">
         <Button variant="outline" onclick={more} disabled={paginationState.loading || loadingAll}>
           {paginationState.loading ? t('profile.loading') : t('profile.loadMore')}
         </Button>
@@ -334,7 +331,7 @@
         </Button>
       </div>
       {#if loadingAll}
-        <p class="text-xs text-muted-foreground">
+        <p class="load-more-status">
           Loading all remaining tracks... {loadProgress.current} loaded so far
         </p>
       {/if}
@@ -358,3 +355,29 @@
     />
   </Dialog>
 {/if}
+
+<style>
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+  }
+
+  .load-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--size-2);
+    margin-top: var(--size-4);
+  }
+
+  .load-more-buttons {
+    display: flex;
+    gap: var(--size-2);
+  }
+
+  .load-more-status {
+    color: var(--muted-foreground);
+  }
+</style>

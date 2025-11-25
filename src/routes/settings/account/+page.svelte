@@ -249,11 +249,11 @@
 </script>
 
 {#if $session?.did}
-  <div class="space-y-6">
+  <div class="settings-stack">
     <Card>
       <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <LogOut class="h-5 w-5" />
+        <CardTitle class="card-title-icon">
+          <LogOut class="icon" />
           {t('settings.signOutTitle')}
         </CardTitle>
         <CardDescription>
@@ -261,12 +261,12 @@
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onclick={signOut} disabled={signingOut} variant="destructive" class="w-full">
+        <Button onclick={signOut} disabled={signingOut} variant="destructive" class="full-width">
           {#if signingOut}
-            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 class="icon-sm spin" />
             {t('settings.signOutWorking')}
           {:else}
-            <LogOut class="mr-2 h-4 w-4" />
+            <LogOut class="icon-sm" />
             {t('settings.signOutButton')}
           {/if}
         </Button>
@@ -278,16 +278,16 @@
         <CardTitle>{t('settings.accountTitle')}</CardTitle>
         <CardDescription>{t('settings.accountDescription')}</CardDescription>
       </CardHeader>
-      <CardContent class="space-y-4">
-        <div class="space-y-2">
+      <CardContent class="content-stack">
+        <div class="field-group">
           <Label>{t('settings.handleLabel')}</Label>
-          <div class="text-sm font-mono bg-muted px-3 py-2 rounded-md">
+          <div class="mono-box">
             @{$session.handle || '...'}
           </div>
         </div>
-        <div class="space-y-2">
+        <div class="field-group">
           <Label>{t('settings.didLabel')}</Label>
-          <div class="text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
+          <div class="mono-box break-all">
             {$session.did}
           </div>
         </div>
@@ -296,46 +296,46 @@
 
     <Card>
       <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <Shield class="h-5 w-5" />
+        <CardTitle class="card-title-icon">
+          <Shield class="icon" />
           {t('settings.permissionsTitle')}
         </CardTitle>
         <CardDescription>
           {t('settings.permissionsDescription')}
         </CardDescription>
       </CardHeader>
-      <CardContent class="space-y-3">
-        <div class="rounded-lg bg-muted/50 p-3 text-sm space-y-2">
-          <p class="font-semibold mb-2">{t('settings.permissionsAtProtocolLabel')}</p>
-          <div class="space-y-2 text-xs">
-            <div class="border-l-2 border-border pl-2">
-              <p class="font-mono text-foreground">com.radio4000.track</p>
-              <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
+      <CardContent class="content-stack-sm">
+        <div class="info-panel">
+          <p class="info-panel-title">{t('settings.permissionsAtProtocolLabel')}</p>
+          <div class="permission-list">
+            <div class="permission-item">
+              <p class="mono">com.radio4000.track</p>
+              <p class="muted">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
             </div>
-            <div class="border-l-2 border-border pl-2">
-              <p class="font-mono text-foreground">com.radio4000.favorite</p>
-              <p class="text-muted-foreground">{t('settings.permissionsActionsCreateDelete')}</p>
+            <div class="permission-item">
+              <p class="mono">com.radio4000.favorite</p>
+              <p class="muted">{t('settings.permissionsActionsCreateDelete')}</p>
             </div>
-            <div class="border-l-2 border-border pl-2">
-              <p class="font-mono text-foreground">com.radio4000.profile</p>
-              <p class="text-muted-foreground">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
+            <div class="permission-item">
+              <p class="mono">com.radio4000.profile</p>
+              <p class="muted">{t('settings.permissionsActionsCreateUpdateDelete')}</p>
             </div>
           </div>
         </div>
-        <Button onclick={managePermissions} disabled={permissionWorking} variant="outline" class="w-full">
+        <Button onclick={managePermissions} disabled={permissionWorking} variant="outline" class="full-width">
           {#if permissionWorking}
-            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 class="icon-sm spin" />
             {t('settings.permissionsWorking')}
           {:else}
-            <Shield class="mr-2 h-4 w-4" />
+            <Shield class="icon-sm" />
             {t('settings.permissionsButton')}
           {/if}
         </Button>
-        <p class="text-xs text-muted-foreground">
+        <p class="footnote">
           {t('settings.permissionsFootnote')}
         </p>
         {#if permissionError}
-          <div class="rounded-md bg-destructive/15 p-3 text-sm text-foreground/70">
+          <div class="error-box">
             {permissionError}
           </div>
         {/if}
@@ -347,19 +347,19 @@
         <CardTitle>{t('settings.accountActionsTitle')}</CardTitle>
         <CardDescription>{t('settings.accountActionsDescription')}</CardDescription>
       </CardHeader>
-      <CardContent class="space-y-3">
-        <Button onclick={handleExport} disabled={isExporting} variant="outline" class="w-full">
+      <CardContent class="content-stack-sm">
+        <Button onclick={handleExport} disabled={isExporting} variant="outline" class="full-width">
           {#if isExporting}
-            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 class="icon-sm spin" />
             {t('settings.exportTracksWorking')}
           {:else}
-            <Download class="mr-2 h-4 w-4" />
+            <Download class="icon-sm" />
             {t('settings.exportTracksButton')}
           {/if}
         </Button>
 
-        <Button onclick={openDeleteDialog} disabled={isDeleting} variant="outline" class="w-full">
-          <Trash2 class="mr-2 h-4 w-4" />
+        <Button onclick={openDeleteDialog} disabled={isDeleting} variant="outline" class="full-width">
+          <Trash2 class="icon-sm" />
           {t('settings.deleteTracksButton')}
         </Button>
       </CardContent>
@@ -368,18 +368,18 @@
 
   <!-- Delete Confirmation Dialog -->
   <Dialog bind:open={showDeleteDialog}>
-    <DialogContent class="max-w-2xl max-h-[80vh] overflow-y-auto">
+    <DialogContent class="dialog-wide">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <AlertCircle class="h-5 w-5 text-destructive" />
+        <DialogTitle class="card-title-icon">
+          <AlertCircle class="icon destructive" />
           {t('settings.deleteTracksConfirmTitle')}
         </DialogTitle>
         <DialogDescription>
           {#if isCountingTracks}
-            <div class="flex items-center gap-2">
-              <Loader2 class="h-4 w-4 animate-spin" />
+            <span class="loading-inline">
+              <Loader2 class="icon-sm spin" />
               Loading tracks...
-            </div>
+            </span>
           {:else}
             {t('settings.deleteTracksConfirmDescription', { count: tracksToDelete.length })}
           {/if}
@@ -387,11 +387,11 @@
       </DialogHeader>
 
       {#if deleteErrors.length > 0}
-        <div class="space-y-2">
-          <h4 class="text-sm font-medium text-destructive">Errors ({deleteErrors.length}):</h4>
-          <div class="max-h-40 overflow-y-auto border rounded-md p-3 bg-destructive/5">
+        <div class="field-group">
+          <h4 class="error-title">Errors ({deleteErrors.length}):</h4>
+          <div class="error-list">
             {#each deleteErrors as error}
-              <div class="text-xs text-destructive mb-1">{error}</div>
+              <div class="error-item">{error}</div>
             {/each}
           </div>
         </div>
@@ -403,7 +403,7 @@
         </Button>
         <Button variant="destructive" onclick={handleDelete} disabled={isDeleting || isCountingTracks || tracksToDelete.length === 0}>
           {#if isDeleting}
-            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 class="icon-sm spin" />
             {#if deleteProgress}
               Deleting ({deleteProgress.current}/{deleteProgress.total})
             {:else}
@@ -419,3 +419,142 @@
 {:else}
   <SignInForm variant="settings" />
 {/if}
+
+<style>
+  .settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-fluid-2);
+  }
+
+  .card-title-icon {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  :global(.content-stack) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+  }
+
+  :global(.content-stack-sm) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  .mono-box {
+    padding: var(--size-2) var(--size-3);
+    background: var(--muted);
+    border-radius: var(--radius-2);
+    font-family: var(--font-mono);
+  }
+
+  .break-all {
+    word-break: break-all;
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--muted) 50%, transparent);
+    border-radius: var(--radius-3);
+  }
+
+  .info-panel-title {
+    font-weight: var(--font-weight-6);
+    margin-bottom: var(--size-2);
+  }
+
+  .permission-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  .permission-item {
+    padding-left: var(--size-2);
+    border-left: var(--border-size-2) solid var(--border);
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+  }
+
+  .muted {
+    color: var(--muted-foreground);
+  }
+
+  :global(.full-width) {
+    width: 100%;
+  }
+
+  .footnote {
+    color: var(--muted-foreground);
+  }
+
+  .error-box {
+    padding: var(--size-3);
+    background: color-mix(in srgb, var(--destructive) 15%, transparent);
+    border-radius: var(--radius-2);
+  }
+
+  :global(.dialog-wide) {
+    max-width: 42rem;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .loading-inline {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+  }
+
+  .error-title {
+    font-weight: var(--font-weight-5);
+    color: var(--destructive);
+  }
+
+  .error-list {
+    max-height: 10rem;
+    overflow-y: auto;
+    padding: var(--size-3);
+    border: var(--border-size-1) solid var(--border);
+    border-radius: var(--radius-2);
+    background: color-mix(in srgb, var(--destructive) 5%, transparent);
+  }
+
+  .error-item {
+    color: var(--destructive);
+    margin-bottom: var(--size-1);
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .icon.destructive {
+    color: var(--destructive);
+  }
+
+  .icon-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  :global(.spin) {
+    animation: var(--animation-spin);
+  }
+</style>

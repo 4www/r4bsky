@@ -40,7 +40,7 @@
   }
 </script>
 
-<div class="container max-w-2xl py-6">
+<div class="add-page">
   <Card>
     <CardHeader>
       <CardTitle>{t('add.title')}</CardTitle>
@@ -52,9 +52,9 @@
       <TrackForm submitLabel={t('forms.publish')} onSubmit={onCreate} />
 
       {#if savedTrack}
-        <div class="mt-6 space-y-3">
-          <div class="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 class="h-4 w-4" />
+        <div class="success-section">
+          <div class="success-message">
+            <CheckCircle2 class="icon-sm" />
             <span>{t('add.successTitle')}</span>
           </div>
           <TrackListItem
@@ -70,3 +70,30 @@
     </CardContent>
   </Card>
 </div>
+
+<style>
+  .add-page {
+    max-width: 42rem;
+    margin-inline: auto;
+    padding: var(--size-fluid-2);
+  }
+
+  .success-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+    margin-top: var(--size-fluid-2);
+  }
+
+  .success-message {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    color: var(--muted-foreground);
+  }
+
+  .icon-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+</style>

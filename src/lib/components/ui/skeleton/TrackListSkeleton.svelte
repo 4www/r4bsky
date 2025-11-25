@@ -10,21 +10,39 @@
 	const items = Array.from({ length: count }, (_, i) => i)
 </script>
 
-<div class="flex flex-col gap-3" aria-label="Loading tracks...">
+<div class="track-list-skeleton" aria-label="Loading tracks...">
 	{#each items as item (item)}
-		<div class="rounded-lg border p-4 space-y-3">
-			<!-- Track title -->
-			<Skeleton class="h-5 w-3/4" />
-
-			<!-- Track description -->
-			<Skeleton class="h-4 w-full" />
-			<Skeleton class="h-4 w-2/3" />
-
-			<!-- Action buttons -->
-			<div class="flex gap-2 pt-2">
-				<Skeleton class="h-8 w-20" />
-				<Skeleton class="h-8 w-20" />
+		<div class="track-skeleton">
+			<Skeleton style="height: 1.25rem; width: 75%;" />
+			<Skeleton style="height: 1rem; width: 100%;" />
+			<Skeleton style="height: 1rem; width: 66%;" />
+			<div class="actions">
+				<Skeleton style="height: 2rem; width: 5rem;" />
+				<Skeleton style="height: 2rem; width: 5rem;" />
 			</div>
 		</div>
 	{/each}
 </div>
+
+<style>
+	.track-list-skeleton {
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-3);
+	}
+
+	.track-skeleton {
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-3);
+		padding: var(--size-3);
+		border: var(--r4-border-size) solid var(--border);
+		border-radius: var(--radius);
+	}
+
+	.actions {
+		display: flex;
+		gap: var(--size-2);
+		padding-block-start: var(--size-2);
+	}
+</style>

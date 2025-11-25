@@ -32,6 +32,15 @@
   ]);
 </script>
 
-<div class="flex gap-2 mb-4 justify-center">
-  <NavTabs items={navItems} variant="pills-muted" class="border border-foreground rounded-full" />
-</div>
+<nav class="profile-nav">
+  <NavTabs items={navItems} />
+</nav>
+
+<style>
+  .profile-nav {
+    display: flex;
+    justify-content: center;
+    gap: var(--size-2);
+    margin-block-end: var(--size-3);
+  }
+</style>

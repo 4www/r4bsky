@@ -5,15 +5,20 @@
 	const toasts = $derived(getToasts())
 </script>
 
-<!-- Toast container positioned at top-right of viewport -->
-<div
-	class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
-	aria-live="polite"
-	aria-atomic="false"
->
+<div class="toast-container" aria-live="polite" aria-atomic="false">
 	{#each toasts as toast (toast.id)}
-		<div class="pointer-events-auto">
-			<Toast {toast} />
-		</div>
+		<Toast {toast} />
 	{/each}
 </div>
+
+<style>
+	.toast-container {
+		position: fixed;
+		top: var(--size-4);
+		right: var(--size-4);
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-2);
+	}
+</style>

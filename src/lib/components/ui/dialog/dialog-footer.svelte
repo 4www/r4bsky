@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
 	let {
 		ref = $bindable(null),
@@ -11,10 +11,6 @@
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
-<div
-	bind:this={ref}
-	class={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
-	{...restProps}
->
+<div bind:this={ref} class={clsx("dialog-footer", className)} {...restProps}>
 	{@render children?.()}
 </div>

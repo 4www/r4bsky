@@ -6,18 +6,18 @@
 
   const { tracks = [], context = null, editable = false } = $props();
 
-  function handleRemove(event) {
+  function handleRemove(event: { detail: { uri: string } }) {
     const removedUri = event.detail?.uri;
     if (removedUri) {
       const idx = tracks.findIndex((t) => t.uri === removedUri);
       if (idx !== -1) tracks.splice(idx, 1);
     }
   }
-  const t = (key, vars = {}) => translate($locale, key, vars);
+  const t = (key: string, vars = {}) => translate($locale, key, vars);
 </script>
 
 {#if tracks && tracks.length > 0}
-  <div class="rounded-xl border border-foreground divide-y overflow-visible">
+  <div class="track-list">
     {#each tracks as item, idx (item.uri || idx)}
       <TrackListItem
         {item}
@@ -26,7 +26,7 @@
         {context}
         {editable}
         flat={true}
-        on:remove={handleRemove}
+        onremove={handleRemove}
       />
     {/each}
   </div>

@@ -22,19 +22,26 @@
   ]);
 </script>
 
-<div class="container max-w-4xl py-6">
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold">{t('settings.title')}</h1>
-    <p class="text-muted-foreground mt-1">{t('settings.description')}</p>
-  </div>
+<div class="settings-layout">
+  <header>
+    <h1>{t('settings.title')}</h1>
+    <p>{t('settings.description')}</p>
+  </header>
 
-  <!-- Settings Navigation -->
-  <div class="mb-6 flex justify-center">
-    <NavTabs items={navItems} variant="pills-muted" class="border border-foreground rounded-full" />
-  </div>
+  <NavTabs items={navItems} />
 
-  <!-- Settings Content -->
   <div>
     {@render children()}
   </div>
 </div>
+
+<style>
+  .settings-layout {
+    display: grid;
+    gap: var(--size-fluid-2);
+    flex-direction: column;
+    align-items: center;
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+</style>

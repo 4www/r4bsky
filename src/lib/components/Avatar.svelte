@@ -1,6 +1,6 @@
 <script lang="ts">
   import { User } from 'lucide-svelte';
-  import { cn } from '$lib/utils';
+  import { clsx } from 'clsx';
 
   const {
     src = '',
@@ -9,19 +9,7 @@
     class: extraClass = '',
   } = $props();
 
-  const sizeClasses = {
-    sm: 'h-8 w-8',
-    md: 'h-12 w-12',
-    lg: 'h-16 w-16',
-    xl: 'h-24 w-24',
-  };
-
-  const iconSizes = {
-    sm: 'h-4 w-4',
-    md: 'h-6 w-6',
-    lg: 'h-8 w-8',
-    xl: 'h-12 w-12',
-  };
+  const iconSizes = { sm: 16, md: 24, lg: 32, xl: 48 };
 
   let imageLoaded = $state(!!src);
   let imageError = $state(false);
@@ -41,22 +29,28 @@
   <img
     {src}
     {alt}
-    class={cn(
-      'rounded-full object-cover border-2 border-primary/30',
-      sizeClasses[size],
-      extraClass
-    )}
+    class={clsx('avatar', `avatar-${size}`, extraClass)}
     onload={handleLoad}
     onerror={handleError}
   />
 {:else}
-  <div
-    class={cn(
-      'rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/30',
-      sizeClasses[size],
-      extraClass
-    )}
-  >
-    <User class={cn('text-primary', iconSizes[size])} />
+  <div class={clsx('avatar', `avatar-${size}`, extraClass)}>
+    <User size={iconSizes[size]} />
   </div>
 {/if}
+
+<style>
+  .avatar {
+    border-radius: var(--radius-round);
+    border: 2px solid var(--border);
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-sm { width: 2rem; height: 2rem; }
+  .avatar-md { width: 3rem; height: 3rem; }
+  .avatar-lg { width: 4rem; height: 4rem; }
+  .avatar-xl { width: 6rem; height: 6rem; }
+</style>

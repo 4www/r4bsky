@@ -122,9 +122,9 @@
   description={trackDescription}
 />
 
-<div class="max-w-4xl mx-auto px-4 py-6">
+<div class="track-detail-page">
   {#if loading}
-    <div class="flex items-center justify-center min-h-[50vh]">
+    <div class="state-container">
       <StateCard
         icon={Loader2}
         loading={true}
@@ -133,7 +133,7 @@
       />
     </div>
   {:else if status}
-    <div class="flex items-center justify-center min-h-[50vh]">
+    <div class="state-container">
       <StateCard
         icon={AlertCircle}
         title={t('trackDetail.errorTitle')}
@@ -164,3 +164,17 @@
     </TrackListItem>
   {/if}
 </div>
+
+<style>
+  .track-detail-page {
+    max-width: 56rem;
+    margin-inline: auto;
+    padding: var(--size-4) var(--size-fluid-2);
+  }
+  .state-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+  }
+</style>
