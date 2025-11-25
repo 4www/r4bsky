@@ -162,8 +162,8 @@
 <style>
   .track {
     padding: var(--size-2) var(--size-3);
-    background: var(--color-background);
-    border-bottom: 1px solid var(--color-foreground);
+    background: var(--background);
+    border-bottom: 1px solid var(--foreground);
     transition: background 150ms var(--ease-2);
   }
 
@@ -183,29 +183,29 @@
   .track-title {
     display: block;
     font-weight: var(--font-weight-6);
-    color: var(--color-foreground);
+    color: var(--foreground);
     transition: color 150ms var(--ease-2);
   }
 
   .track-info:hover .track-title {
-    color: var(--color-primary);
+    color: var(--primary);
     text-decoration: underline;
   }
 
   .track-title--active {
-    background: var(--color-primary);
-    color: var(--color-background);
+    background: var(--primary);
+    color: var(--background);
     padding: 0 var(--size-1);
     border-radius: var(--radius-1);
   }
 
   .track-info:hover .track-title--active {
-    color: var(--color-background);
+    color: var(--background);
     text-decoration: none;
   }
 
   .track-description {
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
     white-space: pre-wrap;
     line-height: var(--font-lineheight-2);
     margin: 0;
@@ -227,21 +227,21 @@
     border-radius: var(--radius-2);
     border: 1px solid transparent;
     background: transparent;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
     cursor: pointer;
     transition: all 150ms var(--ease-2);
   }
 
   .icon-btn:hover {
-    background: var(--color-muted);
-    border-color: var(--color-border);
-    color: var(--color-foreground);
+    background: var(--muted);
+    border-color: var(--border);
+    color: var(--foreground);
   }
 
   .icon-btn--active {
-    background: var(--color-muted);
-    border-color: var(--color-border);
-    color: var(--color-foreground);
+    background: var(--muted);
+    border-color: var(--border);
+    color: var(--foreground);
   }
 
   .menu-wrapper {
@@ -255,8 +255,8 @@
     margin-top: var(--size-1);
     width: 12rem;
     border-radius: var(--radius-2);
-    border: 1px solid var(--color-foreground);
-    background: var(--color-background);
+    border: 1px solid var(--foreground);
+    background: var(--background);
     box-shadow: var(--shadow-3);
   }
 
@@ -266,7 +266,7 @@
     gap: var(--size-2);
     width: 100%;
     padding: var(--size-2) var(--size-3);
-    color: var(--color-foreground);
+    color: var(--foreground);
     background: none;
     border: none;
     text-decoration: none;
@@ -275,15 +275,15 @@
   }
 
   .menu-item:hover {
-    background: var(--color-muted);
+    background: var(--muted);
   }
 
   .menu-item--destructive {
-    color: var(--color-destructive);
+    color: var(--destructive);
   }
 
   .menu-item--destructive:hover {
-    color: var(--color-destructive);
+    color: var(--destructive);
   }
 
   .icon {
@@ -291,14 +291,4 @@
     height: var(--size-3);
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-  }
 </style>
