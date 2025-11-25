@@ -16,7 +16,7 @@ const en = {
 		},
 	},
 	home: {
-		title: "Welcome to R4 AT Protocol",
+		title: "r4@atproto",
 		subtitle: "Share and discover music tracks on the AT Protocol",
 		handleLabel: "Your AT Protocol handle",
 		handlePlaceholder: "alice.bsky.social",

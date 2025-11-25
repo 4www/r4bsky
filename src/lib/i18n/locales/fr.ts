@@ -16,7 +16,7 @@ const fr = {
 		},
 	},
 	home: {
-		title: "Bienvenue sur R4 AT Protocol",
+		title: "r4@atproto",
 		subtitle: "Partagez et découvrez de la musique sur le protocole AT",
 		handleLabel: "Votre identifiant du protocole AT",
 		handlePlaceholder: "alice.bsky.social",

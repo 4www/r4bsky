@@ -19,10 +19,15 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import SeoHead from '$lib/components/SeoHead.svelte';
 
   const { data, children } = $props();
   const handle = $derived(data?.handle ? data.handle.replace(/^@/, '') : '');
   const normalizedHandle = $derived(handle || '');
+  const profileTitle = $derived(profile?.displayName || profile?.handle || (handle ? `@${handle}` : 'Profile'));
+  const profileDescription = $derived(profile?.description || t('profile.viewFormDescription'));
+  const profileImage = $derived(profile?.avatar || profile?.banner || '');
+  const profileFavicon = $derived(profile?.avatar || '/favicon.png');
 
   // Check if we're on an edit route
   const isEditRoute = $derived($page.url.pathname.includes('/edit'));
@@ -106,6 +111,14 @@
     }
   });
 </script>
+
+<SeoHead
+  title={profileTitle}
+  description={profileDescription}
+  image={profileImage}
+  favicon={profileFavicon}
+  type="profile"
+/>
 
 {#if !isEditRoute}
 <div class="max-w-4xl mx-auto w-full">

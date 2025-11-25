@@ -37,29 +37,30 @@
     []
   );
 
-  // Derive items from query, filtering by DID and sorting by createdAt
+  // Derive items from query, filtering by DID and sorting by created_at
   // TODO: Use indexed queries when TanStack DB API supports it
   const items = $derived.by(() => {
     if (!did) return [];
     const allTracks = tracksQuery.data || [];
     const filtered = allTracks.filter(track => track.authorDid === did);
-    // Sort by createdAt descending (newest first)
+    // Sort by created_at descending (newest first)
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
       return dateB - dateA;
     });
   });
 
-  // Group tracks by Year Month based on createdAt
+  // Group tracks by Year Month based on created_at
   const groupedTracks = $derived.by(() => {
     const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
 
     items.forEach(track => {
-      if (!track.createdAt) return;
+      const createdAt = track.created_at;
+      if (!createdAt) return;
 
       try {
-        const date = new Date(track.createdAt);
+        const date = new Date(createdAt);
         if (isNaN(date.getTime())) return;
 
         const year = date.getFullYear();
@@ -82,8 +83,8 @@
       .map(([key, data]) => ({
         key,
         tracks: data.tracks.sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0).getTime();
-          const dateB = new Date(b.createdAt || 0).getTime();
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
           return dateB - dateA; // Newest first within group
         }),
         year: data.year,

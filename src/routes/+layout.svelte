@@ -18,6 +18,7 @@
   import { base } from '$app/paths';
   import { browser } from '$app/environment';
   import ToastContainer from '$lib/components/ui/toast/ToastContainer.svelte';
+  import SeoHead from '$lib/components/SeoHead.svelte';
 
   let { children } = $props();
   let ready = $state(false);
@@ -212,6 +213,7 @@
   });
 
   const t = (key, vars = {}) => translate($locale, key, vars);
+  const defaultDescription = $derived(t('home.subtitle') || 'Share and discover music tracks on the AT Protocol.');
 
   const userHandle = $derived(($session && $session.handle) || '');
   const myPath = $derived(userHandle ? `/@${encodeURIComponent(userHandle)}` : '/');
@@ -245,6 +247,8 @@
   );
   const playbackCollapsed = $derived(!hasPlayback || !playerVisible);
 </script>
+
+<SeoHead title="Radio4000" description={defaultDescription} />
 
 {#if !ready}
   <div class="loading-screen">

@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:metadata": "node scripts/generate-client-metadata.js && vite",
     "build": "vite build",
-    "build:cloudflare": "node scripts/generate-client-metadata.js && R4_BASE='' npm run build",
-    "build:github": "cp -f static/client-metadata.github.json static/client-metadata.json && npm run build",
+    "build:cloudflare": "cp -f static/client-metadata.cloudflare.json static/client-metadata.json && npm run build",
+    "build:github": "cp -f static/client-metadata.github.json static/client-metadata.json && R4_BASE='/r4atproto' npm run build",
     "preview": "vite preview",
-    "deploy:wrangler": "wrangler pages deploy dist",
+    "deploy:wrangler": "wrangler deploy --assets=./dist",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -37,6 +36,7 @@
     "svelte": "^5.41.2",
     "typescript": "^5.9.3",
     "vite": "^7.1.11",
-    "vitest": "^4.0.1"
+    "vitest": "^4.0.1",
+    "wrangler": "^4.50.0"
   }
 }
