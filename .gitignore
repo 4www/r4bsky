@@ -7,3 +7,4 @@ coverage
 .svelte-kit/
 .wrangler/
 wrangler.log
+bun.lock
