@@ -692,9 +692,9 @@
                   </span>
                   <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                   <span class={cn(
-                      "truncate text-sm font-medium leading-tight transition-colors px-1.5 py-0.5 rounded underline-offset-4",
+                      "truncate text-sm font-medium leading-tight transition-colors py-0.5 rounded underline-offset-4",
                       originalIdx === state.index
-                        ? "bg-foreground text-background"
+                        ? "bg-foreground text-background px-1.5"
                         : "text-foreground group-hover:underline"
                     )}>
                       {track.title || t('trackItem.untitled')}
@@ -814,7 +814,7 @@
         </div>
       </div>
 
-        <div class={cn("flex items-center justify-center gap-2 pt-1 pb-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
+        <div class={cn("flex items-center justify-center gap-2 py-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
           <button
             type="button"
             class={cn(

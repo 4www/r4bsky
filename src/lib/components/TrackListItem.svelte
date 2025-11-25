@@ -226,7 +226,7 @@
               href={viewHref() || '#'}
               onclick={openDetail}
               class={cn(
-                "transition-colors cursor-pointer px-1.5 py-0.5 inline-block",
+                "transition-colors cursor-pointer py-0.5 inline-block",
                 isActiveTrack
                   ? "bg-primary text-background rounded"
                   : "hover:text-primary hover:underline"
@@ -237,7 +237,7 @@
           </CardTitle>
           {#if showAuthor && authorHandle}
             <CardDescription class={cn(
-              "text-xs flex items-center gap-1 mt-0.5",
+              "text-xs flex items-center gap-1",
               isDetailView && "mt-0 sm:mt-0"
             )}>
               <span class="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-foreground text-[0.55rem] font-semibold">
@@ -250,7 +250,7 @@
           {/if}
         </div>
         {#if item.description}
-          <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug m-0">
+          <p class="text-xs text-muted-foreground whitespace-pre-wrap leading-snug !mt-0">
             {item.description}
           </p>
         {/if}
