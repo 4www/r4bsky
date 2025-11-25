@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Avatar from './Avatar.svelte'
 	import { Card, CardHeader, CardTitle, CardDescription } from './ui/card'
-	import { Button, buttonVariants } from './ui/button'
+	import { Button } from './ui/button'
 	import { cn, menuItemClass, menuTriggerClass } from '$lib/utils'
 	import Link from '$lib/components/Link.svelte'
 	import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye, Star } from 'lucide-svelte'

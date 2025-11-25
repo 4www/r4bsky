@@ -5,7 +5,7 @@
   import { setPlaylist } from '$lib/player/store';
   import { session } from '$lib/state/session';
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
-  import { Button, buttonVariants } from '$lib/components/ui/button';
+  import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
   import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';

@@ -1,7 +1,9 @@
 <script lang="ts" module>
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
-	import { buttonVariants, type ButtonVariant, type ButtonSize } from "./types";
+
+	export type ButtonVariant = "default" | "primary" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+	export type ButtonSize = "default" | "sm" | "lg" | "icon";
 
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
@@ -12,7 +14,7 @@
 
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
 	let {
 		class: className,
@@ -34,24 +36,16 @@
 		if (isExternalHref(href)) return href;
 		return resolve(href);
 	});
+
+	const classes = $derived(clsx("btn", `btn-${variant}`, size !== "default" && `btn-${size}`, className));
 </script>
 
 {#if href}
-	<a
-		bind:this={ref}
-		class={cn(buttonVariants({ variant, size }), className)}
-		href={finalHref}
-		{...restProps}
-	>
+	<a bind:this={ref} class={classes} href={finalHref} {...restProps}>
 		{@render children?.()}
 	</a>
 {:else}
-	<button
-		bind:this={ref}
-		class={cn(buttonVariants({ variant, size }), className)}
-		{type}
-		{...restProps}
-	>
+	<button bind:this={ref} class={classes} {type} {...restProps}>
 		{@render children?.()}
 	</button>
 {/if}

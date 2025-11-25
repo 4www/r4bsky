@@ -53,11 +53,11 @@
 
 {#if showCard}
   {#if variant === 'default'}
-    <Card class="border-2 shadow-xl">
-      <CardContent class="pt-6">
-        <form onsubmit={handleSignIn} class="space-y-6">
-          <div class="space-y-2">
-            <Label for="signin-handle" class="text-base">
+    <Card class="card">
+      <CardContent>
+        <form onsubmit={handleSignIn} class="signin-form">
+          <div class="field">
+            <Label for="signin-handle">
               {t('home.handleLabel')}
             </Label>
             <Input
@@ -66,19 +66,18 @@
               placeholder={t('home.handlePlaceholder')}
               bind:value={handle}
               disabled={signingIn}
-              class="h-12 text-base"
             />
           </div>
 
           {#if error}
-            <div class="rounded-lg bg-destructive/15 border border-destructive/20 p-4 text-sm text-destructive">
+            <div class="error-message">
               {error}
             </div>
           {/if}
 
-          <Button type="submit" class="w-full h-12 text-base" disabled={signingIn || !handle.trim()}>
+          <Button type="submit" disabled={signingIn || !handle.trim()}>
             {#if signingIn}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 class="spinner" />
               {t('home.submitting')}
             {:else}
               {t('home.submit')}
@@ -94,8 +93,8 @@
         <CardDescription>{displayDescription}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onsubmit={handleSignIn} class="space-y-4">
-          <div class="space-y-2">
+        <form onsubmit={handleSignIn} class="signin-form">
+          <div class="field">
             <Label for="signin-handle">{t('home.handleLabel')}</Label>
             <Input
               id="signin-handle"
@@ -107,14 +106,14 @@
           </div>
 
           {#if error}
-            <div class="rounded-lg bg-destructive/15 border border-destructive/20 p-4 text-sm text-destructive">
+            <div class="error-message">
               {error}
             </div>
           {/if}
 
-          <Button type="submit" class="w-full" disabled={signingIn || !handle.trim()}>
+          <Button type="submit" disabled={signingIn || !handle.trim()}>
             {#if signingIn}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 class="spinner" />
               {t('settings.signInWorking')}
             {:else}
               {t('settings.signInButton')}
@@ -125,8 +124,8 @@
     </Card>
   {/if}
 {:else}
-  <form onsubmit={handleSignIn} class="space-y-4">
-    <div class="space-y-2">
+  <form onsubmit={handleSignIn} class="signin-form">
+    <div class="field">
       <Label for="signin-handle">{t('home.handleLabel')}</Label>
       <Input
         id="signin-handle"
@@ -138,14 +137,14 @@
     </div>
 
     {#if error}
-      <div class="rounded-lg bg-destructive/15 border border-destructive/20 p-4 text-sm text-destructive">
+      <div class="error-message">
         {error}
       </div>
     {/if}
 
-    <Button type="submit" class="w-full" disabled={signingIn || !handle.trim()}>
+    <Button type="submit" disabled={signingIn || !handle.trim()}>
       {#if signingIn}
-        <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+        <Loader2 class="spinner" />
         {t('settings.signInWorking')}
       {:else}
         {t('settings.signInButton')}
@@ -153,3 +152,25 @@
     </Button>
   </form>
 {/if}
+
+<style>
+  .signin-form {
+    display: grid;
+    gap: var(--size-4);
+  }
+  .field {
+    display: grid;
+    gap: var(--size-2);
+  }
+  .error-message {
+    padding: var(--size-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2);
+  }
+  .signin-form :global(.spinner) {
+    width: 1rem;
+    height: 1rem;
+    margin-right: var(--size-2);
+    animation: var(--animation-spin);
+  }
+</style>

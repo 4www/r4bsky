@@ -12,7 +12,7 @@
   import { Loader2, Menu, X, Home, Plus, User, Search, Settings, AtSign, Play, Pause, LayoutList } from 'lucide-svelte';
   import { player, toggle } from '$lib/player/store';
   import { locale, translate } from '$lib/i18n';
-  import { cn } from '$lib/utils';
+  import { clsx } from 'clsx';
   import { resolveHandle } from '$lib/services/r4-service';
   import NavTabs from '$lib/components/NavTabs.svelte';
   import { base } from '$app/paths';
@@ -248,7 +248,7 @@
 </script>
 
 {#if !ready}
-  <div class="flex items-center justify-center min-h-screen p-4">
+  <div class="loading-screen">
     <StateCard
       icon={Loader2}
       loading={true}
@@ -258,62 +258,49 @@
   </div>
 {:else}
 
-  <div class="min-h-screen bg-background flex flex-col">
-    <div class="flex-1 px-0.5 sm:px-1 lg:px-2">
-      <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-center lg:gap-4">
+  <div class="app-shell">
+    <div class="app-container">
+      <div class="layout-grid">
         {#if hasPlayback}
         <section
-          class={cn(
-            "layout-playback order-1 w-full sticky top-0 z-10 transition-all duration-200 lg:order-2 lg:w-full lg:max-w-lg h-screen",
-            playbackCollapsed && "hidden"
-          )}
+          class={clsx("layout-playback", playbackCollapsed && "hidden")}
           aria-label="layout-playback"
         >
-          <div class="h-full rounded-xl bg-background/95 p-2 lg:p-3 shadow-sm">
+          <div class="playback-inner">
             <Player
               visible={!playbackCollapsed}
               bind:mobilePanelOpen={mobilePanelOpen}
-              class="w-full h-full"
             />
           </div>
         </section>
         {/if}
 
         <section
-          class={cn(
-            "layout-panel relative z-20 flex-1 min-w-0 flex flex-col gap-4 order-2 lg:order-1 min-h-screen w-full bg-background/95 rounded-xl",
-            playbackCollapsed ? "lg:max-w-5xl lg:mx-auto" : ""
-          )}
+          class={clsx("layout-panel", playbackCollapsed && "panel-centered")}
           aria-label="layout-panel"
         >
-          <main class="flex-1 min-h-0 rounded-2xl">
+          <main class="main-content">
             {@render children()}
           </main>
 
-          <nav class="mt-2 sticky bottom-0 left-0 right-0 z-40 rounded-2xl pb-1">
-            <div class="flex items-center justify-center gap-2 flex-wrap">
+          <nav class="bottom-nav card">
+            <div class="nav-inner">
               <NavTabs items={navItems} variant="pills" />
 
               {#if hasPlayback}
-                <div class="inline-flex gap-1 rounded-full bg-background/95 backdrop-blur-xl border border-border">
+                <div class="playback-controls">
                   <button
                     type="button"
                     onclick={toggle}
-                    class={cn(
-                      "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                      playerState.playing
-                        ? "text-background bg-foreground border border-foreground shadow-sm hover:border-background"
-                        : "text-foreground border border-foreground hover:bg-foreground hover:text-background hover:border-background"
-                    )}
+                    class={clsx("control-btn", playerState.playing && "active")}
                     aria-label={playerState.playing ? 'Pause' : 'Play'}
                   >
                     {#if playerState.playing}
-                      <Pause class="h-3.5 w-3.5" />
+                      <Pause class="icon" />
                     {:else}
-                      <Play class="h-3.5 w-3.5" />
+                      <Play class="icon" />
                     {/if}
                   </button>
-                  <!-- Never stop playback when hiding the player -->
                   <button
                     type="button"
                     onclick={() => {
@@ -324,15 +311,10 @@
                         playerVisible = !playerVisible;
                       }
                     }}
-                    class={cn(
-                      "flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                      (playerVisible || mobilePanelOpen)
-                        ? "text-background bg-foreground border border-foreground shadow-sm hover:border-background"
-                        : "text-foreground border border-foreground hover:bg-foreground hover:text-background hover:border-background"
-                    )}
+                    class={clsx("control-btn", (playerVisible || mobilePanelOpen) && "active")}
                     aria-label="Toggle player visibility"
                   >
-                    <LayoutList class="h-3.5 w-3.5" />
+                    <LayoutList class="icon" />
                   </button>
                </div>
              {/if}
@@ -345,5 +327,176 @@
   </div>
 {/if}
 
-<!-- Toast Notifications -->
 <ToastContainer />
+
+<style>
+  .loading-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--size-4);
+  }
+
+  .app-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--background);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-container {
+    flex: 1;
+    padding-inline: var(--size-1);
+  }
+
+  .layout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+  }
+
+  @media (min-width: 1024px) {
+    .layout-grid {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: center;
+      gap: var(--size-4);
+    }
+  }
+
+  .layout-playback {
+    order: 1;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 100vh;
+    height: 100dvh;
+    transition: all 200ms var(--ease-2);
+  }
+
+  .layout-playback.hidden {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .layout-playback {
+      order: 2;
+      max-width: 32rem;
+    }
+  }
+
+  .playback-inner {
+    height: 100%;
+    border-radius: var(--radius-3);
+    background: var(--background);
+    padding: var(--size-2);
+    box-shadow: var(--shadow-1);
+  }
+
+  @media (min-width: 1024px) {
+    .playback-inner {
+      padding: var(--size-3);
+    }
+  }
+
+  .layout-panel {
+    position: relative;
+    z-index: 20;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+    order: 2;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    background: var(--background);
+    border-radius: var(--radius-3);
+  }
+
+  @media (min-width: 1024px) {
+    .layout-panel {
+      order: 1;
+    }
+
+    .layout-panel.panel-centered {
+      max-width: 64rem;
+      margin-inline: auto;
+    }
+  }
+
+  .main-content {
+    flex: 1;
+    min-height: 0;
+    border-radius: var(--radius-4);
+  }
+
+  .bottom-nav {
+    margin-top: var(--size-2);
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding: var(--size-2);
+    background: var(--background);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-2);
+    flex-wrap: wrap;
+  }
+
+  .playback-controls {
+    display: inline-flex;
+    gap: var(--size-1);
+    border-radius: var(--radius-round);
+    background: var(--background);
+    border: var(--r4-border-size) solid var(--border);
+  }
+
+  .control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--size-2) var(--size-3);
+    border-radius: var(--radius-round);
+    font-size: var(--font-size-0);
+    font-weight: var(--font-weight-5);
+    transition: all 200ms var(--ease-2);
+    color: var(--foreground);
+    border: var(--r4-border-size) solid var(--foreground);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .control-btn:hover {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--background);
+  }
+
+  .control-btn.active {
+    color: var(--background);
+    background: var(--foreground);
+    border-color: var(--foreground);
+    box-shadow: var(--shadow-1);
+  }
+
+  .control-btn.active:hover {
+    border-color: var(--background);
+  }
+
+  .control-btn :global(.icon) {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+</style>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
 	let {
 		ref = $bindable(null),
@@ -11,9 +11,6 @@
 
 <DropdownMenuPrimitive.SubContent
 	bind:ref
-	class={cn(
-		"bg-background text-foreground z-50 min-w-[8rem] rounded-md border border-foreground p-1 shadow-lg focus:outline-none",
-		className
-	)}
+	class={clsx("dropdown-content", className)}
 	{...restProps}
 />

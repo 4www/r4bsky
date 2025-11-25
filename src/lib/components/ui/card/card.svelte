@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
 	let {
 		ref = $bindable(null),
@@ -11,10 +11,6 @@
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
-<div
-	bind:this={ref}
-	class={cn("bg-background text-foreground rounded-xl border border-border shadow-sm", className)}
-	{...restProps}
->
+<div bind:this={ref} class={clsx("card", className)} {...restProps}>
 	{@render children?.()}
 </div>

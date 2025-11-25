@@ -1,6 +1,5 @@
 <script lang="ts">
   import Link from '$lib/components/Link.svelte';
-  import { cn } from '$lib/utils';
   import type { ComponentType } from 'svelte';
 
   interface NavItem {
@@ -13,44 +12,59 @@
   interface Props {
     items: NavItem[];
     variant?: 'pills' | 'pills-muted' | 'sidebar';
-    class?: string;
   }
 
-  let { items, variant = 'pills', class: className }: Props = $props();
-
-  // Container styles based on variant
-  const containerClass = $derived(cn(
-    'inline-flex overflow-x-auto',
-    variant === 'pills' && 'rounded-full bg-background/95 backdrop-blur-xl border-2 border-border',
-    variant === 'pills-muted' && 'rounded-full bg-muted/40 border border-muted',
-    variant === 'sidebar' && 'flex-col overflow-x-visible',
-    className
-  ));
-
-  // Link styles based on variant
-  const linkClass = (active: boolean) => cn(
-    'flex items-center gap-1 text-sm font-medium transition-all duration-200',
-    variant === 'pills' && 'gap-1.5 px-3 py-2',
-    variant === 'pills-muted' && 'gap-1.5 px-3 py-2',
-    variant === 'sidebar' && 'px-3 py-2 rounded-md whitespace-nowrap',
-    active
-      ? 'text-background bg-foreground border border-foreground hover:border-transparent'
-      : 'text-foreground border border-border hover:bg-foreground hover:text-background hover:border-transparent'
-  );
-
-  const iconClass = $derived(cn(
-    variant === 'pills' || variant === 'pills-muted' ? 'h-3.5 w-3.5' : 'h-4 w-4'
-  ));
+  let { items, variant = 'pills' }: Props = $props();
 </script>
 
-<nav class={containerClass}>
+<nav class="nav-tabs" data-variant={variant}>
   {#each items as item (item.href)}
-    <Link href={item.href} class={linkClass(item.isActive)}>
+    <Link href={item.href} class={item.isActive ? 'active' : ''}>
       {#if item.icon}
         {@const Icon = item.icon}
-        <Icon class={iconClass} />
+        <Icon size={variant === 'sidebar' ? 16 : 14} />
       {/if}
       <span>{item.label}</span>
     </Link>
   {/each}
 </nav>
+
+<style>
+  .nav-tabs {
+    display: inline-flex;
+    overflow-x: auto;
+  }
+
+  .nav-tabs[data-variant="pills"],
+  .nav-tabs[data-variant="pills-muted"] {
+    border-radius: var(--radius-round);
+    border: var(--r4-border-size) solid var(--border);
+    background: var(--background);
+  }
+
+  .nav-tabs[data-variant="sidebar"] {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .nav-tabs :global(a) {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    padding: var(--size-2) var(--size-3);
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-5);
+    white-space: nowrap;
+    transition: all 0.2s var(--ease-2);
+  }
+
+  .nav-tabs[data-variant="sidebar"] :global(a) {
+    border-radius: var(--radius-2);
+  }
+
+  .nav-tabs :global(a:hover),
+  .nav-tabs :global(a.active) {
+    background: var(--foreground);
+    color: var(--background);
+  }
+</style>

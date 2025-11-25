@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
 	let {
 		ref = $bindable(null),
@@ -14,6 +14,6 @@
 
 <DropdownMenuPrimitive.GroupHeading
 	bind:ref
-	class={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)}
+	class={clsx("dropdown-label", inset && "dropdown-item-inset", className)}
 	{...restProps}
 />

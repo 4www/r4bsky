@@ -8,9 +8,9 @@
 		CardHeader,
 		CardTitle,
 	} from "./card";
-	import { cn } from "$lib/utils";
+	import { clsx } from "clsx";
 
-	type IconComponent = ComponentType<{ class?: string }>;
+	type IconComponent = ComponentType<{ size?: number }>;
 
 	let {
 		title = "",
@@ -31,32 +31,55 @@
 	} = $props();
 </script>
 
-<Card class={cn(
-	"text-center max-w-md mx-auto",
-	loading && "border-none border-0 shadow-none bg-transparent",
-	className
-)}>
-	<CardHeader class="items-center text-center space-y-4 pb-6">
+<Card class={clsx("state-card", loading && "state-card-loading", className)}>
+	<CardHeader>
 		{#if Icon}
-			<div class="rounded-full bg-muted p-4">
-				<Icon class={cn("h-8 w-8 text-muted-foreground", loading && "animate-spin")} />
+			<div class="state-card-icon" class:loading>
+				<Icon size={32} />
 			</div>
 		{/if}
-		<div class="space-y-2">
-			<CardTitle class="text-xl">{title}</CardTitle>
-			{#if description}
-				<CardDescription class="text-base">{description}</CardDescription>
-			{/if}
-		</div>
+		<CardTitle>{title}</CardTitle>
+		{#if description}
+			<CardDescription>{description}</CardDescription>
+		{/if}
 	</CardHeader>
 	{#if children}
-		<CardContent class="text-sm text-muted-foreground pb-6">
+		<CardContent>
 			{@render children?.()}
 		</CardContent>
 	{/if}
 	{#if actions}
-		<CardFooter class="flex justify-center gap-3 pt-0">
+		<CardFooter class="state-card-actions">
 			{@render actions?.()}
 		</CardFooter>
 	{/if}
 </Card>
+
+<style>
+	:global(.state-card) {
+		text-align: center;
+		max-width: 28rem;
+		margin-inline: auto;
+	}
+
+	:global(.state-card-loading) {
+		border: none;
+		background: transparent;
+	}
+
+	.state-card-icon {
+		margin-inline: auto;
+		padding: var(--size-3);
+		border-radius: var(--radius-round);
+		background: var(--muted);
+	}
+
+	.state-card-icon.loading {
+		animation: var(--animation-spin);
+	}
+
+	:global(.state-card-actions) {
+		justify-content: center;
+		gap: var(--size-3);
+	}
+</style>

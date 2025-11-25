@@ -6,7 +6,7 @@
   import StateCard from '$lib/components/ui/state-card.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import SignInForm from '$lib/components/SignInForm.svelte';
-  import { Loader2, Users } from 'lucide-svelte';
+  import { Loader2 } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
 
   let myProfile = $state(null);
@@ -54,9 +54,9 @@
 </script>
 
 {#if isAuthenticated}
-  <div class="container max-w-4xl py-4 space-y-6">
+  <div class="page">
     {#if loadingHome}
-      <div class="flex items-center justify-center min-h-[50vh]">
+      <div class="center">
         <StateCard
           icon={Loader2}
           loading={true}
@@ -70,12 +70,11 @@
           profile={myProfile}
           handle={$session.handle}
           size="lg"
-          class="mb-6"
         />
       {/if}
 
       {#if follows.length > 0}
-        <div class="space-y-3 mb-4">
+        <div class="follows">
           {#each follows as follow (follow.uri)}
             {@const profile = followProfiles.get(follow.subject)}
             {@const profileHandle = profile?.handle || follow.subject}
@@ -87,32 +86,59 @@
           {/each}
         </div>
       {:else}
-        <Card class="border-2">
+        <Card>
           <CardHeader>
-            <CardTitle class="flex items-center gap-2">
-              <Users class="h-5 w-5" />
-              No favorites yet
-            </CardTitle>
+            <CardTitle>No favorites yet</CardTitle>
             <CardDescription>
               Start adding Radio4000 favorites to see them here.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button href="/search" class="w-full">
-              {t('home.exploreProfiles')}
-            </Button>
+            <Button href="/search">{t('home.exploreProfiles')}</Button>
           </CardContent>
         </Card>
       {/if}
     {/if}
   </div>
 {:else}
-  <div class="container mx-auto max-w-2xl mt-10 px-3 space-y-8">
-    <div class="mb-8 text-center space-y-3 animate-in">
-      <h1 class="text-4xl font-bold text-gradient">{t('home.title')}</h1>
-      <p class="text-lg text-muted-foreground">{t('home.subtitle')}</p>
-    </div>
-
+  <div class="container">
+    <header class="animate-in">
+      <h1>{t('home.title')}</h1>
+      <p>{t('home.subtitle')}</p>
+    </header>
     <SignInForm variant="default" />
   </div>
 {/if}
+
+<style>
+  .page {
+    max-width: 56rem;
+    margin-inline: auto;
+    padding: var(--size-4);
+    display: grid;
+    gap: var(--size-4);
+  }
+  .container {
+    max-width: 42rem;
+    margin-inline: auto;
+    margin-block-start: var(--size-8);
+    padding: var(--size-4);
+    display: grid;
+    gap: var(--size-4);
+  }
+  .center {
+    display: grid;
+    place-items: center;
+    min-height: 50vh;
+  }
+  .follows {
+    display: grid;
+    gap: var(--size-3);
+  }
+  header {
+    text-align: center;
+  }
+  header p {
+    color: var(--muted-foreground);
+  }
+</style>
