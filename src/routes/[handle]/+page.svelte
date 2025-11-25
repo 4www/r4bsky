@@ -37,32 +37,31 @@
     []
   );
 
-  // Derive items from query, filtering by DID and sorting by rkey (AT Protocol record creation time)
+  // Derive items from query, filtering by DID and sorting by createdAt
   // TODO: Use indexed queries when TanStack DB API supports it
   const items = $derived.by(() => {
     if (!did) return [];
     const allTracks = tracksQuery.data || [];
     const filtered = allTracks.filter(track => track.authorDid === did);
-    // Sort by rkey descending (newest AT Protocol records first)
-    // rkey is timestamp-based (milliseconds since epoch) so higher = newer
+    // Sort by createdAt descending (newest first)
     return filtered.sort((a, b) => {
-      const rkeyA = parseInt(a.rkey || '0');
-      const rkeyB = parseInt(b.rkey || '0');
-      return rkeyB - rkeyA;
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
     });
   });
 
-  // Group tracks by Year Month based on rkey (AT Protocol record creation time)
+  // Group tracks by Year Month based on createdAt
   const groupedTracks = $derived.by(() => {
     const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
 
     items.forEach(track => {
-      if (!track.rkey) return;
+      if (!track.createdAt) return;
 
       try {
-        // rkey is milliseconds since epoch
-        const timestamp = parseInt(track.rkey);
-        const date = new Date(timestamp);
+        const date = new Date(track.createdAt);
+        if (isNaN(date.getTime())) return;
+
         const year = date.getFullYear();
         const monthNum = date.getMonth(); // 0-11
         // Use current locale for month name
@@ -74,18 +73,18 @@
         }
         groups.get(key)!.tracks.push(track);
       } catch (e) {
-        // Invalid rkey, skip grouping
+        // Invalid date, skip grouping
       }
     });
 
-    // Sort groups by year and month (newest first), then sort tracks within each group by rkey
+    // Sort groups by year and month (newest first), then sort tracks within each group by createdAt
     return Array.from(groups.entries())
       .map(([key, data]) => ({
         key,
         tracks: data.tracks.sort((a, b) => {
-          const rkeyA = parseInt(a.rkey || '0');
-          const rkeyB = parseInt(b.rkey || '0');
-          return rkeyB - rkeyA; // Newest first within group
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA; // Newest first within group
         }),
         year: data.year,
         month: data.month,

@@ -103,7 +103,7 @@ export function updateProfileCache(did: string, updates: Partial<Profile>) {
  * Useful when profile is deleted or on logout
  */
 export function clearProfileCache(did: string) {
-  if (did) {
+  if (did && profilesCollection.get(did)) {
     profilesCollection.delete(did)
   }
 }
