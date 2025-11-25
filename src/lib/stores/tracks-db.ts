@@ -1,27 +1,18 @@
 import { createCollection, localOnlyCollectionOptions } from '@tanstack/svelte-db'
 import { listTracksByDid, createTrack as apiCreateTrack, updateTrackByUri as apiUpdateTrack, deleteTrackByUri as apiDeleteTrack } from '$lib/services/r4-service'
+import type { Track } from '$lib/types'
 
-export interface Track {
-  uri: string
-  cid?: string
-  rkey?: string
-  url: string
-  title: string
-  description?: string
-  discogsUrl?: string
-  discogs_url?: string
-  authorDid?: string
-  createdAt?: string
-}
+export type { Track }
 
 // Store to manage pagination state per DID
 const paginationState = new Map<string, { cursor?: string; hasMore: boolean; loading: boolean }>()
 
 // Create a collection for tracks using local-only storage
 // This is a pure in-memory store - API calls are handled separately
+// Note: Indexes will be added when TanStack DB API stabilizes
 export const tracksCollection = createCollection(
   localOnlyCollectionOptions<Track, string>({
-    getKey: (item: Track) => item.uri
+    getKey: (item: Track) => item.uri,
   })
 )
 
@@ -60,7 +51,9 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
       }
     }
 
-    const result = await listTracksByDid(did, options)
+    // Load tracks in chronological order (oldest first by rkey)
+    // Then sort client-side by created_at for display
+    const result = await listTracksByDid(did, { ...options, reverse: false })
 
     // Add tracks to collection with authorDid
     result.tracks.forEach(track => {
@@ -187,7 +180,7 @@ export async function createTrack(track: Omit<Track, 'uri' | 'cid' | 'rkey'> & {
       url: track.url,
       title: track.title,
       description: track.description,
-      discogs_url: track.discogsUrl || track.discogs_url
+      discogs_url: track.discogs_url
     })
 
     // Add to collection
@@ -203,9 +196,9 @@ export async function createTrack(track: Omit<Track, 'uri' | 'cid' | 'rkey'> & {
       url: track.url,
       title: track.title,
       description: track.description,
-      discogsUrl: track.discogsUrl || track.discogs_url,
+      discogs_url: track.discogs_url,
       authorDid: track.authorDid,
-      createdAt: new Date().toISOString() // Set current timestamp
+      created_at: new Date().toISOString() // Set current timestamp
     }
     tracksCollection.insert(newTrack)
 

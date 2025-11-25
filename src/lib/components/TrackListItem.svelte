@@ -88,7 +88,7 @@
     const raw = context?.handle || item.authorHandle || item.author_handle || null;
     return raw?.replace?.(/^@/, '') ?? raw;
   });
-  const discogsLink = $derived(item?.discogsUrl ?? item?.discogs_url ?? '');
+  const discogsLink = $derived(item?.discogs_url ?? '');
   let playerState = $state(player.get());
   const unsubscribe = player.subscribe((value) => {
     playerState = value;
@@ -115,7 +115,7 @@
         url: item.url,
         title: item.title,
         description: item.description,
-        discogsUrl: item.discogsUrl || item.discogs_url || '',
+        discogs_url: item.discogs_url || '',
       };
       goto(resolve(href), {
         state: { track: payload, returnTo: window.location.pathname },

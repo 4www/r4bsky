@@ -1,6 +1,7 @@
 /**
  * Track Normalizer Utility
  * Handles inconsistent field naming between camelCase and snake_case
+ * Canonical format is snake_case to match Radio4000.com schema
  */
 
 export interface RawTrack {
@@ -10,14 +11,14 @@ export interface RawTrack {
   url?: string;
   title?: string;
   description?: string;
-  discogsUrl?: string;
-  discogs_url?: string;
+  discogsUrl?: string; // Legacy camelCase
+  discogs_url?: string; // Canonical snake_case
   r4SupabaseId?: string;
   r4_supabase_id?: string;
-  createdAt?: string;
-  created_at?: string;
-  updatedAt?: string;
-  updated_at?: string;
+  createdAt?: string; // Legacy camelCase
+  created_at?: string; // Canonical snake_case
+  updatedAt?: string; // Legacy camelCase
+  updated_at?: string; // Canonical snake_case
   authorDid?: string;
   author_did?: string;
   [key: string]: unknown;
@@ -30,16 +31,17 @@ export interface NormalizedTrack {
   url: string;
   title: string;
   description?: string;
-  discogsUrl?: string;
+  discogs_url?: string; // Canonical snake_case to match Radio4000
   r4SupabaseId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  created_at?: string; // Canonical snake_case to match Radio4000
+  updated_at?: string; // Canonical snake_case to match Radio4000
   authorDid?: string;
 }
 
 /**
- * Normalize track fields to consistent camelCase naming
- * Handles both camelCase and snake_case inputs
+ * Normalize track fields to consistent snake_case naming
+ * Handles both camelCase (legacy) and snake_case inputs
+ * Output uses snake_case to match Radio4000.com schema
  */
 export function normalizeTrack(track: RawTrack): NormalizedTrack {
   return {
@@ -49,10 +51,10 @@ export function normalizeTrack(track: RawTrack): NormalizedTrack {
     url: track.url || '',
     title: track.title || '',
     description: track.description,
-    discogsUrl: track.discogsUrl ?? track.discogs_url,
+    discogs_url: track.discogs_url ?? track.discogsUrl, // Prefer snake_case
     r4SupabaseId: track.r4SupabaseId ?? track.r4_supabase_id,
-    createdAt: track.createdAt ?? track.created_at,
-    updatedAt: track.updatedAt ?? track.updated_at,
+    created_at: track.created_at ?? track.createdAt, // Prefer snake_case
+    updated_at: track.updated_at ?? track.updatedAt, // Prefer snake_case
     authorDid: track.authorDid ?? track.author_did,
   };
 }

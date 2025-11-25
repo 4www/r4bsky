@@ -37,8 +37,7 @@ const testTrack: Track = {
   rkey: 'test-key',
   description: 'A test track',
   authorDid: 'did:web:test.example.com',
-  createdAt: '2023-01-01T00:00:00.000Z',
-  discogsUrl: undefined,
+  created_at: '2023-01-01T00:00:00.000Z',
   discogs_url: undefined,
 };
 

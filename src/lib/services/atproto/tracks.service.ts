@@ -29,9 +29,9 @@ export async function createTrack({url, title, description, discogs_url, r4Supab
     url,
     title,
     description: description || undefined,
-    discogsUrl: discogs_url || undefined,
+    discogs_url: discogs_url || undefined,
     r4SupabaseId: r4SupabaseId || undefined,
-    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString(),
   }
 
   try {
@@ -54,14 +54,14 @@ export async function createTrack({url, title, description, discogs_url, r4Supab
 /**
  * List all tracks for a given DID with pagination
  */
-export async function listTracksByDid(did: string, {cursor, limit = 100}: ListTracksOptions = {}): Promise<ListTracksResult> {
+export async function listTracksByDid(did: string, {cursor, limit = 100, reverse = false}: ListTracksOptions = {}): Promise<ListTracksResult> {
   const res = await fetchWithAgentFallback(
     (agent) => agent.com.atproto.repo.listRecords({
       repo: did,
       collection: R4_COLLECTION,
       limit,
       cursor,
-      reverse: true,
+      reverse, // Default false to preserve chronological order (oldest first)
     }),
     { did, useAuthForOwn: true }
   )
@@ -74,12 +74,10 @@ export async function listTracksByDid(did: string, {cursor, limit = 100}: ListTr
   }))
   const tracks = items as Track[]
 
-  // Sort by rkey descending (newest first)
-  tracks.sort((a: Track, b: Track) => {
-    const ar = a.rkey || ''
-    const br = b.rkey || ''
-    return String(br).localeCompare(String(ar))
-  })
+  // API returns records ordered by rkey (timestamp-based)
+  // reverse=false (default): oldest first - preserves Radio4000 chronological order
+  // reverse=true: newest first - for showing recent tracks in UI
+  // Both work correctly since rkeys are timestamp-based (from Radio4000 or TID)
 
   return {tracks, cursor: res.data?.cursor}
 }
@@ -127,7 +125,7 @@ export async function updateTrackByUri(uri: string, changes: Partial<Track>) {
   const updated = {
     ...(existing as unknown as { data: { value: Record<string, unknown> } }).data.value,
     ...changes,
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   }
 
   return await withDpopRetry(() => agent.com.atproto.repo.putRecord({

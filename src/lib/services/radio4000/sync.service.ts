@@ -159,11 +159,15 @@ export async function importRadio4000Tracks(
 
 		try {
 			// Build create operations for this batch
-			// Use sequential rkeys to preserve Radio4000 order (sortable by rkey)
+			// Use timestamp-based rkeys derived from track.created_at
+			// Radio4000 timestamps include milliseconds and are unique per track
 			const writes = batch.map((track, batchIndex) => {
-				// Generate zero-padded sequential rkey (e.g., "r4-0000000001")
-				const sequenceNum = i + batchIndex
-				const rkey = `r4-${sequenceNum.toString().padStart(10, '0')}`
+				// Convert ISO timestamp to sortable format
+				// Radio4000's channel_track.created_at has millisecond precision and is unique
+				const timestamp = new Date(track.created_at).getTime()
+				// Use timestamp directly as rkey (milliseconds since epoch)
+				// Pad to 13 digits for consistent string sorting
+				const rkey = timestamp.toString().padStart(13, '0')
 
 				return {
 					$type: 'com.atproto.repo.applyWrites#create' as const,
@@ -176,8 +180,8 @@ export async function importRadio4000Tracks(
 						description: track.description || undefined,
 						discogs_url: track.discogs_url || undefined,
 						r4SupabaseId: track.id, // Save Radio4000 Supabase ID
-						createdAt: track.created_at, // Preserve original created timestamp
-						updatedAt: track.updated_at, // Preserve original updated timestamp
+						created_at: track.created_at, // Preserve original created timestamp
+						updated_at: track.updated_at, // Preserve original updated timestamp
 					},
 				}
 			})

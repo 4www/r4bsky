@@ -22,7 +22,7 @@
   let displayHandle = $state('');
   const context = $derived({ type: 'author', key: did, handle: displayHandle || undefined });
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
-  const discogsUrl = $derived(item?.discogsUrl || item?.discogs_url || '');
+  const discogsUrl = $derived(item?.discogs_url || '');
   let loadRequestId = 0;
   let currentKey = $state('');
   const t = (key, vars = {}) => translate($locale, key, vars);

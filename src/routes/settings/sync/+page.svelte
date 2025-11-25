@@ -16,6 +16,7 @@
     listTracksByDid,
     getMyDid,
   } from '$lib/services/r4-service';
+  import { loadTracksForDid } from '$lib/stores/tracks-db';
   import { onMount } from 'svelte';
 
   const t = (key: string, vars = {}) => translate($localeStore, key, vars);
@@ -66,7 +67,7 @@
       // Save config
       await setR4SyncConfig({ apiEndpoint, apiKey, channelSlug });
 
-      // Fetch channel
+      // Fetch channel info only - no need to fetch all tracks yet
       const channel = await fetchRadio4000Channel(apiEndpoint, apiKey, channelSlug);
       if (!channel) {
         error = 'Channel not found';
@@ -74,29 +75,11 @@
       }
       channelInfo = channel;
 
-      // Fetch radio4000 tracks
-      const r4Tracks = await fetchRadio4000Tracks(apiEndpoint, apiKey, channelSlug);
-
-      // Fetch imported tracks
-      const myDid = await getMyDid();
-      const importedResult = await listTracksByDid(myDid, { limit: 100 });
-      let importedTracks = [...importedResult.tracks];
-
-      let cursor = importedResult.cursor;
-      while (cursor) {
-        const result = await listTracksByDid(myDid, { cursor, limit: 100 });
-        importedTracks.push(...result.tracks);
-        cursor = result.cursor;
-      }
-
-      // Compare
-      const importedUrls = new Set(importedTracks.map(t => t.url.toLowerCase().trim()));
-      const missing = r4Tracks.filter(r4Track => !importedUrls.has(r4Track.url.toLowerCase().trim()));
-
+      // Show ready state - comparison will happen during import
       comparison = {
-        total: r4Tracks.length,
-        imported: r4Tracks.length - missing.length,
-        missing: missing.length,
+        total: 0, // Will be computed during import
+        imported: 0,
+        missing: 0,
       };
     } catch (err) {
       error = (err as Error).message;
@@ -113,12 +96,28 @@
     importErrors = [];
 
     try {
+      // Fetch radio4000 tracks to get total count
+      const r4Tracks = await fetchRadio4000Tracks(apiEndpoint, apiKey, channelSlug);
+
+      // Update comparison with total before starting import
+      comparison = {
+        total: r4Tracks.length,
+        imported: 0,
+        missing: r4Tracks.length,
+      };
+
       const result = await importRadio4000Tracks(
         apiEndpoint,
         apiKey,
         channelSlug,
         (current, total, skipped) => {
           importProgress = { current, total, skipped };
+          // Update comparison during import
+          comparison = {
+            total: r4Tracks.length,
+            imported: skipped + current,
+            missing: total - current,
+          };
         },
         (errorMsg) => {
           importErrors = [...importErrors, errorMsg];
@@ -127,8 +126,16 @@
 
       importResult = result;
 
-      // Reload comparison
-      await handleLoad();
+      // Final comparison
+      comparison = {
+        total: r4Tracks.length,
+        imported: result.imported + result.skipped,
+        missing: 0,
+      };
+
+      // Load imported tracks into the reactive collection
+      const myDid = await getMyDid();
+      await loadTracksForDid(myDid, { reset: true });
     } catch (err) {
       error = (err as Error).message;
     } finally {
@@ -200,59 +207,48 @@
         </div>
       </div>
 
-      <!-- Channel Info & Comparison -->
-      {#if channelInfo && comparison}
+      <!-- Channel Info & Import -->
+      {#if channelInfo}
         <div class="border-t pt-4 space-y-4">
           <!-- Channel Name -->
           <div class="text-sm">
-            <span class="font-medium">
-              {t('settings.syncChannelInfo', { name: channelInfo.name, total: comparison.total })}
+            <span class="font-medium text-foreground">
+              {channelInfo.name}
             </span>
+            {#if channelInfo.description}
+              <p class="text-muted-foreground mt-1">{channelInfo.description}</p>
+            {/if}
           </div>
 
-          <!-- Comparison Stats -->
-          <div class="space-y-2">
-            <h3 class="text-sm font-medium">{t('settings.syncComparisonTitle')}</h3>
-            <div class="flex gap-4 text-sm">
-              <div class="flex items-center gap-2">
-                <CheckCircle2 class="h-4 w-4" />
-                <span>
-                  {t('settings.syncStatusImported', { count: comparison.imported })}
-                </span>
-              </div>
-              <div class="flex items-center gap-2">
-                {#if comparison.missing > 0}
-                  <AlertCircle class="h-4 w-4" />
-                  <span>
-                    {t('settings.syncStatusMissing', { count: comparison.missing })}
-                  </span>
-                {:else}
-                  <CheckCircle2 class="h-4 w-4" />
-                  <span>
-                    {t('settings.syncAllImported')}
-                  </span>
-                {/if}
-              </div>
-            </div>
-          </div>
-
-          <!-- Import Button -->
-          {#if comparison.missing > 0}
-            <div>
-              <Button onclick={handleImport} disabled={isImporting}>
-                {#if isImporting}
-                  <RefreshCw class="h-4 w-4 mr-2 animate-spin" />
-                  {#if importProgress}
-                    {t('settings.syncImportProgress', importProgress)}
-                  {:else}
-                    {t('settings.syncImporting')}
-                  {/if}
-                {:else}
-                  {t('settings.syncImportButton')}
-                {/if}
-              </Button>
+          <!-- Comparison Stats (only show if we have data) -->
+          {#if comparison && comparison.total > 0}
+            <div class="flex gap-4 text-sm text-muted-foreground">
+              <span>{comparison.total} tracks total</span>
+              <span>{comparison.imported} imported</span>
+              {#if comparison.missing > 0}
+                <span>{comparison.missing} remaining</span>
+              {/if}
             </div>
           {/if}
+
+          <!-- Import Button -->
+          <div>
+            <Button onclick={handleImport} disabled={isImporting}>
+              {#if isImporting}
+                <RefreshCw class="h-4 w-4 mr-2 animate-spin" />
+                {#if importProgress}
+                  {importProgress.current}/{importProgress.total}
+                  {#if importProgress.skipped > 0}
+                    ({importProgress.skipped} skipped)
+                  {/if}
+                {:else}
+                  {t('settings.syncImporting')}
+                {/if}
+              {:else}
+                Sync from Radio4000
+              {/if}
+            </Button>
+          </div>
         </div>
       {/if}
 

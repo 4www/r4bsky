@@ -11,6 +11,7 @@ export interface AtUri {
 }
 
 // Track types
+// Matches Radio4000.com schema - uses snake_case for consistency
 export interface Track {
   uri: string;
   cid?: string;
@@ -18,11 +19,11 @@ export interface Track {
   url: string;
   title: string;
   description?: string;
-  discogsUrl?: string;
+  discogs_url?: string; // snake_case to match Radio4000
   r4SupabaseId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  authorDid?: string;
+  created_at?: string; // snake_case to match Radio4000
+  updated_at?: string; // snake_case to match Radio4000
+  authorDid?: string; // camelCase OK - this is internal to our app
 }
 
 export interface CreateTrackParams {
@@ -43,6 +44,7 @@ export interface UpdateTrackParams {
 export interface ListTracksOptions {
   cursor?: string;
   limit?: number;
+  reverse?: boolean; // Default false (oldest first), true for newest first
 }
 
 export interface ListTracksResult {

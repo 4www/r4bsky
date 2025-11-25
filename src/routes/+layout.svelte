@@ -32,9 +32,35 @@
   async function initOAuth() {
     try {
       const metadataFile = 'client-metadata.json';
-      const clientId = window.location.protocol === 'https:'
-        ? new URL(metadataFile, window.location.origin + base + '/').href
-        : buildLoopbackClientId(window.location);
+      let clientId: string;
+      let useFallback = false;
+
+      // Determine which client ID to use
+      if (window.location.protocol === 'https:') {
+        // For HTTPS, first check if we can reach the metadata
+        const metadataUrl = new URL(metadataFile, window.location.origin + base + '/').href;
+
+        try {
+          // Quick check if metadata is accessible
+          const response = await fetch(metadataUrl, { method: 'HEAD', cache: 'no-cache' });
+          if (response.ok) {
+            clientId = metadataUrl;
+          } else {
+            console.warn(`Metadata not accessible (${response.status}), using loopback client`);
+            useFallback = true;
+          }
+        } catch (error) {
+          console.warn('Cannot reach metadata URL, using loopback client:', error);
+          useFallback = true;
+        }
+
+        if (useFallback) {
+          clientId = buildLoopbackClientId(window.location);
+        }
+      } else {
+        // For HTTP (localhost), always use loopback client
+        clientId = buildLoopbackClientId(window.location);
+      }
 
       await bskyOAuth.init(clientId);
 

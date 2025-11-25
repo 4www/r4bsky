@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { player, toggle, next, prev, playIndex, toggleShuffle } from '$lib/player/store';
+  import { player, toggle, next, prev, playIndex, toggleShuffle, shuffleCurrentPlaylist } from '$lib/player/store';
   import { useLiveQuery } from '@tanstack/svelte-db';
   import { tracksCollection, removeTrack } from '$lib/stores/tracks-db';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
@@ -11,7 +11,7 @@
   import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
   import Link from '$lib/components/Link.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
-  import { getProfile } from '$lib/services/r4-service';
+  import { profilesCollection, loadProfile, getProfileFromCache } from '$lib/stores/profiles-db';
   import { buildViewHash, buildEditHash } from '$lib/services/track-uri';
   import { session } from '$lib/state/session';
   import { goto } from '$app/navigation';
@@ -34,6 +34,12 @@
     []
   );
 
+  // Use live query to get profiles from cache
+  const profilesQuery = useLiveQuery(
+    (q) => q.from({ profiles: profilesCollection }),
+    []
+  );
+
   // Derive the actual playlist based on context
   const playlist = $derived.by(() => {
     const ctx = state.context;
@@ -44,6 +50,12 @@
     if (ctx.type === 'profile' || ctx.type === 'author') {
       const allTracks = tracksQuery.data || [];
       const centralizedTracks = allTracks.filter(track => track.authorDid === ctx.key);
+
+      // If shuffle is active and we have a customPlaylist, use it (it contains the shuffled order)
+      // This allows shuffle to work even with centralized tracks
+      if (state.isShuffled && state.customPlaylist && state.customPlaylist.length > 0) {
+        return state.customPlaylist;
+      }
 
       // Use centralized tracks if available and non-empty, otherwise fall back to customPlaylist
       if (centralizedTracks.length > 0) {
@@ -479,18 +491,32 @@
     return buildViewHash(currentHandle, current.uri);
   });
 
+  // Get profile from cache reactively, load if not cached
   $effect(() => {
     if (currentHandle && currentHandle !== lastFetchedHandle) {
       lastFetchedHandle = currentHandle;
-      getProfile(currentHandle).then(data => {
+
+      // First, try to get from cache (instant)
+      const cached = getProfileFromCache(currentHandle);
+      if (cached) {
+        profileData = cached;
+      }
+
+      // Then load fresh data in background (will update cache)
+      loadProfile(currentHandle).then(data => {
         if (currentHandle === lastFetchedHandle) {
           profileData = data;
         }
       }).catch(() => {
-        profileData = null;
+        // Keep cached data if fetch fails
+        if (!profileData) {
+          profileData = null;
+        }
       });
     }
   });
+
+  const hasBanner = $derived(!!profileData?.banner);
 </script>
 
 {#if current}
@@ -503,9 +529,16 @@
     style={visible && !isDesktop ? 'max-height:100dvh;' : ''}
   >
     <section
-      class="flex flex-col flex-1 min-h-0 gap-0 border border-foreground bg-card/95 shadow rounded-3xl p-0 w-full overflow-hidden"
+      class="flex flex-col flex-1 min-h-0 gap-0 border border-foreground bg-card/95 shadow rounded-3xl p-0 w-full overflow-hidden relative"
     >
-      <div class="flex flex-col gap-0 flex-1 min-h-0">
+      {#if hasBanner}
+        <div
+          class="absolute inset-0 bg-cover bg-center rounded-3xl blur-sm"
+          style={`background-image: url(${profileData.banner})`}
+        ></div>
+
+      {/if}
+      <div class={cn("flex flex-col gap-0 flex-1 min-h-0 relative")}>
         <div class={cn("flex items-start gap-3 px-3 pt-3 pb-2 border-b border-foreground", isDesktop ? "min-w-0" : "justify-between items-start")}>
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <Avatar
@@ -517,17 +550,21 @@
             <div class="min-w-0 flex-1">
               {#if currentTrackHref}
                 <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-foreground transition-colors">
-                  {currentTrackTitle}
+                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
                 </Link>
               {:else}
-                <p class="text-sm font-semibold truncate">{currentTrackTitle}</p>
+                <p class="text-sm font-semibold truncate">
+                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
+                </p>
               {/if}
               {#if currentHandle}
                 <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-foreground transition-colors truncate block">
-                  @{currentHandle}
+                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{currentHandle}</span>
                 </Link>
               {:else if state.context?.handle}
-                <span class="text-xs text-muted-foreground truncate block">@{state.context.handle}</span>
+                <span class="text-xs text-muted-foreground truncate block">
+                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{state.context.handle}</span>
+                </span>
               {/if}
             </div>
           </div>
@@ -777,7 +814,7 @@
         </div>
       </div>
 
-        <div class={cn("flex items-center justify-center gap-2 pt-1 pb-2 border-t border-foreground bg-background", isDesktop ? '' : 'shrink-0')}>
+        <div class={cn("flex items-center justify-center gap-2 pt-1 pb-2 border-t border-foreground bg-background relative z-10", isDesktop ? '' : 'shrink-0')}>
           <button
             type="button"
             class={cn(
@@ -786,7 +823,14 @@
               ? "text-background border-foreground bg-foreground shadow-sm hover:border-background"
               : "text-foreground border-foreground hover:bg-foreground hover:text-background hover:border-background"
           )}
-          onclick={toggleShuffle}
+          onclick={() => {
+            // If turning shuffle on and we don't have a customPlaylist yet, shuffle the current playlist
+            if (!state.isShuffled && playlist.length > 0) {
+              shuffleCurrentPlaylist(playlist)
+            } else {
+              toggleShuffle()
+            }
+          }}
           aria-label="Shuffle"
         >
           <Shuffle class="h-3.5 w-3.5" />

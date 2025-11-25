@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { resolveHandle, getProfile } from '$lib/services/r4-service';
+  import { resolveHandle } from '$lib/services/r4-service';
   import { setContext } from 'svelte';
+  import { useLiveQuery } from '@tanstack/svelte-db';
+  import { profilesCollection, loadProfile, getProfileFromCache } from '$lib/stores/profiles-db';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import ProfileNav from '$lib/components/ProfileNav.svelte';
@@ -32,7 +34,26 @@
   });
 
   let did = $state('');
-  let profile = $state(null);
+  let status = $state('');
+  let loading = $state(false);
+  const t = (key, vars = {}) => translate($locale, key, vars);
+
+  // Use reactive query to get profile from cache
+  const profilesQuery = useLiveQuery(
+    (q) => q.from({ profiles: profilesCollection }),
+    []
+  );
+
+  // Get profile from query results, filtering by handle
+  const profile = $derived.by(() => {
+    if (!handle) return null;
+    const profiles = profilesQuery.data || [];
+    return profiles.find(p =>
+      p.handle === handle ||
+      p.handle === `@${handle}` ||
+      p.did === did
+    ) || null;
+  });
 
   // Set context so child pages can access profile and did
   setContext('profile', {
@@ -41,39 +62,29 @@
     get handle() { return normalizedHandle; }
   });
 
-  let status = $state('');
-  let loading = $state(false);
-  let loadRequestId = 0;
-  const t = (key, vars = {}) => translate($locale, key, vars);
-
   function refreshProfile() {
     if (handle) {
-      loadProfile(handle);
+      loadProfileData(handle);
     }
   }
 
-  async function loadProfile(currentHandle: string) {
-    const requestId = ++loadRequestId;
+  async function loadProfileData(currentHandle: string) {
     loading = true;
     status = '';
     did = '';
-    profile = null;
 
-    (async () => {
-      try {
-        const resolvedDid = await resolveHandle(currentHandle);
-        if (requestId !== loadRequestId) return;
-        did = resolvedDid;
+    try {
+      // Resolve DID first
+      const resolvedDid = await resolveHandle(currentHandle);
+      did = resolvedDid;
 
-        const profileData = await getProfile(currentHandle);
-        if (requestId !== loadRequestId) return;
-        profile = profileData;
-      } catch (err) {
-        if (requestId === loadRequestId) status = (err as Error)?.message || String(err);
-      } finally {
-        if (requestId === loadRequestId) loading = false;
-      }
-    })();
+      // Load profile into cache (will update reactive query automatically)
+      await loadProfile(currentHandle);
+    } catch (err) {
+      status = (err as Error)?.message || String(err);
+    } finally {
+      loading = false;
+    }
   }
 
   function closeEditDialog() {
@@ -82,9 +93,16 @@
     goto(resolve(fallback), { replaceState: false, noScroll: true, keepFocus: true });
   }
 
+  // Load profile when handle changes
   $effect(() => {
     if (handle) {
-      loadProfile(handle);
+      // Check cache first for instant load
+      const cached = getProfileFromCache(handle);
+      if (cached) {
+        did = cached.did;
+      }
+      // Always load fresh data (will update cache if changed)
+      loadProfileData(handle);
     }
   });
 </script>

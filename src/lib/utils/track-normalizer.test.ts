@@ -9,7 +9,7 @@ import {
 
 describe('Track Normalizer', () => {
   describe('normalizeTrack', () => {
-    it('should normalize camelCase fields', () => {
+    it('should normalize camelCase fields (legacy)', () => {
       const raw: RawTrack = {
         uri: 'at://did:plc:test/com.radio4000.track/123',
         cid: 'bafycid123',
@@ -26,6 +26,7 @@ describe('Track Normalizer', () => {
 
       const normalized = normalizeTrack(raw);
 
+      // Output should be snake_case (canonical)
       expect(normalized).toEqual({
         uri: 'at://did:plc:test/com.radio4000.track/123',
         cid: 'bafycid123',
@@ -33,15 +34,15 @@ describe('Track Normalizer', () => {
         url: 'https://youtube.com/watch?v=test',
         title: 'Test Track',
         description: 'Test description',
-        discogsUrl: 'https://discogs.com/release/123',
+        discogs_url: 'https://discogs.com/release/123',
         r4SupabaseId: 'supabase-123',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-02T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-02T00:00:00Z',
         authorDid: 'did:plc:author',
       });
     });
 
-    it('should normalize snake_case fields', () => {
+    it('should normalize snake_case fields (canonical)', () => {
       const raw: RawTrack = {
         uri: 'at://did:plc:test/com.radio4000.track/456',
         url: 'https://soundcloud.com/test',
@@ -55,6 +56,7 @@ describe('Track Normalizer', () => {
 
       const normalized = normalizeTrack(raw);
 
+      // Output should be snake_case (canonical)
       expect(normalized).toEqual({
         uri: 'at://did:plc:test/com.radio4000.track/456',
         cid: undefined,
@@ -62,10 +64,10 @@ describe('Track Normalizer', () => {
         url: 'https://soundcloud.com/test',
         title: 'Snake Case Track',
         description: undefined,
-        discogsUrl: 'https://discogs.com/release/456',
+        discogs_url: 'https://discogs.com/release/456',
         r4SupabaseId: 'supabase-456',
-        createdAt: '2024-02-01T00:00:00Z',
-        updatedAt: '2024-02-02T00:00:00Z',
+        created_at: '2024-02-01T00:00:00Z',
+        updated_at: '2024-02-02T00:00:00Z',
         authorDid: 'did:plc:author2',
       });
     });
@@ -83,9 +85,9 @@ describe('Track Normalizer', () => {
 
       const normalized = normalizeTrack(raw);
 
-      // camelCase should take precedence via nullish coalescing
-      expect(normalized.discogsUrl).toBe('https://discogs.com/release/camel');
-      expect(normalized.createdAt).toBe('2024-03-01T00:00:00Z');
+      // snake_case should take precedence (canonical format)
+      expect(normalized.discogs_url).toBe('https://discogs.com/release/snake');
+      expect(normalized.created_at).toBe('2024-03-02T00:00:00Z');
     });
 
     it('should handle missing optional fields', () => {
@@ -104,10 +106,10 @@ describe('Track Normalizer', () => {
         cid: undefined,
         rkey: undefined,
         description: undefined,
-        discogsUrl: undefined,
+        discogs_url: undefined,
         r4SupabaseId: undefined,
-        createdAt: undefined,
-        updatedAt: undefined,
+        created_at: undefined,
+        updated_at: undefined,
         authorDid: undefined,
       });
     });
@@ -134,7 +136,7 @@ describe('Track Normalizer', () => {
           uri: 'at://test1',
           url: 'https://test1.com',
           title: 'Track 1',
-          discogsUrl: 'https://discogs.com/1',
+          discogs_url: 'https://discogs.com/1',
         },
         {
           uri: 'at://test2',
@@ -147,8 +149,8 @@ describe('Track Normalizer', () => {
       const normalized = normalizeTracks(raw);
 
       expect(normalized).toHaveLength(2);
-      expect(normalized[0].discogsUrl).toBe('https://discogs.com/1');
-      expect(normalized[1].discogsUrl).toBe('https://discogs.com/2');
+      expect(normalized[0].discogs_url).toBe('https://discogs.com/1');
+      expect(normalized[1].discogs_url).toBe('https://discogs.com/2');
     });
 
     it('should handle empty array', () => {

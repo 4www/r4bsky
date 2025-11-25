@@ -37,22 +37,32 @@
     []
   );
 
-  // Derive items from query, filtering by DID
+  // Derive items from query, filtering by DID and sorting by rkey (AT Protocol record creation time)
+  // TODO: Use indexed queries when TanStack DB API supports it
   const items = $derived.by(() => {
     if (!did) return [];
     const allTracks = tracksQuery.data || [];
-    return allTracks.filter(track => track.authorDid === did);
+    const filtered = allTracks.filter(track => track.authorDid === did);
+    // Sort by rkey descending (newest AT Protocol records first)
+    // rkey is timestamp-based (milliseconds since epoch) so higher = newer
+    return filtered.sort((a, b) => {
+      const rkeyA = parseInt(a.rkey || '0');
+      const rkeyB = parseInt(b.rkey || '0');
+      return rkeyB - rkeyA;
+    });
   });
 
-  // Group tracks by Year Month (newest first) - i18n aware
+  // Group tracks by Year Month based on rkey (AT Protocol record creation time)
   const groupedTracks = $derived.by(() => {
     const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
 
     items.forEach(track => {
-      if (!track.createdAt) return;
+      if (!track.rkey) return;
 
       try {
-        const date = new Date(track.createdAt);
+        // rkey is milliseconds since epoch
+        const timestamp = parseInt(track.rkey);
+        const date = new Date(timestamp);
         const year = date.getFullYear();
         const monthNum = date.getMonth(); // 0-11
         // Use current locale for month name
@@ -64,18 +74,18 @@
         }
         groups.get(key)!.tracks.push(track);
       } catch (e) {
-        // Invalid date, skip grouping
+        // Invalid rkey, skip grouping
       }
     });
 
-    // Sort groups by year and month (newest first), then sort tracks within each group
+    // Sort groups by year and month (newest first), then sort tracks within each group by rkey
     return Array.from(groups.entries())
       .map(([key, data]) => ({
         key,
         tracks: data.tracks.sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0).getTime();
-          const dateB = new Date(b.createdAt || 0).getTime();
-          return dateB - dateA; // Newest first within group
+          const rkeyA = parseInt(a.rkey || '0');
+          const rkeyB = parseInt(b.rkey || '0');
+          return rkeyB - rkeyA; // Newest first within group
         }),
         year: data.year,
         month: data.month,
@@ -273,7 +283,7 @@
           {#each group.tracks as item (item.uri)}
             {@const globalIdx = items.findIndex(t => t.uri === item.uri)}
             {@const isSelected = item.uri === selectedTrackUri}
-            {@const discogsUrl = item?.discogsUrl || item?.discogs_url || ''}
+            {@const discogsUrl = item?.discogs_url || ''}
             {#if isSelected && discogsUrl}
               <div bind:this={selectedTrackRef}>
                 <TrackListItem

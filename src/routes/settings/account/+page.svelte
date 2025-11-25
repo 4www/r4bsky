@@ -24,6 +24,7 @@
     deleteAllTracks,
     getR4Profile,
   } from '$lib/services/r4-service';
+  import { withDpopRetry } from '$lib/utils/atproto-client';
   import { AtUri } from '@atproto/api';
 
   let isExporting = $state(false);
@@ -215,11 +216,11 @@
             };
           });
 
-          // Execute batch delete
-          await agent.com.atproto.repo.applyWrites({
+          // Execute batch delete with DPoP retry handling
+          await withDpopRetry(() => agent.com.atproto.repo.applyWrites({
             repo: myDid,
             writes,
-          });
+          }));
 
           deleted += batch.length;
           deleteProgress = { current: Math.min(i + BATCH_SIZE, total), total };

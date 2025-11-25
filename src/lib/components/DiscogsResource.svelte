@@ -113,8 +113,8 @@
       </div>
     </CardHeader>
     <CardContent class="space-y-3">
-      <div class="flex gap-2">
-        <Button variant="primary" onclick={playAll} size="sm" class="flex-1">
+      <div class="flex flex-wrap gap-2">
+        <Button variant="primary" onclick={playAll} size="sm" class="flex-1 min-w-[120px]">
           <Play class="mr-2 h-3.5 w-3.5" />
           Play All
         </Button>
@@ -122,6 +122,7 @@
           onclick={() => window.open(resource.uri, '_blank')}
           variant="outline"
           size="sm"
+          class="flex-1 min-w-[120px]"
         >
           <ExternalLink class="mr-2 h-3.5 w-3.5" />
           Discogs

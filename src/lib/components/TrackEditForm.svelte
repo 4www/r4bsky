@@ -7,7 +7,7 @@
   const onsaved = $derived(props.onsaved || (() => {}))
 
   async function onSave({ url, title, description, discogs_url }) {
-    await updateTrackByUri(uri, { url, title, description, discogsUrl: discogs_url || undefined })
+    await updateTrackByUri(uri, { url, title, description, discogs_url: discogs_url || undefined })
     const ev = new CustomEvent('saved', { detail: { uri } })
     dispatchEvent(ev)
     onsaved({ uri })

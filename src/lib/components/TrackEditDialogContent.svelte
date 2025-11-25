@@ -18,7 +18,7 @@
     url: track?.url || '',
     title: track?.title || '',
     description: track?.description || '',
-    discogs_url: track?.discogsUrl || track?.discogs_url || '',
+    discogs_url: track?.discogs_url || '',
   });
   let uri = $state(track?.uri || '');
   let seeded = $state(Boolean(track));
@@ -29,7 +29,7 @@
       url: data.url || '',
       title: data.title || '',
       description: data.description || '',
-      discogs_url: data.discogsUrl || data.discogs_url || '',
+      discogs_url: data.discogs_url || '',
     };
     uri = data.uri || fallbackUri || uri;
     seeded = true;

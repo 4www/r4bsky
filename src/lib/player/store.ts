@@ -134,14 +134,20 @@ function shuffleArray<T>(array: T[]): T[] {
 /**
  * Toggle shuffle mode
  * When shuffling: saves original playlist and shuffles customPlaylist
- * When un-shuffling: restores original playlist
+ * When un-shuffling: clears customPlaylist to restore collection order
+ *
+ * Note: For profile contexts, the Player component will provide the current
+ * playlist from tracksCollection. The shuffle function can't access that directly,
+ * so it relies on the Player component to pass the current playlist via play()
+ * before shuffle is enabled, OR it just sets the shuffle flag and lets the
+ * Player component handle it on next play.
  */
 export function toggleShuffle(): void {
   const s = player.get()
 
   if (!s.isShuffled) {
     // Turning shuffle ON
-    // Save current playlist as original and create shuffled version
+    // If we have a customPlaylist, shuffle it
     if (s.customPlaylist && s.customPlaylist.length > 0) {
       const shuffled = shuffleArray(s.customPlaylist)
       player.set({
@@ -153,23 +159,39 @@ export function toggleShuffle(): void {
         index: 0
       })
     } else {
-      // No playlist to shuffle, just toggle the flag
+      // No customPlaylist yet - just set the flag
+      // The Player component will need to call shuffleCurrentPlaylist() with the actual tracks
       player.set({ ...s, isShuffled: true })
     }
   } else {
     // Turning shuffle OFF
-    // Restore original playlist if it exists
-    if (s.originalPlaylist) {
-      player.set({
-        ...s,
-        customPlaylist: s.originalPlaylist,
-        originalPlaylist: undefined,
-        isShuffled: false,
-        // Reset index to start
-        index: 0
-      })
-    } else {
-      player.set({ ...s, isShuffled: false })
-    }
+    // Clear customPlaylist to let the collection tracks show through again
+    player.set({
+      ...s,
+      customPlaylist: null,
+      originalPlaylist: undefined,
+      isShuffled: false,
+      // Keep current index, don't reset
+    })
   }
+}
+
+/**
+ * Shuffle the current playlist
+ * This should be called by the Player component when shuffle is toggled
+ * and it has access to the actual current playlist
+ */
+export function shuffleCurrentPlaylist(tracks: Track[]): void {
+  if (!tracks || tracks.length === 0) return
+
+  const shuffled = shuffleArray(tracks)
+  const s = player.get()
+
+  player.set({
+    ...s,
+    originalPlaylist: tracks,
+    customPlaylist: shuffled,
+    isShuffled: true,
+    index: 0
+  })
 }
