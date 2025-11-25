@@ -1,6 +1,3 @@
 name = "r4atproto"
 compatibility_date = "2025-11-19"
-pages_build_output_dir = "dist"
-
-# This is for Cloudflare Pages, not Workers
-# The middleware in /functions will handle dynamic client-metadata.json
+# pages_build_output_dir = "dist"
