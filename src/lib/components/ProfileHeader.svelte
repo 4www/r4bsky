@@ -179,7 +179,7 @@
 		></div>
 
 	{/if}
-	<CardHeader class={cn('p-1 relative')}>
+	<CardHeader class={cn('p-2.5 relative')}>
 		<div class="flex items-center justify-between gap-3">
 			{#if clickable}
 				                <Link

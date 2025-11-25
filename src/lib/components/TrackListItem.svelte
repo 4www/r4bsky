@@ -256,7 +256,7 @@
         {/if}
       </div>
 
-      <div class="flex items-center gap-2 shrink-0 pl-2 pr-3">
+      <div class="flex items-center gap-2 shrink-0 pl-2">
         {#if discogsLink}
           <a
             href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
