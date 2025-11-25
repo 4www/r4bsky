@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:cloudflare": "cp -f static/client-metadata.cloudflare.json static/client-metadata.json && npm run build",
-    "build:github": "cp -f static/client-metadata.github.json static/client-metadata.json && npm run build",
+    "build:github": "cp -f static/client-metadata.github.json static/client-metadata.json && R4_BASE='/r4atproto' npm run build",
     "preview": "vite preview",
     "deploy:wrangler": "wrangler deploy --assets=./dist",
     "test": "vitest",

@@ -60,12 +60,6 @@ Minimum metadata requirements:
 }
 ```
 
-Tips:
-- Include both versions of your redirect URI if you deploy under a subpath (with and without the trailing slash).
-- When the AS does not understand `authorization_details`, remove `authorization_details_types` and the app will fall back to coarse scopes.
-- For remote dev (ngrok, Tailscale, etc.) copy the generated HTTPS URL into `static/client-metadata.json`, rebuild, and serve the site from that URL so the OAuth server can fetch it.
-- More background lives in `OAUTH_SETUP.md`, `README_ATPROTO.md`, and `AUTH_COMPARISON.md`.
-
 ## Routes & flows
 | Route | Purpose |
 | --- | --- |

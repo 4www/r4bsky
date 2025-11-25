@@ -4,6 +4,9 @@ import path from 'path'
 
 export default defineConfig({
 	plugins: [svelte({ hot: false })],
+	server: {
+		host: '127.0.0.1' // atproto no `localhost`
+	},
 	resolve: {
 		conditions: ['svelte', 'browser'],
 		alias: {
