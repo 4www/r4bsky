@@ -24,10 +24,10 @@
 
   let status = $state('');
   let loading = $state(false);
+  let refreshing = $state(false);
   let loadingAll = $state(false);
   let loadProgress = $state({ current: 0, total: 0 });
-  let selectedTrackUri = $state<string | null>(null);
-  let selectedTrackRef = $state<HTMLElement | null>(null);
+  let viewingTrackUri = $state<string | null>(null);
   let editingTrackUri = $state<string | null>(null);
   let lastLoadedDid = $state<string>('');
   const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' });
@@ -100,50 +100,75 @@
   });
 
   // Flatten grouped tracks for virtualization (headers + items)
+  // Store global index with each track for performance
   const virtualData = $derived.by(() => {
-    const flat: Array<{ kind: 'header'; key: string; group: typeof groupedTracks[number] } | { kind: 'track'; track: typeof items[number] }> = [];
+    const flat: Array<{ kind: 'header'; key: string; group: typeof groupedTracks[number] } | { kind: 'track'; track: typeof items[number]; globalIdx: number }> = [];
     const sticky: number[] = [];
+
+    // Create a Map for O(1) index lookups by track URI
+    const trackIndexMap = new Map<string, number>();
+    items.forEach((track, index) => {
+      trackIndexMap.set(track.uri, index);
+    });
 
     groupedTracks.forEach(group => {
       sticky.push(flat.length);
       flat.push({ kind: 'header', key: group.key, group });
       group.tracks.forEach(track => {
-        flat.push({ kind: 'track', track });
+        const globalIdx = trackIndexMap.get(track.uri) ?? 0;
+        flat.push({ kind: 'track', track, globalIdx });
       });
     });
 
     return { flat, sticky };
   });
 
-  const paginationState = $derived(did ? getPaginationState(did) : { cursor: undefined, hasMore: false, loading: false });
+  let paginationState = $state<{ cursor?: string; hasMore: boolean; loading: boolean }>({ cursor: undefined, hasMore: false, loading: false });
+
+  // Subscribe to pagination state changes
+  $effect(() => {
+    if (!did) {
+      paginationState = { cursor: undefined, hasMore: false, loading: false };
+      return;
+    }
+    const store = getPaginationState(did);
+    const unsubscribe = store.subscribe(value => {
+      paginationState = value;
+    });
+    return () => unsubscribe();
+  });
+
   const cursor = $derived(paginationState.cursor);
   const hasMore = $derived(paginationState.hasMore);
 
-  const selectedTrack = $derived(items.find(t => t.uri === selectedTrackUri) || null);
+  const viewingTrack = $derived(items.find(t => t.uri === viewingTrackUri) || null);
   const editingTrack = $derived(items.find(t => t.uri === editingTrackUri) || null);
   const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
 
-  // Create virtualizer - returns a Svelte store
+  // Create virtualizer with fixed size estimation for performance
   const virtualizerStore = createVirtualizer({
     count: 0,
     getScrollElement: () => listContainer,
     estimateSize: (index) => {
       const item = virtualData.flat[index];
-      if (item?.kind === 'header') return 52;
-      // Estimate based on if item has discogs and is selected
-      const track = item?.track;
-      const isSelected = track?.uri === selectedTrackUri;
-      const hasDiscogs = track?.discogs_url || track?.discogsUrl;
-      if (isSelected && hasDiscogs) return 320;
-      // Default estimate - will be measured dynamically
-      return 80;
+      if (item?.kind === 'header') return 53; // Header: 52px content + 1px border
+
+      // Track items have consistent height
+      // Base track: ~72px (play button + title + padding + border)
+      if (item?.kind === 'track') {
+        const track = item.track;
+
+        // Track with description (estimate extra height)
+        if (track?.description && track.description.length > 50) {
+          return 92; // Slightly taller for wrapped description
+        }
+      }
+
+      return 73; // Base track height
     },
-    measureElement: (element) => {
-      // Measure the actual rendered height
-      return element.getBoundingClientRect().height;
-    },
-    overscan: 4,
+    // Disable dynamic measurement for scroll performance
+    overscan: 20,
     getItemKey: (index) => {
       const item = virtualData.flat[index];
       return item?.kind === 'header' ? `header-${item.key}` : item?.track?.uri || index;
@@ -157,17 +182,9 @@
     });
   });
 
-  // Action to measure element height
-  function measureElement(node: HTMLElement) {
-    $virtualizerStore.measureElement(node);
-    return {
-      destroy() {}
-    };
-  }
-
   async function refreshTracks() {
     if (!did) return;
-    loading = true;
+    refreshing = true;
     status = '';
 
     try {
@@ -177,7 +194,7 @@
     } catch (err) {
       status = (err as Error)?.message || String(err);
     } finally {
-      loading = false;
+      refreshing = false;
     }
   }
 
@@ -212,20 +229,12 @@
   });
 
 
-  // Scroll to selected track
-  $effect(() => {
-    if (selectedTrack && selectedTrackRef) {
-      tick().then(() => {
-        selectedTrackRef?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-    }
-  });
-
   function selectTrack(trackUri: string) {
-    const track = items.find(t => t.uri === trackUri);
-    if (!track) return;
+    viewingTrackUri = trackUri;
+  }
 
-    selectedTrackUri = selectedTrackUri === trackUri ? null : trackUri;
+  function closeViewDialog() {
+    viewingTrackUri = null;
   }
 
   function openEditDialog(trackUri: string) {
@@ -302,33 +311,27 @@
     }
   }
 
-  // Recompute sizes when selection changes (for variable heights with expanded discogs view)
-  $effect(() => {
-    if (selectedTrackUri !== null) {
-      setTimeout(() => {
-        $virtualizerStore.measure();
-      }, 0);
-    }
-  });
-
   // Calculate height based on viewport - exclude header, nav, and margins
   onMount(() => {
     if (!browser) return;
 
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     const updateHeight = () => {
-      // Account for: navbar (~60px), profile header (~180px), track count bar (~40px), gaps/padding (~60px)
-      const reservedSpace = 340;
-      listHeight = Math.max(400, window.innerHeight - reservedSpace);
-
-      // Recompute item sizes when viewport changes (important for mobile orientation changes)
-      setTimeout(() => {
-        $virtualizerStore.measure();
-      }, 0);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // Account for: navbar (~60px), profile header (~180px), track count bar (~40px), gaps/padding (~60px)
+        const reservedSpace = 340;
+        listHeight = Math.max(400, window.innerHeight - reservedSpace);
+        resizeTimeout = null;
+      }, 100);
     };
 
     updateHeight();
     window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+    };
   });
 
   // Handle infinite scroll
@@ -393,21 +396,21 @@
           variant="outline"
           size="sm"
           onclick={refreshTracks}
-          disabled={loading}
+          disabled={refreshing}
           title={t('profile.refresh') || 'Refresh'}
           class="gap-2"
         >
-          <RefreshCw class={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-          {#if loading}
+          <RefreshCw class={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          {#if refreshing}
             <span class="text-xs">{t('profile.refreshing')}</span>
           {/if}
         </Button>
-        {#if hasMore}
+        {#if hasMore || loadingAll}
           <Button
             variant="outline"
             size="sm"
             onclick={loadAll}
-            disabled={loadingAll || paginationState.loading}
+            disabled={loadingAll || paginationState.loading || !hasMore}
             class="gap-2"
           >
             {#if loadingAll}
@@ -424,16 +427,15 @@
       <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
         {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
           {@const itemIndex = virtualItem.index}
+          {@const virtualItemData = virtualData.flat[itemIndex]}
           {@const style = `position: absolute; top: 0; left: 0; width: 100%; transform: translateY(${virtualItem.start}px);`}
           <div
             {style}
-            class="px-0.5"
             data-index={itemIndex}
-            use:measureElement
           >
-          {#if virtualData.flat[itemIndex]?.kind === 'header'}
-            {@const group = virtualData.flat[itemIndex].group}
-            <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
+          {#if virtualItemData?.kind === 'header'}
+            {@const group = virtualItemData.group}
+            <div class="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
               <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
                 {group.key}
                 <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -441,48 +443,24 @@
                 </span>
               </h3>
             </div>
-          {:else}
-            {@const item = virtualData.flat[itemIndex]?.track}
-            {@const globalIdx = items.findIndex(t => t.uri === item?.uri)}
-            {@const isSelected = item?.uri === selectedTrackUri}
-            {@const discogsUrl = item?.discogs_url || ''}
+          {:else if virtualItemData?.kind === 'track'}
+            {@const item = virtualItemData.track}
+            {@const globalIdx = virtualItemData.globalIdx}
             {#if item}
-              {#if isSelected && discogsUrl}
-                <div bind:this={selectedTrackRef} class="border-b border-border last:border-b-0 bg-background">
-                  <TrackListItem
-                    {item}
-                    index={globalIdx}
-                    items={items}
-                    {context}
-                    {editable}
-                    isDetailView={true}
-                    flat={true}
-                    onSelectTrack={selectTrack}
-                    onEditTrack={openEditDialog}
-                    onremove={handleTrackRemoved}
-                    showAuthor={false}
-                  >
-                    {#snippet expandedContent()}
-                      <DiscogsResource url={discogsUrl} {handle} />
-                    {/snippet}
-                  </TrackListItem>
-                </div>
-              {:else}
-                <div class="border-b border-border last:border-b-0 bg-background">
-                  <TrackListItem
-                    {item}
-                    index={globalIdx}
-                    items={items}
-                    {context}
-                    {editable}
-                    flat={true}
-                    onSelectTrack={selectTrack}
-                    onEditTrack={openEditDialog}
-                    onremove={handleTrackRemoved}
-                    showAuthor={false}
-                  />
-                </div>
-              {/if}
+              <div class="bg-background border-b border-border">
+                <TrackListItem
+                  {item}
+                  index={globalIdx}
+                  items={items}
+                  {context}
+                  {editable}
+                  flat={true}
+                  onSelectTrack={selectTrack}
+                  onEditTrack={openEditDialog}
+                  onremove={handleTrackRemoved}
+                  showAuthor={false}
+                />
+              </div>
             {/if}
           {/if}
           </div>
@@ -514,5 +492,30 @@
       rkey={editingRkey}
       onsaved={onTrackSaved}
     />
+  </Dialog>
+{/if}
+
+{#if viewingTrackUri && viewingTrack}
+  <Dialog title={viewingTrack.title || t('trackItem.untitled')} onClose={closeViewDialog}>
+    <div class="space-y-4">
+      {#if viewingTrack.description}
+        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{viewingTrack.description}</p>
+      {/if}
+      {#if viewingTrack.discogs_url || viewingTrack.discogsUrl}
+        <DiscogsResource url={viewingTrack.discogs_url || viewingTrack.discogsUrl} {handle} />
+      {/if}
+      {#if viewingTrack.url}
+        <div class="flex gap-2">
+          <a
+            href={viewingTrack.url}
+            target="_blank"
+            rel="noopener"
+            class="text-sm text-primary hover:underline"
+          >
+            {t('trackItem.openMediaUrl') || 'Open media URL'}
+          </a>
+        </div>
+      {/if}
+    </div>
   </Dialog>
 {/if}

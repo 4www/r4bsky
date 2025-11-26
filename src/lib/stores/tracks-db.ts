@@ -1,11 +1,12 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/svelte-db'
 import { listTracksByDid, createTrack as apiCreateTrack, updateTrackByUri as apiUpdateTrack, deleteTrackByUri as apiDeleteTrack } from '$lib/services/r4-service'
 import type { Track } from '$lib/types'
+import { writable, get } from 'svelte/store'
 
 export type { Track }
 
-// Store to manage pagination state per DID
-const paginationState = new Map<string, { cursor?: string; hasMore: boolean; loading: boolean }>()
+// Store to manage pagination state per DID - using Svelte store for reactivity
+const paginationStateMap = writable(new Map<string, { cursor?: string; hasMore: boolean; loading: boolean }>())
 
 // Create a collection for tracks using localStorage persistence
 // This persists tracks across page refreshes and supports cross-tab sync
@@ -23,13 +24,17 @@ export const tracksCollection = createCollection(
  */
 export async function loadTracksForDid(did: string, options?: { cursor?: string; limit?: number; reset?: boolean; forceRefresh?: boolean }) {
   // Prevent concurrent loading for the same DID
-  const state = paginationState.get(did)
+  const currentMap = get(paginationStateMap)
+  const state = currentMap.get(did)
   if (state?.loading) {
     return { tracks: [], cursor: undefined }
   }
 
   // Mark as loading
-  paginationState.set(did, { ...state, cursor: state?.cursor, hasMore: state?.hasMore ?? false, loading: true })
+  paginationStateMap.update(map => {
+    map.set(did, { ...state, cursor: state?.cursor, hasMore: state?.hasMore ?? false, loading: true })
+    return map
+  })
 
   try {
     // Reset if requested (clears existing tracks for this DID)
@@ -43,19 +48,23 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
       const existingTracks = tracksCollection.toArray.filter(t => t.authorDid === did)
       if (existingTracks.length > 0) {
         // Already have tracks, restore pagination state and skip loading
-        const existingState = paginationState.get(did)
-        paginationState.set(did, {
-          cursor: existingState?.cursor,
-          hasMore: existingState?.hasMore ?? false,
-          loading: false
+        const existingState = get(paginationStateMap).get(did)
+        paginationStateMap.update(map => {
+          map.set(did, {
+            cursor: existingState?.cursor,
+            hasMore: existingState?.hasMore ?? false,
+            loading: false
+          })
+          return map
         })
         return { tracks: existingTracks, cursor: existingState?.cursor }
       }
     }
 
     // Load tracks in chronological order (oldest first by rkey)
+    // For refresh, use reverse=true to get newest tracks
     // Then sort client-side by created_at for display
-    const result = await listTracksByDid(did, { ...options, reverse: false })
+    const result = await listTracksByDid(did, { ...options, reverse: options?.forceRefresh ? true : false })
 
     // Add tracks to collection with authorDid
     result.tracks.forEach(track => {
@@ -73,16 +82,22 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
     })
 
     // Update pagination state
-    paginationState.set(did, {
-      cursor: result.cursor,
-      hasMore: !!result.cursor,
-      loading: false
+    paginationStateMap.update(map => {
+      map.set(did, {
+        cursor: result.cursor,
+        hasMore: !!result.cursor,
+        loading: false
+      })
+      return map
     })
 
     return result
   } catch (error) {
     console.error('Failed to load tracks for DID:', did, error)
-    paginationState.set(did, { ...state, cursor: state?.cursor, hasMore: state?.hasMore ?? false, loading: false })
+    paginationStateMap.update(map => {
+      map.set(did, { ...state, cursor: state?.cursor, hasMore: state?.hasMore ?? false, loading: false })
+      return map
+    })
     throw error
   }
 }
@@ -91,7 +106,7 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
  * Load more tracks for a DID (pagination)
  */
 export async function loadMoreTracksForDid(did: string) {
-  const state = paginationState.get(did)
+  const state = get(paginationStateMap).get(did)
   if (!state?.cursor) {
     return { tracks: [], cursor: undefined }
   }
@@ -100,10 +115,16 @@ export async function loadMoreTracksForDid(did: string) {
 }
 
 /**
- * Get pagination state for a DID
+ * Get pagination state for a DID (returns a derived store for reactivity)
  */
 export function getPaginationState(did: string) {
-  return paginationState.get(did) || { cursor: undefined, hasMore: false }
+  return {
+    subscribe: (fn: (value: { cursor?: string; hasMore: boolean; loading: boolean }) => void) => {
+      return paginationStateMap.subscribe(map => {
+        fn(map.get(did) || { cursor: undefined, hasMore: false, loading: false })
+      })
+    }
+  }
 }
 
 /**
@@ -119,7 +140,10 @@ export function resetTracksForDid(did: string) {
   })
 
   // Reset pagination state
-  paginationState.delete(did)
+  paginationStateMap.update(map => {
+    map.delete(did)
+    return map
+  })
 }
 
 /**
