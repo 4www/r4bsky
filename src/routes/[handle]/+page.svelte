@@ -11,7 +11,7 @@
   import { Loader2, AlertCircle, RefreshCw } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
-  import VirtualList from 'svelte-tiny-virtual-list';
+  import { createVirtualizer } from '@tanstack/svelte-virtual';
   import { browser } from '$app/environment';
 
   const { data } = $props();
@@ -32,7 +32,7 @@
   let lastLoadedDid = $state<string>('');
   const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' });
   const t = (key, vars = {}) => translate($locale, key, vars);
-  let virtualListRef = $state<any>(null);
+  let listContainer = $state<HTMLElement | null>(null);
   let listHeight = $state(600);
 
   // Use live query to get tracks for this DID
@@ -123,6 +123,47 @@
   const editingTrack = $derived(items.find(t => t.uri === editingTrackUri) || null);
   const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
+
+  // Create virtualizer - returns a Svelte store
+  const virtualizerStore = createVirtualizer({
+    count: 0,
+    getScrollElement: () => listContainer,
+    estimateSize: (index) => {
+      const item = virtualData.flat[index];
+      if (item?.kind === 'header') return 52;
+      // Estimate based on if item has discogs and is selected
+      const track = item?.track;
+      const isSelected = track?.uri === selectedTrackUri;
+      const hasDiscogs = track?.discogs_url || track?.discogsUrl;
+      if (isSelected && hasDiscogs) return 320;
+      // Default estimate - will be measured dynamically
+      return 80;
+    },
+    measureElement: (element) => {
+      // Measure the actual rendered height
+      return element.getBoundingClientRect().height;
+    },
+    overscan: 4,
+    getItemKey: (index) => {
+      const item = virtualData.flat[index];
+      return item?.kind === 'header' ? `header-${item.key}` : item?.track?.uri || index;
+    },
+  });
+
+  // Update virtualizer when data changes
+  $effect(() => {
+    $virtualizerStore.setOptions({
+      count: virtualData.flat.length,
+    });
+  });
+
+  // Action to measure element height
+  function measureElement(node: HTMLElement) {
+    $virtualizerStore.measureElement(node);
+    return {
+      destroy() {}
+    };
+  }
 
   async function refreshTracks() {
     if (!did) return;
@@ -263,9 +304,9 @@
 
   // Recompute sizes when selection changes (for variable heights with expanded discogs view)
   $effect(() => {
-    if (virtualListRef && selectedTrackUri !== null) {
+    if (selectedTrackUri !== null) {
       setTimeout(() => {
-        virtualListRef?.recomputeSizes?.(0);
+        $virtualizerStore.measure();
       }, 0);
     }
   });
@@ -278,6 +319,11 @@
       // Account for: navbar (~60px), profile header (~180px), track count bar (~40px), gaps/padding (~60px)
       const reservedSpace = 340;
       listHeight = Math.max(400, window.innerHeight - reservedSpace);
+
+      // Recompute item sizes when viewport changes (important for mobile orientation changes)
+      setTimeout(() => {
+        $virtualizerStore.measure();
+      }, 0);
     };
 
     updateHeight();
@@ -286,18 +332,25 @@
   });
 
   // Handle infinite scroll
-  function handleAfterScroll(event: CustomEvent) {
-    if (!hasMore || paginationState.loading || loadingAll) return;
+  let loadingMore = $state(false);
 
-    const { offset } = event.detail;
-    const totalHeight = virtualListRef?.getTotalSize?.() || 0;
-    const visibleHeight = listHeight;
+  $effect(() => {
+    if (!hasMore || loadingMore || paginationState.loading || loadingAll || !listContainer) return;
 
-    // Load more when scrolled within 300px of bottom
-    if (totalHeight - (offset + visibleHeight) < 300) {
-      more();
+    const items = $virtualizerStore.getVirtualItems();
+    if (items.length === 0) return;
+
+    const lastItem = items[items.length - 1];
+    if (!lastItem) return;
+
+    // Load more when last visible item is close to the end
+    if (lastItem.index >= virtualData.flat.length - 5) {
+      loadingMore = true;
+      more().finally(() => {
+        loadingMore = false;
+      });
     }
-  }
+  });
 </script>
 
 {#if status}
@@ -367,32 +420,17 @@
         {/if}
       </div>
     </div>
-    <div class="rounded-xl border border-foreground bg-card/70 overflow-hidden" role="region" aria-label="Track list grouped by date">
-      <VirtualList
-        bind:this={virtualListRef}
-        width="100%"
-        height={listHeight}
-        itemCount={virtualData.flat.length}
-        itemSize={(i) => {
-          const item = virtualData.flat[i];
-          if (item?.kind === 'header') return 52;
-          // Track items: check if selected (with discogs) for expanded view
-          const track = item?.track;
-          const isSelected = track?.uri === selectedTrackUri;
-          const hasDiscogs = track?.discogs_url || track?.discogsUrl;
-          // Base: 68px for normal track, expanded with discogs: ~320px
-          return isSelected && hasDiscogs ? 320 : 68;
-        }}
-        estimatedItemSize={68}
-        stickyIndices={virtualData.sticky}
-        overscanCount={4}
-        getKey={(i) => {
-          const item = virtualData.flat[i];
-          return item?.kind === 'header' ? `header-${item.key}` : item?.track?.uri || i;
-        }}
-        on:afterScroll={handleAfterScroll}
-      >
-        <div slot="item" let:index={itemIndex} let:style {style} class="px-0.5">
+    <div class="rounded-xl border border-foreground bg-card/70 overflow-auto" role="region" aria-label="Track list grouped by date" bind:this={listContainer} style="height: {listHeight}px;">
+      <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
+        {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
+          {@const itemIndex = virtualItem.index}
+          {@const style = `position: absolute; top: 0; left: 0; width: 100%; transform: translateY(${virtualItem.start}px);`}
+          <div
+            {style}
+            class="px-0.5"
+            data-index={itemIndex}
+            use:measureElement
+          >
           {#if virtualData.flat[itemIndex]?.kind === 'header'}
             {@const group = virtualData.flat[itemIndex].group}
             <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
@@ -447,16 +485,17 @@
               {/if}
             {/if}
           {/if}
-        </div>
-        <div slot="footer" class="flex items-center justify-center py-4">
-          {#if hasMore && paginationState.loading}
+          </div>
+        {/each}
+        {#if hasMore && paginationState.loading}
+          <div class="flex items-center justify-center py-4" style="position: absolute; bottom: 0; left: 0; width: 100%;">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 class="h-4 w-4 animate-spin" />
               {t('profile.loading')}
             </div>
-          {/if}
-        </div>
-      </VirtualList>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {:else}

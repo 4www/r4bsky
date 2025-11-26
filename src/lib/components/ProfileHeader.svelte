@@ -8,11 +8,9 @@
 	import {
 		resolveHandle,
 		listTracksByDid,
-		followActor,
-		unfollowActor,
-		findFollowUri,
 		createR4Favorite,
 		deleteR4Favorite,
+		findR4FavoriteUri,
 	} from '$lib/services/r4-service'
 	import { setPlaylist, player } from '$lib/player/store'
 	import { onMount, onDestroy } from 'svelte'
@@ -102,19 +100,19 @@
 	}
 
 	// Favorite functionality
-	let followUri = $state<string | null>(null)
+	let favoriteUri = $state<string | null>(null)
 	let favoriteLoading = $state(false)
 	let profileDid = $state<string | null>(null)
 
 	async function refreshFavoriteState() {
 		if (!handle || !$session?.did) {
-			followUri = null
+			favoriteUri = null
 			return
 		}
 		try {
 			const did = await resolveHandle(handle)
 			profileDid = did
-			followUri = await findFollowUri(did)
+			favoriteUri = await findR4FavoriteUri(did)
 		} catch (err) {
 			console.error('Failed to load favorite state:', err)
 		}
@@ -124,14 +122,12 @@
 		if (!$session?.did || !profileDid) return
 		favoriteLoading = true
 		try {
-			if (followUri) {
-				await unfollowActor(followUri)
+			if (favoriteUri) {
 				await deleteR4Favorite(profileDid)
-				followUri = null
+				favoriteUri = null
 			} else {
-				const res = await followActor(profileDid)
-				followUri = res?.uri || null
-				await createR4Favorite(profileDid)
+				const res = await createR4Favorite(profileDid)
+				favoriteUri = res?.uri || (await findR4FavoriteUri(profileDid))
 			}
 			await refreshFavoriteState()
 		} catch (err) {
@@ -303,12 +299,12 @@
 								>
 									{#if favoriteLoading}
 										<Loader2 class="h-4 w-4 animate-spin" />
-									{:else if followUri}
+									{:else if favoriteUri}
 										<Star class="h-4 w-4 fill-current" />
 									{:else}
 										<Star class="h-4 w-4" />
 									{/if}
-									{followUri ? 'Unfavorite' : 'Favorite'}
+									{favoriteUri ? 'Unfavorite' : 'Favorite'}
 								</button>
 							{/if}
 							<a href={`/@${normalizedHandle}`} class={menuItemClass} onclick={closeMenu}>

@@ -19,8 +19,8 @@
     "@atproto/api": "^0.18.3",
     "@atproto/oauth-client-browser": "^0.3.33",
     "@tanstack/svelte-db": "^0.1.48",
-    "lucide-svelte": "^0.554.0",
-    "svelte-tiny-virtual-list": "^3.0.1"
+    "@tanstack/svelte-virtual": "^3.13.12",
+    "lucide-svelte": "^0.554.0"
   },
   "devDependencies": {
     "@lucide/svelte": "^0.554.0",

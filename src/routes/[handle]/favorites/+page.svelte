@@ -6,7 +6,7 @@
   import { Loader2, AlertCircle, Users } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
-  import VirtualList from 'svelte-tiny-virtual-list';
+  import { createVirtualizer } from '@tanstack/svelte-virtual';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 
@@ -25,6 +25,22 @@
   let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
   let listHeight = $state(560);
+  let listContainer = $state<HTMLElement | null>(null);
+
+  const virtualizerStore = createVirtualizer({
+    count: 0,
+    getScrollElement: () => listContainer,
+    estimateSize: () => 120,
+    overscan: 4,
+    getItemKey: (index) => follows[index]?.uri || follows[index]?.subject || index,
+  });
+
+  // Update virtualizer when follows change
+  $effect(() => {
+    $virtualizerStore.setOptions({
+      count: follows.length,
+    });
+  });
 
   function refreshFollowing() {
     if (did) {
@@ -150,28 +166,24 @@
     description={t('following.emptyDescription')}
   />
 {:else if follows.length > 0}
-  <div role="region" aria-label="Following list">
-    <VirtualList
-      width="100%"
-      height={listHeight}
-      itemCount={follows.length}
-      itemSize={120}
-      overscanCount={4}
-      estimatedItemSize={120}
-      getKey={(idx) => follows[idx]?.uri || follows[idx]?.subject || idx}
-    >
-    <div slot="item" let:index let:style class="px-0.5" style={style}>
-      {#if follows[index]}
-        {@const followProfile = profiles.get(follows[index]?.subject)}
-        <ProfileHeader
-          profile={followProfile}
-          handle={followProfile?.handle || follows[index]?.subject}
-          size="sm"
-          class="my-2"
-        />
-      {/if}
+  <div class="overflow-auto" role="region" aria-label="Following list" bind:this={listContainer} style="height: {listHeight}px;">
+    <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
+      {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
+        {@const index = virtualItem.index}
+        {@const style = `position: absolute; top: 0; left: 0; width: 100%; height: ${virtualItem.size}px; transform: translateY(${virtualItem.start}px);`}
+        <div class="px-0.5" {style}>
+          {#if follows[index]}
+            {@const followProfile = profiles.get(follows[index]?.subject)}
+            <ProfileHeader
+              profile={followProfile}
+              handle={followProfile?.handle || follows[index]?.subject}
+              size="sm"
+              class="my-2"
+            />
+          {/if}
+        </div>
+      {/each}
     </div>
-    </VirtualList>
   </div>
 
   {#if cursor && follows.length >= 50}

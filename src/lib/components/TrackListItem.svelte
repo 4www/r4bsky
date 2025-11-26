@@ -8,7 +8,8 @@
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
-  import { cn, menuItemClass, menuTriggerClass } from '$lib/utils';
+  import { cn } from '$lib/utils';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { locale, translate } from '$lib/i18n';
@@ -36,9 +37,6 @@
   let deleting = $state(false);
 
   const t = (key, vars = {}) => translate($locale, key, vars);
-  let menuOpen = $state(false);
-  let menuRef = $state<HTMLElement | null>(null);
-  let triggerRef = $state<HTMLElement | null>(null);
 
   function play() {
     setPlaylist(items && items.length ? items : [item], items && items.length ? index : 0, context);
@@ -156,49 +154,24 @@
     }
   }
 
-  function toggleMenu() {
-    menuOpen = !menuOpen;
-  }
-
-  function closeMenu() { menuOpen = false; }
-
-  onMount(() => {
-    function handleClick(event: MouseEvent) {
-      if (!menuOpen) return;
-      const target = event.target as Node;
-      if (menuRef && menuRef.contains(target)) return;
-      if (triggerRef && triggerRef.contains(target)) return;
-      menuOpen = false;
-    }
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') menuOpen = false;
-    }
-    window.addEventListener('click', handleClick);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      window.removeEventListener('click', handleClick);
-      window.removeEventListener('keydown', handleKey);
-    };
-  });
 </script>
 
 <Card
   class={cn(
     isDetailView
       ? (flat
-        ? "border-0 bg-background transition-colors overflow-visible rounded-none shadow-none"
-        : "border border-foreground bg-background transition-colors overflow-visible rounded-lg shadow")
+        ? "border-0 bg-background transition-colors rounded-none shadow-none"
+        : "border border-foreground bg-background transition-colors rounded-lg shadow")
       : flat
         ? "border-0 bg-transparent transition-colors rounded-none shadow-none ring-0 rounded-none"
-        : "border border-foreground bg-background transition-colors hover:bg-foreground/10 overflow-visible rounded-lg shadow-none",
+        : "border border-foreground bg-background transition-colors hover:bg-foreground/10 rounded-lg shadow-none",
     deleting && "opacity-50 pointer-events-none"
   )}
 >
   <CardHeader class={cn(
     flat ? "p-0" : "p-0",
     isDetailView && !flat && "sm:p-3",
-    flat && "rounded-none",
-    "overflow-visible"
+    flat && "rounded-none"
   )}>
     <div class={cn(
       "flex items-center justify-between gap-2",
@@ -287,81 +260,55 @@
           aria-hidden="true"
         />
 
-        <div class="relative">
-            <button
-              bind:this={triggerRef}
-              type="button"
-            class={cn(menuTriggerClass(menuOpen), "h-7 w-7")}
-            onclick={() => toggleMenu()}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
           >
-              <MoreVertical class="h-3.5 w-3.5 text-current" />
-              <span class="sr-only">{t('trackItem.actions')}</span>
-            </button>
-            {#if menuOpen}
-              <div
-                bind:this={menuRef}
-                class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-                role="menu"
-              >
-                {#if viewHref()}
-                  <button
-                    type="button"
-                    class={menuItemClass}
-                    onclick={(e) => { e.preventDefault(); e.stopPropagation(); closeMenu(); openDetail(e, { forceNavigate: true }); }}
-                  >
-                    <Eye class="h-4 w-4" />
-                    View track
-                  </button>
-                {/if}
-                {#if editable && editHref()}
-                  <a
-                    href={editHref()}
-                    class={menuItemClass}
-                    onclick={(e) => { e.preventDefault(); closeMenu(); openEdit(); }}
-                  >
-                    <Pencil class="h-4 w-4" />
-                    {t('trackItem.edit')}
-                  </a>
-                {/if}
-                <a
-                  href={safeOpenUrl && safeOpenUrl !== '#'
-                    ? (safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl))
-                    : '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class={menuItemClass}
-                  onclick={closeMenu}
-                >
-                  <ExternalLink class="h-4 w-4" />
-                  {t('trackItem.openMediaUrl')}
-                </a>
-                {#if discogsLink}
-                  <a
-                    href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class={menuItemClass}
-                    onclick={closeMenu}
-                  >
-                    <DiscIcon class="h-4 w-4" />
-                    Open Discogs
-                  </a>
-                {/if}
-                {#if editable}
-                  <button
-                    type="button"
-                    class={menuItemClass}
-                    onclick={() => { closeMenu(); confirmDelete(); }}
-                  >
-                    <Trash2 class="h-4 w-4" />
-                    {t('trackItem.delete')}
-                  </button>
-                {/if}
-              </div>
+            <MoreVertical class="h-3.5 w-3.5" />
+            <span class="sr-only">{t('trackItem.actions')}</span>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" class="w-48">
+            {#if viewHref()}
+              <DropdownMenu.Item onclick={(e) => { openDetail(e, { forceNavigate: true }); }}>
+                <Eye class="h-4 w-4" />
+                View track
+              </DropdownMenu.Item>
             {/if}
-          </div>
+            {#if editable && editHref()}
+              <DropdownMenu.Item onclick={() => openEdit()}>
+                <Pencil class="h-4 w-4" />
+                {t('trackItem.edit')}
+              </DropdownMenu.Item>
+            {/if}
+            <DropdownMenu.Item
+              onclick={() => {
+                if (safeOpenUrl && safeOpenUrl !== '#') {
+                  window.open(safeOpenUrl.startsWith('http') ? safeOpenUrl : resolve(safeOpenUrl), '_blank');
+                }
+              }}
+            >
+              <ExternalLink class="h-4 w-4" />
+              {t('trackItem.openMediaUrl')}
+            </DropdownMenu.Item>
+            {#if discogsLink}
+              <DropdownMenu.Item
+                onclick={() => {
+                  window.open(discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink), '_blank');
+                }}
+              >
+                <DiscIcon class="h-4 w-4" />
+                Open Discogs
+              </DropdownMenu.Item>
+            {/if}
+            {#if editable}
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item onclick={confirmDelete} class="text-destructive focus:text-destructive">
+                <Trash2 class="h-4 w-4" />
+                {t('trackItem.delete')}
+              </DropdownMenu.Item>
+            {/if}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
     </div>
   </CardHeader>

@@ -17,7 +17,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { Pencil, Trash2 } from 'lucide-svelte';
-  import VirtualList from 'svelte-tiny-virtual-list';
+  import { createVirtualizer } from '@tanstack/svelte-virtual';
   let {
     class: classProp = '',
     visible: visibleProp = true,
@@ -90,7 +90,22 @@
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let playlistContainer = $state<HTMLElement | null>(null);
   let playlistHeight = $state(400);
-  let virtualListRef = $state<any>(null);
+
+  // Create virtualizer for playlist - returns a Svelte store
+  const virtualizerStore = createVirtualizer({
+    count: 0,
+    getScrollElement: () => playlistContainer,
+    estimateSize: () => 48,
+    overscan: 6,
+    getItemKey: (index) => filteredPlaylist[index]?.track?.uri || filteredPlaylist[index]?.track?.url || index,
+  });
+
+  // Update virtualizer when playlist changes
+  $effect(() => {
+    $virtualizerStore.setOptions({
+      count: filteredPlaylist.length,
+    });
+  });
 
   function toggleMenu() {
     menuOpen = !menuOpen;
@@ -721,21 +736,15 @@
               </div>
             </div>
             <div
-              class="flex-1 min-h-0 rounded-none border-t border-foreground border-l-0 border-r-0 bg-background overflow-hidden"
+              class="flex-1 min-h-0 rounded-none border-t border-foreground border-l-0 border-r-0 bg-background overflow-auto"
               bind:this={playlistContainer}
               role="region"
               aria-label={t('player.playlistLabel') || 'Playlist'}
             >
-              <VirtualList
-                bind:this={virtualListRef}
-                width="100%"
-                height={playlistHeight}
-                itemCount={filteredPlaylist.length}
-                itemSize={48}
-                overscanCount={6}
-                getKey={(i) => filteredPlaylist[i]?.track?.uri || filteredPlaylist[i]?.track?.url || i}
-              >
-                {#snippet item({ index, style })}
+              <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
+                {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
+                  {@const index = virtualItem.index}
+                  {@const style = `position: absolute; top: 0; left: 0; width: 100%; height: ${virtualItem.size}px; transform: translateY(${virtualItem.start}px);`}
                   {@const entry = filteredPlaylist[index]}
                   {@const track = entry?.track}
                   {@const originalIdx = entry?.originalIdx ?? index}
@@ -880,8 +889,8 @@
                       </div>
                     </a>
                   {/if}
-                {/snippet}
-              </VirtualList>
+                {/each}
+              </div>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@
   import SignInForm from '$lib/components/SignInForm.svelte';
   import { Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
-  import VirtualList from 'svelte-tiny-virtual-list';
+  import { createVirtualizer } from '@tanstack/svelte-virtual';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import SeoHead from '$lib/components/SeoHead.svelte';
@@ -19,6 +19,22 @@
   let loadingHome = $state(false);
   const t = (key, vars = {}) => translate($locale, key, vars);
   let listHeight = $state(560);
+  let listContainer = $state<HTMLElement | null>(null);
+
+  const virtualizerStore = createVirtualizer({
+    count: 0,
+    getScrollElement: () => listContainer,
+    estimateSize: () => 120,
+    overscan: 4,
+    getItemKey: (index) => follows[index]?.uri || follows[index]?.subject || index,
+  });
+
+  // Update virtualizer when follows change
+  $effect(() => {
+    $virtualizerStore.setOptions({
+      count: follows.length,
+    });
+  });
 
   async function loadHomeData() {
     if (!$session?.did || !$session?.handle) return;
@@ -92,28 +108,24 @@
       {/if}
 
       {#if follows.length > 0}
-        <div class="mb-4" role="region" aria-label="Your favorite profiles">
-          <VirtualList
-            width="100%"
-            height={listHeight}
-            itemCount={follows.length}
-            itemSize={120}
-            overscanCount={4}
-            estimatedItemSize={120}
-            getKey={(idx) => follows[idx]?.uri || follows[idx]?.subject || idx}
-          >
-            <div slot="item" let:index let:style class="px-0.5" style={style}>
-              {#if follows[index]}
-                {@const profile = followProfiles.get(follows[index]?.subject)}
-                <ProfileHeader
-                  profile={profile}
-                  handle={profile?.handle || follows[index]?.subject}
-                  size="sm"
-                  class="my-2"
-                />
-              {/if}
-            </div>
-          </VirtualList>
+        <div class="mb-4 overflow-auto" role="region" aria-label="Your favorite profiles" bind:this={listContainer} style="height: {listHeight}px;">
+          <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
+            {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
+              {@const index = virtualItem.index}
+              {@const style = `position: absolute; top: 0; left: 0; width: 100%; height: ${virtualItem.size}px; transform: translateY(${virtualItem.start}px);`}
+              <div class="px-0.5" {style}>
+                {#if follows[index]}
+                  {@const profile = followProfiles.get(follows[index]?.subject)}
+                  <ProfileHeader
+                    profile={profile}
+                    handle={profile?.handle || follows[index]?.subject}
+                    size="sm"
+                    class="my-2"
+                  />
+                {/if}
+              </div>
+            {/each}
+          </div>
         </div>
       {:else}
         <Card class="border-2">

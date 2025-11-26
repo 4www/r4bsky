@@ -1,4 +1,4 @@
-import { createCollection, localOnlyCollectionOptions } from '@tanstack/svelte-db'
+import { createCollection, localStorageCollectionOptions } from '@tanstack/svelte-db'
 import { listTracksByDid, createTrack as apiCreateTrack, updateTrackByUri as apiUpdateTrack, deleteTrackByUri as apiDeleteTrack } from '$lib/services/r4-service'
 import type { Track } from '$lib/types'
 
@@ -7,12 +7,13 @@ export type { Track }
 // Store to manage pagination state per DID
 const paginationState = new Map<string, { cursor?: string; hasMore: boolean; loading: boolean }>()
 
-// Create a collection for tracks using local-only storage
-// This is a pure in-memory store - API calls are handled separately
+// Create a collection for tracks using localStorage persistence
+// This persists tracks across page refreshes and supports cross-tab sync
 // Note: Indexes will be added when TanStack DB API stabilizes
 export const tracksCollection = createCollection(
-  localOnlyCollectionOptions<Track, string>({
+  localStorageCollectionOptions<Track, string>({
     getKey: (item: Track) => item.uri,
+    storageKey: 'r4atproto-tracks',
   })
 )
 
