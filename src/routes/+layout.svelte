@@ -35,6 +35,12 @@
       const metadataFile = 'client-metadata.json';
       let clientId: string;
       let useFallback = false;
+      // Ensure loopback client IDs never include path components
+      const loopbackLocation = {
+        hostname: window.location.hostname,
+        port: window.location.port,
+        pathname: '/',
+      };
 
       // Determine which client ID to use
       if (window.location.protocol === 'https:') {
@@ -56,11 +62,11 @@
         }
 
         if (useFallback) {
-          clientId = buildLoopbackClientId(window.location);
+          clientId = buildLoopbackClientId(loopbackLocation as any);
         }
       } else {
         // For HTTP (localhost), always use loopback client
-        clientId = buildLoopbackClientId(window.location);
+        clientId = buildLoopbackClientId(loopbackLocation as any);
       }
 
       await bskyOAuth.init(clientId);

@@ -198,6 +198,13 @@ const fr = {
 		viewProfile: "Voir le profil",
 		openInBluesky: "Ouvrir dans Bluesky",
 		copyLink: "Copier le lien du profil",
+		track: "morceau",
+		tracks: "morceaux",
+		loaded: "chargés",
+		refresh: "Vérifier nouveaux",
+		refreshing: "Vérification...",
+		loadAllTracks: "Charger tous les morceaux",
+		loadingAllTracks: "Chargement de tous les morceaux",
 	},
 	profileNav: {
 		tracks: "Morceaux",

@@ -6,6 +6,9 @@
   import { Loader2, AlertCircle, Users } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
+  import VirtualList from 'svelte-tiny-virtual-list';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
 
   const { data } = $props();
 
@@ -21,6 +24,7 @@
   let loading = $state(false);
   let loadRequestId = 0;
   const t = (key, vars = {}) => translate($locale, key, vars);
+  let listHeight = $state(560);
 
   function refreshFollowing() {
     if (did) {
@@ -91,6 +95,16 @@
     }
   });
 
+  onMount(() => {
+    if (!browser) return;
+    const calcHeight = () => {
+      listHeight = Math.max(320, Math.floor(window.innerHeight - 260));
+    };
+    calcHeight();
+    window.addEventListener('resize', calcHeight);
+    return () => window.removeEventListener('resize', calcHeight);
+  });
+
   async function more() {
     if (!cursor || !did) return;
     const { favorites: newFollows = [], cursor: c } = await listR4FavoritesByDid(did, { cursor });
@@ -136,16 +150,28 @@
     description={t('following.emptyDescription')}
   />
 {:else if follows.length > 0}
-  <div class="space-y-4">
-    {#each follows as follow (follow.uri)}
-      {@const followProfile = profiles.get(follow.subject)}
-      {@const profileHandle = followProfile?.handle || follow.subject}
-      <ProfileHeader
-        profile={followProfile}
-        handle={profileHandle}
-        size="sm"
-      />
-    {/each}
+  <div role="region" aria-label="Following list">
+    <VirtualList
+      width="100%"
+      height={listHeight}
+      itemCount={follows.length}
+      itemSize={120}
+      overscanCount={4}
+      estimatedItemSize={120}
+      getKey={(idx) => follows[idx]?.uri || follows[idx]?.subject || idx}
+    >
+    <div slot="item" let:index let:style class="px-0.5" style={style}>
+      {#if follows[index]}
+        {@const followProfile = profiles.get(follows[index]?.subject)}
+        <ProfileHeader
+          profile={followProfile}
+          handle={followProfile?.handle || follows[index]?.subject}
+          size="sm"
+          class="my-2"
+        />
+      {/if}
+    </div>
+    </VirtualList>
   </div>
 
   {#if cursor && follows.length >= 50}

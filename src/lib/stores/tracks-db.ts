@@ -20,7 +20,7 @@ export const tracksCollection = createCollection(
  * Load tracks for a specific DID
  * This will fetch tracks and add them to the collection
  */
-export async function loadTracksForDid(did: string, options?: { cursor?: string; limit?: number; reset?: boolean }) {
+export async function loadTracksForDid(did: string, options?: { cursor?: string; limit?: number; reset?: boolean; forceRefresh?: boolean }) {
   // Prevent concurrent loading for the same DID
   const state = paginationState.get(did)
   if (state?.loading) {
@@ -37,7 +37,8 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
     }
 
     // If not resetting and we already have tracks, check if we need to load at all
-    if (!options?.reset && !options?.cursor) {
+    // Skip this check if forceRefresh is true
+    if (!options?.reset && !options?.cursor && !options?.forceRefresh) {
       const existingTracks = tracksCollection.toArray.filter(t => t.authorDid === did)
       if (existingTracks.length > 0) {
         // Already have tracks, restore pagination state and skip loading

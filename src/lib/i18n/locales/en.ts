@@ -200,6 +200,11 @@ const en = {
 		copyLink: "Copy profile link",
 		track: "track",
 		tracks: "tracks",
+		loaded: "loaded",
+		refresh: "Check for new",
+		refreshing: "Checking...",
+		loadAllTracks: "Load all tracks",
+		loadingAllTracks: "Loading all tracks",
 	},
 	profileNav: {
 		tracks: "Tracks",

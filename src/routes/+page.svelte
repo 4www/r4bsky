@@ -8,6 +8,9 @@
   import SignInForm from '$lib/components/SignInForm.svelte';
   import { Loader2, Users } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
+  import VirtualList from 'svelte-tiny-virtual-list';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import SeoHead from '$lib/components/SeoHead.svelte';
 
   let myProfile = $state(null);
@@ -15,6 +18,7 @@
   let followProfiles = $state(new Map());
   let loadingHome = $state(false);
   const t = (key, vars = {}) => translate($locale, key, vars);
+  let listHeight = $state(560);
 
   async function loadHomeData() {
     if (!$session?.did || !$session?.handle) return;
@@ -52,6 +56,16 @@
       loadHomeData();
     }
   });
+
+  onMount(() => {
+    if (!browser) return;
+    const calcHeight = () => {
+      listHeight = Math.max(320, Math.floor(window.innerHeight - 260));
+    };
+    calcHeight();
+    window.addEventListener('resize', calcHeight);
+    return () => window.removeEventListener('resize', calcHeight);
+  });
 </script>
 
 <SeoHead title={t('home.title')} description={t('home.subtitle')} />
@@ -78,16 +92,28 @@
       {/if}
 
       {#if follows.length > 0}
-        <div class="space-y-3 mb-4">
-          {#each follows as follow (follow.uri)}
-            {@const profile = followProfiles.get(follow.subject)}
-            {@const profileHandle = profile?.handle || follow.subject}
-            <ProfileHeader
-              {profile}
-              handle={profileHandle}
-              size="sm"
-            />
-          {/each}
+        <div class="mb-4" role="region" aria-label="Your favorite profiles">
+          <VirtualList
+            width="100%"
+            height={listHeight}
+            itemCount={follows.length}
+            itemSize={120}
+            overscanCount={4}
+            estimatedItemSize={120}
+            getKey={(idx) => follows[idx]?.uri || follows[idx]?.subject || idx}
+          >
+            <div slot="item" let:index let:style class="px-0.5" style={style}>
+              {#if follows[index]}
+                {@const profile = followProfiles.get(follows[index]?.subject)}
+                <ProfileHeader
+                  profile={profile}
+                  handle={profile?.handle || follows[index]?.subject}
+                  size="sm"
+                  class="my-2"
+                />
+              {/if}
+            </div>
+          </VirtualList>
         </div>
       {:else}
         <Card class="border-2">
