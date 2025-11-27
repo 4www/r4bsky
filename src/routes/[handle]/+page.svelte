@@ -11,7 +11,6 @@
   import { Loader2, AlertCircle, RefreshCw } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
   import { locale, translate } from '$lib/i18n';
-  import { createVirtualizer } from '@tanstack/svelte-virtual';
   import { browser } from '$app/environment';
 
   const { data } = $props();
@@ -33,7 +32,6 @@
   const context = $derived(did ? { type: 'author', key: did, handle } : { type: 'author', key: handle || '' });
   const t = (key, vars = {}) => translate($locale, key, vars);
   let listContainer = $state<HTMLElement | null>(null);
-  let listHeight = $state(600);
 
   // Use live query to get tracks for this DID
   const tracksQuery = useLiveQuery(
@@ -56,10 +54,15 @@
   });
 
   // Group tracks by Year Month based on created_at
-  const groupedTracks = $derived.by(() => {
+  // Memoized with single pass for better performance
+  const groupedTracksWithIndex = $derived.by(() => {
     const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
+    const indexMap = new Map<string, number>();
 
-    items.forEach(track => {
+    // Single pass: build groups and index map
+    items.forEach((track, index) => {
+      indexMap.set(track.uri, index);
+
       const createdAt = track.created_at;
       if (!createdAt) return;
 
@@ -69,7 +72,6 @@
 
         const year = date.getFullYear();
         const monthNum = date.getMonth(); // 0-11
-        // Use current locale for month name
         const monthName = date.toLocaleDateString($locale, { month: 'long' });
         const key = `${year} ${monthName}`;
 
@@ -82,46 +84,26 @@
       }
     });
 
-    // Sort groups by year and month (newest first), then sort tracks within each group by createdAt
-    return Array.from(groups.entries())
+    // Sort groups and tracks
+    const sortedGroups = Array.from(groups.entries())
       .map(([key, data]) => ({
         key,
         tracks: data.tracks.sort((a, b) => {
           const dateA = new Date(a.created_at || 0).getTime();
           const dateB = new Date(b.created_at || 0).getTime();
-          return dateB - dateA; // Newest first within group
+          return dateB - dateA;
         }),
         year: data.year,
         month: data.month,
-        // Sort key: combine year and month for proper ordering
         sortKey: data.year * 100 + data.month
       }))
-      .sort((a, b) => b.sortKey - a.sortKey); // Sort groups by year-month (newest first)
+      .sort((a, b) => b.sortKey - a.sortKey);
+
+    return { groups: sortedGroups, indexMap };
   });
 
-  // Flatten grouped tracks for virtualization (headers + items)
-  // Store global index with each track for performance
-  const virtualData = $derived.by(() => {
-    const flat: Array<{ kind: 'header'; key: string; group: typeof groupedTracks[number] } | { kind: 'track'; track: typeof items[number]; globalIdx: number }> = [];
-    const sticky: number[] = [];
-
-    // Create a Map for O(1) index lookups by track URI
-    const trackIndexMap = new Map<string, number>();
-    items.forEach((track, index) => {
-      trackIndexMap.set(track.uri, index);
-    });
-
-    groupedTracks.forEach(group => {
-      sticky.push(flat.length);
-      flat.push({ kind: 'header', key: group.key, group });
-      group.tracks.forEach(track => {
-        const globalIdx = trackIndexMap.get(track.uri) ?? 0;
-        flat.push({ kind: 'track', track, globalIdx });
-      });
-    });
-
-    return { flat, sticky };
-  });
+  const groupedTracks = $derived(groupedTracksWithIndex.groups);
+  const trackIndexMap = $derived(groupedTracksWithIndex.indexMap);
 
   let paginationState = $state<{ cursor?: string; hasMore: boolean; loading: boolean }>({ cursor: undefined, hasMore: false, loading: false });
 
@@ -145,25 +127,6 @@
   const editingTrack = $derived(items.find(t => t.uri === editingTrackUri) || null);
   const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
-
-  // Create virtualizer with dynamic measurement
-  const virtualizerStore = createVirtualizer({
-    count: 0,
-    getScrollElement: () => listContainer,
-    estimateSize: () => 60, // Initial estimate, will be measured dynamically
-    overscan: 10,
-    getItemKey: (index) => {
-      const item = virtualData.flat[index];
-      return item?.kind === 'header' ? `header-${item.key}` : item?.track?.uri || index;
-    },
-  });
-
-  // Update virtualizer when data changes
-  $effect(() => {
-    $virtualizerStore.setOptions({
-      count: virtualData.flat.length,
-    });
-  });
 
   async function refreshTracks() {
     if (!did) return;
@@ -294,49 +257,18 @@
     }
   }
 
-  // Calculate height based on viewport - exclude header, nav, and margins
-  onMount(() => {
-    if (!browser) return;
-
-    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
-    const updateHeight = () => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        // Account for: navbar (~60px), profile header (~180px), track count bar (~40px), gaps/padding (~60px)
-        const reservedSpace = 340;
-        listHeight = Math.max(400, window.innerHeight - reservedSpace);
-        resizeTimeout = null;
-      }, 100);
-    };
-
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => {
-      window.removeEventListener('resize', updateHeight);
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-    };
-  });
-
   // Handle infinite scroll
-  let loadingMore = $state(false);
+  function handleScroll(event: Event) {
+    if (!hasMore || paginationState.loading || loadingAll) return;
 
-  $effect(() => {
-    if (!hasMore || loadingMore || paginationState.loading || loadingAll || !listContainer) return;
+    const container = event.target as HTMLElement;
+    const { scrollTop, scrollHeight, clientHeight } = container;
 
-    const items = $virtualizerStore.getVirtualItems();
-    if (items.length === 0) return;
-
-    const lastItem = items[items.length - 1];
-    if (!lastItem) return;
-
-    // Load more when last visible item is close to the end
-    if (lastItem.index >= virtualData.flat.length - 5) {
-      loadingMore = true;
-      more().finally(() => {
-        loadingMore = false;
-      });
+    // Load more when scrolled near bottom (within 300px)
+    if (scrollHeight - scrollTop - clientHeight < 300) {
+      more();
     }
-  });
+  }
 </script>
 
 {#if status}
@@ -406,56 +338,40 @@
         {/if}
       </div>
     </div>
-    <div class="rounded-xl border border-foreground bg-card/70 overflow-auto" role="region" aria-label="Track list grouped by date" bind:this={listContainer} style="height: {listHeight}px;">
-      <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
-        {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
-          {@const itemIndex = virtualItem.index}
-          {@const virtualItemData = virtualData.flat[itemIndex]}
-          <div
-            style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItem.start}px);"
-            data-index={itemIndex}
-          >
-          {#if virtualItemData?.kind === 'header'}
-            {@const group = virtualItemData.group}
-            <div class="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
-              <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-                {group.key}
-                <span class="ml-2 text-xs font-normal text-muted-foreground">
-                  ({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})
-                </span>
-              </h3>
-            </div>
-          {:else if virtualItemData?.kind === 'track'}
-            {@const item = virtualItemData.track}
-            {@const globalIdx = virtualItemData.globalIdx}
-            {#if item}
-              <div class="bg-background border-b border-border">
-                <TrackListItem
-                  {item}
-                  index={globalIdx}
-                  items={items}
-                  {context}
-                  {editable}
-                  flat={true}
-                  onSelectTrack={selectTrack}
-                  onEditTrack={openEditDialog}
-                  onremove={handleTrackRemoved}
-                  showAuthor={false}
-                />
-              </div>
-            {/if}
-          {/if}
-          </div>
+    <div class="rounded-xl border border-foreground bg-card/70 overflow-auto" role="region" aria-label="Track list grouped by date" bind:this={listContainer} onscroll={handleScroll}>
+      {#each groupedTracks as group (group.key)}
+        <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
+          <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+            {group.key}
+            <span class="ml-2 text-xs font-normal text-muted-foreground">
+              ({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})
+            </span>
+          </h3>
+        </div>
+        {#each group.tracks as item (item.uri)}
+          {@const globalIdx = trackIndexMap.get(item.uri) ?? 0}
+          <TrackListItem
+            {item}
+            index={globalIdx}
+            {items}
+            {context}
+            {editable}
+            flat={true}
+            onSelectTrack={selectTrack}
+            onEditTrack={openEditDialog}
+            onremove={handleTrackRemoved}
+            showAuthor={false}
+          />
         {/each}
-        {#if hasMore && paginationState.loading}
-          <div class="flex items-center justify-center py-4" style="position: absolute; bottom: 0; left: 0; width: 100%;">
-            <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 class="h-4 w-4 animate-spin" />
-              {t('profile.loading')}
-            </div>
+      {/each}
+      {#if hasMore && paginationState.loading}
+        <div class="flex items-center justify-center py-4">
+          <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 class="h-4 w-4 animate-spin" />
+            {t('profile.loading')}
           </div>
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   </div>
 {:else}

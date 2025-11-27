@@ -17,7 +17,6 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { Pencil, Trash2 } from 'lucide-svelte';
-  import { createVirtualizer } from '@tanstack/svelte-virtual';
   let {
     class: classProp = '',
     visible: visibleProp = true,
@@ -91,24 +90,6 @@
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let playlistContainer = $state<HTMLElement | null>(null);
   let playlistHeight = $state(400);
-
-  // Create virtualizer with dynamic measurement
-  const virtualizerStore = createVirtualizer({
-    count: 0,
-    getScrollElement: () => playlistContainer,
-    estimateSize: () => 50, // Initial estimate, will be measured dynamically
-    overscan: 5,
-    getItemKey: (index) => filteredPlaylist[index]?.track?.uri || filteredPlaylist[index]?.track?.url || index,
-  });
-
-  // Update virtualizer when playlist changes
-  $effect(() => {
-    const newCount = filteredPlaylist.length;
-    $virtualizerStore.setOptions({
-      count: newCount,
-      getItemKey: (index) => filteredPlaylist[index]?.track?.uri || filteredPlaylist[index]?.track?.url || index,
-    });
-  });
 
   function toggleMenu() {
     menuOpen = !menuOpen;
@@ -761,27 +742,20 @@
               role="region"
               aria-label={t('player.playlistLabel') || 'Playlist'}
             >
-              <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
-                {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
-                  {@const index = virtualItem.index}
-                  {@const entry = filteredPlaylist[index]}
-                  {@const track = entry?.track}
-                  {@const originalIdx = entry?.originalIdx ?? index}
-                  {@const trackHandle = (track?.authorHandle || track?.author_handle || state.context?.handle || '').replace(/^@/, '')}
-                  {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
-                  {@const trackDid = track?.authorDid || track?.author_did || ''}
-                  {@const isEditable = $session?.did && trackDid && $session.did === trackDid}
-                  {@const discogsLink = track?.discogsUrl || track?.discogs_url || ''}
-                  {#if track}
-                    <div
-                      style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItem.start}px);"
-                      data-index={virtualItem.index}
-                    >
-                      <a
-                        href={trackHref || '#'}
-                        class={cn(
-                          "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group border-b border-foreground/10"
-                        )}
+              {#each filteredPlaylist as entry, index (entry.track?.uri || entry.track?.url || index)}
+                {@const track = entry?.track}
+                {@const originalIdx = entry?.originalIdx ?? index}
+                {@const trackHandle = (track?.authorHandle || track?.author_handle || state.context?.handle || '').replace(/^@/, '')}
+                {@const trackHref = track?.uri && trackHandle ? buildViewHash(trackHandle, track.uri) : null}
+                {@const trackDid = track?.authorDid || track?.author_did || ''}
+                {@const isEditable = $session?.did && trackDid && $session.did === trackDid}
+                {@const discogsLink = track?.discogsUrl || track?.discogs_url || ''}
+                {#if track}
+                  <a
+                    href={trackHref || '#'}
+                    class={cn(
+                      "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group border-b border-foreground/10"
+                    )}
                       onclick={(e) => {
                         if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
                           e.preventDefault();
@@ -821,10 +795,8 @@
                         </button>
                       </div>
                     </a>
-                    </div>
                   {/if}
                 {/each}
-              </div>
             </div>
 
             <!-- Track menu portal - rendered outside scroll container -->
