@@ -86,24 +86,27 @@
   let menuRef = $state<HTMLElement | null>(null);
   let triggerRef = $state<HTMLElement | null>(null);
   let trackMenuOpen = $state<number | null>(null);
+  let trackMenuPosition = $state<{ top: number; right: number } | null>(null);
   let searchQuery = $state('');
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let playlistContainer = $state<HTMLElement | null>(null);
   let playlistHeight = $state(400);
 
-  // Create virtualizer for playlist - returns a Svelte store
+  // Create virtualizer with dynamic measurement
   const virtualizerStore = createVirtualizer({
     count: 0,
     getScrollElement: () => playlistContainer,
-    estimateSize: () => 48,
-    overscan: 6,
+    estimateSize: () => 50, // Initial estimate, will be measured dynamically
+    overscan: 5,
     getItemKey: (index) => filteredPlaylist[index]?.track?.uri || filteredPlaylist[index]?.track?.url || index,
   });
 
   // Update virtualizer when playlist changes
   $effect(() => {
+    const newCount = filteredPlaylist.length;
     $virtualizerStore.setOptions({
-      count: filteredPlaylist.length,
+      count: newCount,
+      getItemKey: (index) => filteredPlaylist[index]?.track?.uri || filteredPlaylist[index]?.track?.url || index,
     });
   });
 
@@ -115,12 +118,29 @@
     menuOpen = false;
   }
 
-  function toggleTrackMenu(idx: number) {
-    trackMenuOpen = trackMenuOpen === idx ? null : idx;
+  function toggleTrackMenu(idx: number, event?: MouseEvent) {
+    if (trackMenuOpen === idx) {
+      trackMenuOpen = null;
+      trackMenuPosition = null;
+      return;
+    }
+
+    trackMenuOpen = idx;
+
+    // Calculate menu position relative to viewport
+    if (event) {
+      const target = event.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      trackMenuPosition = {
+        top: rect.bottom + 6, // 6px gap below trigger
+        right: window.innerWidth - rect.right
+      };
+    }
   }
 
   function closeTrackMenu() {
     trackMenuOpen = null;
+    trackMenuPosition = null;
   }
 
   async function deleteTrack(uri: string) {
@@ -650,7 +670,7 @@
               {#if menuOpen}
                 <div
                   bind:this={menuRef}
-                  class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
+                  class="absolute right-0 z-[100] mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
                   role="menu"
                 >
                   {#if currentHandle && current?.uri}
@@ -744,7 +764,6 @@
               <div style="height: {$virtualizerStore.getTotalSize()}px; width: 100%; position: relative;">
                 {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
                   {@const index = virtualItem.index}
-                  {@const style = `position: absolute; top: 0; left: 0; width: 100%; height: ${virtualItem.size}px; transform: translateY(${virtualItem.start}px);`}
                   {@const entry = filteredPlaylist[index]}
                   {@const track = entry?.track}
                   {@const originalIdx = entry?.originalIdx ?? index}
@@ -754,12 +773,15 @@
                   {@const isEditable = $session?.did && trackDid && $session.did === trackDid}
                   {@const discogsLink = track?.discogsUrl || track?.discogs_url || ''}
                   {#if track}
-                    <a
-                      href={trackHref || '#'}
-                      {style}
-                      class={cn(
-                        "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group border-b border-foreground/10"
-                      )}
+                    <div
+                      style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItem.start}px);"
+                      data-index={virtualItem.index}
+                    >
+                      <a
+                        href={trackHref || '#'}
+                        class={cn(
+                          "w-full px-2.5 py-2 transition-all duration-150 flex flex-row flex-nowrap gap-2 relative text-sm items-start group border-b border-foreground/10"
+                        )}
                       onclick={(e) => {
                         if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
                           e.preventDefault();
@@ -790,108 +812,116 @@
                           data-track-menu-trigger
                           type="button"
                           class={cn(menuTriggerClass(trackMenuOpen === originalIdx), "h-7 w-7")}
-                          onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx); }}
+                          onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrackMenu(originalIdx, e); }}
                           aria-haspopup="menu"
                           aria-expanded={trackMenuOpen === originalIdx}
                         >
                           <MoreVertical class="h-3.5 w-3.5 text-current" />
                           <span class="sr-only">{t('player.trackOptions')}</span>
                         </button>
-                        {#if trackMenuOpen === originalIdx}
-                          <div
-                            data-track-menu
-                            class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-                            role="menu"
-                          >
-                            <button
-                              type="button"
-                              class={menuItemClass}
-                              onclick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                closeTrackMenu();
-                                if (trackHref) {
-                                  goto(resolve(trackHref));
-                                }
-                              }}
-                            >
-                              <Eye class="h-4 w-4" />
-                              {t('trackItem.view')}
-                            </button>
-                            {#if isEditable && track.uri && trackHandle}
-                              <button
-                                type="button"
-                                class={menuItemClass}
-                                onclick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  closeTrackMenu();
-                                  // Navigate to edit page
-                                  if (track.uri && trackHandle) {
-                                    const href = buildEditHash(trackHandle, track.uri);
-                                    if (href) goto(resolve(href));
-                                  }
-                                }}
-                              >
-                                <Pencil class="h-4 w-4" />
-                                {t('trackItem.edit')}
-                              </button>
-                            {/if}
-                            {#if track.url}
-                              <button
-                                type="button"
-                                class={menuItemClass}
-                                onclick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  closeTrackMenu();
-                                  window.open(track.url, '_blank', 'noopener');
-                                }}
-                              >
-                                <ExternalLink class="h-4 w-4" />
-                                {t('trackItem.openMediaUrl')}
-                              </button>
-                            {/if}
-                            {#if discogsLink}
-                              <button
-                                type="button"
-                                class={menuItemClass}
-                                onclick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  closeTrackMenu();
-                                  window.open(discogsLink, '_blank', 'noopener');
-                                }}
-                              >
-                                <DiscIcon class="h-4 w-4" />
-                                Open Discogs
-                              </button>
-                            {/if}
-                            {#if isEditable}
-                              <button
-                                type="button"
-                                class={cn(menuItemClass, "text-destructive hover:text-destructive")}
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  if (confirm(`Delete "${track.title || 'Untitled'}"?`)) {
-                                    deleteTrack(track.uri);
-                                  } else {
-                                    closeTrackMenu();
-                                  }
-                                }}
-                              >
-                                <Trash2 class="h-4 w-4" />
-                                {t('trackItem.delete')}
-                              </button>
-                            {/if}
-                          </div>
-                        {/if}
                       </div>
                     </a>
+                    </div>
                   {/if}
                 {/each}
               </div>
             </div>
+
+            <!-- Track menu portal - rendered outside scroll container -->
+            {#if trackMenuOpen !== null && trackMenuPosition}
+              {@const menuTrack = filteredPlaylist[trackMenuOpen]?.track}
+              {@const menuOriginalIdx = filteredPlaylist[trackMenuOpen]?.originalIdx ?? trackMenuOpen}
+              {@const menuTrackHandle = (menuTrack?.authorHandle || menuTrack?.author_handle || state.context?.handle || '').replace(/^@/, '')}
+              {@const menuTrackHref = menuTrack?.uri && menuTrackHandle ? buildViewHash(menuTrackHandle, menuTrack.uri) : null}
+              {@const menuTrackDid = menuTrack?.authorDid || menuTrack?.author_did || ''}
+              {@const menuIsEditable = $session?.did && menuTrackDid && $session.did === menuTrackDid}
+              {@const menuDiscogsLink = menuTrack?.discogsUrl || menuTrack?.discogs_url || ''}
+              <div
+                data-track-menu
+                class="fixed z-[100] w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
+                style={`top: ${trackMenuPosition.top}px; right: ${trackMenuPosition.right}px;`}
+                role="menu"
+              >
+                <button
+                  type="button"
+                  class={menuItemClass}
+                  onclick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeTrackMenu();
+                    if (menuTrackHref) {
+                      goto(resolve(menuTrackHref));
+                    }
+                  }}
+                >
+                  <Eye class="h-4 w-4" />
+                  {t('trackItem.view')}
+                </button>
+                {#if menuIsEditable && menuTrack?.uri && menuTrackHandle}
+                  <button
+                    type="button"
+                    class={menuItemClass}
+                    onclick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeTrackMenu();
+                      const href = buildEditHash(menuTrackHandle, menuTrack.uri);
+                      if (href) goto(resolve(href));
+                    }}
+                  >
+                    <Pencil class="h-4 w-4" />
+                    {t('trackItem.edit')}
+                  </button>
+                {/if}
+                {#if menuTrack?.url}
+                  <button
+                    type="button"
+                    class={menuItemClass}
+                    onclick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeTrackMenu();
+                      window.open(menuTrack.url, '_blank', 'noopener');
+                    }}
+                  >
+                    <ExternalLink class="h-4 w-4" />
+                    {t('trackItem.openMediaUrl')}
+                  </button>
+                {/if}
+                {#if menuDiscogsLink}
+                  <button
+                    type="button"
+                    class={menuItemClass}
+                    onclick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeTrackMenu();
+                      window.open(menuDiscogsLink, '_blank', 'noopener');
+                    }}
+                  >
+                    <DiscIcon class="h-4 w-4" />
+                    Open Discogs
+                  </button>
+                {/if}
+                {#if menuIsEditable}
+                  <button
+                    type="button"
+                    class={cn(menuItemClass, "text-destructive hover:text-destructive")}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete "${menuTrack?.title || 'Untitled'}"?`)) {
+                        deleteTrack(menuTrack.uri);
+                      } else {
+                        closeTrackMenu();
+                      }
+                    }}
+                  >
+                    <Trash2 class="h-4 w-4" />
+                    {t('trackItem.delete')}
+                  </button>
+                {/if}
+              </div>
+            {/if}
           </div>
         </div>
       </div>

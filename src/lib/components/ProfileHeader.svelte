@@ -46,6 +46,7 @@
 	let menuOpen = $state(false)
 	let menuRef = $state<HTMLElement | null>(null)
 	let triggerRef = $state<HTMLElement | null>(null)
+	let menuPosition = $state<{ top: number; right: number } | null>(null)
 
 	const normalizedHandle = $derived(handle?.replace(/^@/, '') ?? '')
 	const currentHandle = $derived.by(() => {
@@ -85,12 +86,39 @@
 		}
 	}
 
-	function toggleMenu() {
-		menuOpen = !menuOpen
+	function toggleMenu(event?: MouseEvent) {
+		if (menuOpen) {
+			menuOpen = false
+			menuPosition = null
+			return
+		}
+
+		menuOpen = true
+
+		// Calculate menu position relative to viewport using the actual button element
+		const button = (event?.currentTarget || triggerRef) as HTMLElement
+		if (button) {
+			const rect = button.getBoundingClientRect()
+			// Position menu aligned to the right edge of the button
+			// Account for menu width (192px = w-48) to ensure it doesn't go off-screen
+			const menuWidth = 192
+			let rightPos = window.innerWidth - rect.right
+
+			// If menu would go off left edge, adjust to align with button's left edge instead
+			if (rect.right - menuWidth < 0) {
+				rightPos = window.innerWidth - rect.left - menuWidth
+			}
+
+			menuPosition = {
+				top: rect.bottom + 6, // 6px gap below trigger
+				right: rightPos
+			}
+		}
 	}
 
 	function closeMenu() {
 		menuOpen = false
+		menuPosition = null
 	}
 
 	function copyProfileUrl() {
@@ -244,7 +272,7 @@
 						bind:this={triggerRef}
 						type="button"
 						class={cn(menuTriggerClass(menuOpen), 'h-9 w-9')}
-						onclick={toggleMenu}
+						onclick={(e) => toggleMenu(e)}
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
 						title={t('profile.actions')}
@@ -266,12 +294,20 @@
 							<PlayCircle class="h-4 w-4 text-current" />
 						{/if}
 					</button>
-					{#if menuOpen}
-						<div
-							bind:this={menuRef}
-							class="absolute right-0 z-40 mt-1.5 w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
-							role="menu"
-						>
+				</div>
+			</div>
+		</div>
+	</CardHeader>
+</Card>
+
+<!-- Menu portal - rendered outside card with fixed positioning -->
+{#if menuOpen && menuPosition}
+	<div
+		bind:this={menuRef}
+		class="fixed z-[100] w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
+		style={`top: ${menuPosition.top}px; right: ${menuPosition.right}px;`}
+		role="menu"
+	>
 							<button
 								type="button"
 								class={cn(menuItemClass, loadingTracks && 'opacity-50 pointer-events-none')}
@@ -321,14 +357,9 @@
 								<ExternalLink class="h-4 w-4" />
 								{t('profile.openInBluesky')}
 							</a>
-							<button type="button" class={menuItemClass} onclick={copyProfileUrl}>
-								<Copy class="h-4 w-4" />
-								{t('profile.copyLink')}
-							</button>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<button type="button" class={menuItemClass} onclick={copyProfileUrl}>
+				<Copy class="h-4 w-4" />
+				{t('profile.copyLink')}
+			</button>
 		</div>
-	</CardHeader>
-</Card>
+	{/if}

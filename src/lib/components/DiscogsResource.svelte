@@ -6,6 +6,7 @@
   import { Button } from '$lib/components/ui/button';
   import { ExternalLink, Play, Disc } from 'lucide-svelte';
   import { locale, translate } from '$lib/i18n';
+  import TrackListItem from '$lib/components/TrackListItem.svelte';
 
   let { url = '', handle = '' } = $props();
 
@@ -66,6 +67,19 @@
   const artistName = $derived(
     resource?.artists_sort || resource?.artists?.map(a => a.name).join(', ') || 'Unknown Artist'
   );
+
+  const r4Tracks = $derived.by(() => {
+    if (!resource?.tracklist) return [];
+    return resource.tracklist
+      .map(t => resourceTrackToR4Track(t, resource))
+      .filter(t => t.url); // Only tracks with video URLs
+  });
+
+  const context = $derived({
+    type: 'discogs',
+    key: resource?.id,
+    handle: handle || resource?.artists_sort || resource?.artists?.map(a => a.name).join(', ')
+  });
 </script>
 
 {#if loading}
@@ -129,39 +143,30 @@
         </Button>
       </div>
 
-      {#if resource.tracklist?.length}
+      {#if r4Tracks.length > 0}
         <div class="space-y-1">
           <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-            Tracklist
+            Tracklist ({r4Tracks.length} {r4Tracks.length === 1 ? 'track' : 'tracks'} with video)
           </p>
-          <div class="rounded-lg border divide-y">
-            {#each resource.tracklist as track, idx}
-              {@const r4Track = resourceTrackToR4Track(track, resource)}
-              <button
-                type="button"
-                onclick={() => playTrack(track, idx)}
-                disabled={!r4Track.url}
-                class="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors flex items-center justify-between gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div class="flex items-center gap-3 min-w-0 flex-1">
-                  <span class="text-xs text-muted-foreground font-mono shrink-0 w-8">
-                    {track.position}
-                  </span>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm truncate">{track.title}</p>
-                    {#if track.duration}
-                      <p class="text-xs text-muted-foreground">{track.duration}</p>
-                    {/if}
-                  </div>
-                </div>
-                {#if r4Track.url}
-                  <Play class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {:else}
-                  <span class="text-xs text-muted-foreground shrink-0">No video</span>
-                {/if}
-              </button>
+          <div class="rounded-lg border-0 space-y-0">
+            {#each r4Tracks as track, idx}
+              <TrackListItem
+                item={track}
+                index={idx}
+                items={r4Tracks}
+                {context}
+                editable={false}
+                flat={true}
+                showAuthor={false}
+              />
             {/each}
           </div>
+        </div>
+      {:else if resource.tracklist?.length}
+        <div class="space-y-1">
+          <p class="text-xs text-muted-foreground">
+            No tracks with video URLs available
+          </p>
         </div>
       {/if}
     </CardContent>

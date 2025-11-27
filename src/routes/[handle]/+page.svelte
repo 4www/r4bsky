@@ -146,29 +146,12 @@
   const editingRkey = $derived(editingTrackUri ? editingTrackUri.split('/').pop() : '');
   const editable = $derived((($session?.did && did && $session.did === did) ? true : false));
 
-  // Create virtualizer with fixed size estimation for performance
+  // Create virtualizer with dynamic measurement
   const virtualizerStore = createVirtualizer({
     count: 0,
     getScrollElement: () => listContainer,
-    estimateSize: (index) => {
-      const item = virtualData.flat[index];
-      if (item?.kind === 'header') return 53; // Header: 52px content + 1px border
-
-      // Track items have consistent height
-      // Base track: ~72px (play button + title + padding + border)
-      if (item?.kind === 'track') {
-        const track = item.track;
-
-        // Track with description (estimate extra height)
-        if (track?.description && track.description.length > 50) {
-          return 92; // Slightly taller for wrapped description
-        }
-      }
-
-      return 73; // Base track height
-    },
-    // Disable dynamic measurement for scroll performance
-    overscan: 20,
+    estimateSize: () => 60, // Initial estimate, will be measured dynamically
+    overscan: 10,
     getItemKey: (index) => {
       const item = virtualData.flat[index];
       return item?.kind === 'header' ? `header-${item.key}` : item?.track?.uri || index;
@@ -428,9 +411,8 @@
         {#each $virtualizerStore.getVirtualItems() as virtualItem (virtualItem.key)}
           {@const itemIndex = virtualItem.index}
           {@const virtualItemData = virtualData.flat[itemIndex]}
-          {@const style = `position: absolute; top: 0; left: 0; width: 100%; transform: translateY(${virtualItem.start}px);`}
           <div
-            {style}
+            style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItem.start}px);"
             data-index={itemIndex}
           >
           {#if virtualItemData?.kind === 'header'}
