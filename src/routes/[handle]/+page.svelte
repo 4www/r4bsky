@@ -3,7 +3,7 @@
   import { tracksCollection, loadTracksForDid, loadMoreTracksForDid, getPaginationState, removeTrack } from '$lib/stores/tracks-db';
   import { getContext, tick, onMount } from 'svelte';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
-  import DiscogsResource from '$lib/components/DiscogsResource.svelte';
+  import TrackDetail from '$lib/components/TrackDetail.svelte';
   import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
   import Dialog from '$lib/components/ui/Dialog.svelte';
   import { session } from '$lib/state/session';
@@ -228,21 +228,18 @@
     status = '';
 
     try {
-      let hasMore = true;
-      let totalLoaded = items.length;
-
-      while (hasMore) {
-        const state = getPaginationState(did);
-        if (!state.cursor) {
-          hasMore = false;
-          break;
-        }
-
+      // Keep loading while hasMore is true
+      while (paginationState.hasMore && paginationState.cursor) {
+        const beforeCount = items.length;
         await loadMoreTracksForDid(did);
 
-        // Update progress
-        totalLoaded = items.length;
-        loadProgress = { current: totalLoaded, total: totalLoaded };
+        // Update progress - show current count
+        loadProgress = { current: items.length, total: items.length };
+
+        // If no new tracks were loaded, break to avoid infinite loop
+        if (items.length === beforeCount) {
+          break;
+        }
 
         // Small delay to prevent overwhelming the API
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -302,9 +299,6 @@
         <span class="text-sm font-medium text-foreground">
           {items.length} {items.length === 1 ? t('profile.track') : t('profile.tracks')}
         </span>
-        {#if hasMore}
-          <span class="text-xs text-muted-foreground">({t('profile.loaded')})</span>
-        {/if}
       </div>
       <div class="flex items-center gap-2">
         <Button
@@ -338,31 +332,33 @@
         {/if}
       </div>
     </div>
-    <div class="rounded-xl border border-foreground bg-card/70 overflow-auto" role="region" aria-label="Track list grouped by date" bind:this={listContainer} onscroll={handleScroll}>
+    <div class="flex-1 min-h-0 overflow-auto space-y-3" role="region" aria-label="Track list grouped by date" bind:this={listContainer} onscroll={handleScroll}>
       {#each groupedTracks as group (group.key)}
-        <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 border-b border-border">
-          <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+        <div class="space-y-2">
+          <h3 class="text-sm font-semibold text-foreground/80 uppercase tracking-wide px-2">
             {group.key}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
               ({group.tracks.length} {group.tracks.length === 1 ? t('profile.track') : t('profile.tracks')})
             </span>
           </h3>
+          <div class="rounded-xl border border-foreground bg-card/70 overflow-hidden">
+            {#each group.tracks as item (item.uri)}
+              {@const globalIdx = trackIndexMap.get(item.uri) ?? 0}
+              <TrackListItem
+                {item}
+                index={globalIdx}
+                {items}
+                {context}
+                {editable}
+                flat={true}
+                onSelectTrack={selectTrack}
+                onEditTrack={openEditDialog}
+                onremove={handleTrackRemoved}
+                showAuthor={false}
+              />
+            {/each}
+          </div>
         </div>
-        {#each group.tracks as item (item.uri)}
-          {@const globalIdx = trackIndexMap.get(item.uri) ?? 0}
-          <TrackListItem
-            {item}
-            index={globalIdx}
-            {items}
-            {context}
-            {editable}
-            flat={true}
-            onSelectTrack={selectTrack}
-            onEditTrack={openEditDialog}
-            onremove={handleTrackRemoved}
-            showAuthor={false}
-          />
-        {/each}
       {/each}
       {#if hasMore && paginationState.loading}
         <div class="flex items-center justify-center py-4">
@@ -394,26 +390,15 @@
 {/if}
 
 {#if viewingTrackUri && viewingTrack}
+  {@const viewingIndex = trackIndexMap.get(viewingTrackUri) ?? 0}
   <Dialog title={viewingTrack.title || t('trackItem.untitled')} onClose={closeViewDialog}>
-    <div class="space-y-4">
-      {#if viewingTrack.description}
-        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{viewingTrack.description}</p>
-      {/if}
-      {#if viewingTrack.discogs_url || viewingTrack.discogsUrl}
-        <DiscogsResource url={viewingTrack.discogs_url || viewingTrack.discogsUrl} {handle} />
-      {/if}
-      {#if viewingTrack.url}
-        <div class="flex gap-2">
-          <a
-            href={viewingTrack.url}
-            target="_blank"
-            rel="noopener"
-            class="text-sm text-primary hover:underline"
-          >
-            {t('trackItem.openMediaUrl') || 'Open media URL'}
-          </a>
-        </div>
-      {/if}
-    </div>
+    <TrackDetail
+      track={viewingTrack}
+      {handle}
+      {items}
+      index={viewingIndex}
+      {context}
+      {editable}
+    />
   </Dialog>
 {/if}

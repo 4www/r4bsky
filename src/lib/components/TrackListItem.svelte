@@ -8,7 +8,7 @@
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
-  import { cn } from '$lib/utils';
+  import { cn, menuTriggerClass } from '$lib/utils';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
@@ -69,6 +69,8 @@
   }
 
   function editHref() {
+    // Only available for AT Protocol tracks with URI
+    if (!item.uri) return null;
     const handle = $session?.handle;
     return buildEditHash(handle, item.uri);
   }
@@ -92,9 +94,23 @@
     playerState = value;
   });
   onDestroy(() => unsubscribe?.());
-  const isActiveTrack = $derived.by(() => playerState?.playlist?.[playerState.index]?.uri === item?.uri);
+  const isActiveTrack = $derived.by(() => {
+    const currentTrack = playerState?.playlist?.[playerState.index];
+    if (!currentTrack) return false;
+    // For tracks with URI (AT Protocol tracks), match by URI
+    if (item?.uri && currentTrack?.uri) {
+      return currentTrack.uri === item.uri;
+    }
+    // For tracks without URI (Discogs tracks), match by URL
+    if (item?.url && currentTrack?.url) {
+      return currentTrack.url === item.url;
+    }
+    return false;
+  });
 
   function viewHref() {
+    // Only available for AT Protocol tracks with URI
+    if (!item.uri) return null;
     return buildViewHash(authorHandle, item.uri);
   }
 
@@ -163,7 +179,7 @@
         ? "border-0 bg-background transition-colors rounded-none shadow-none"
         : "border border-foreground bg-background transition-colors rounded-lg shadow")
       : flat
-        ? "border-0 bg-transparent transition-colors rounded-none shadow-none ring-0 rounded-none"
+        ? "border-0 border-b border-border bg-transparent transition-colors rounded-none shadow-none ring-0 last:border-b-0"
         : "border border-foreground bg-background transition-colors hover:bg-foreground/10 rounded-lg shadow-none",
     deleting && "opacity-50 pointer-events-none"
   )}
@@ -193,7 +209,17 @@
       </div>
 
       <div class={cn("flex-1 min-w-0 space-y-1", isDetailView && "sm:space-y-1.5")}>
-        <div class={cn("flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
+        <div class={cn(isDetailView ? "flex flex-col gap-1.5" : "flex flex-col sm:flex-row sm:items-center sm:gap-3")}>
+          {#if isDetailView && showAuthor && authorHandle}
+            <CardDescription class="text-xs flex items-center gap-1">
+              <span class="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-foreground text-[0.55rem] font-semibold">
+                @
+              </span>
+              <Link href={`/@${encodeURIComponent(authorHandle)}`} class="hover:text-primary transition-colors">
+                {authorHandle}
+              </Link>
+            </CardDescription>
+          {/if}
           <CardTitle class="text-sm font-semibold">
             <a
               href={viewHref() || '#'}
@@ -208,7 +234,7 @@
               {item.title || t('trackItem.untitled')}
             </a>
           </CardTitle>
-          {#if showAuthor && authorHandle}
+          {#if !isDetailView && showAuthor && authorHandle}
             <CardDescription class={cn(
               "text-xs flex items-center gap-1",
               isDetailView && "mt-0 sm:mt-0"
@@ -235,7 +261,7 @@
             href={discogsLink?.startsWith('http') ? discogsLink : resolve(discogsLink)}
             target="_blank"
             rel="noopener"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
+            class={cn(menuTriggerClass(false), "h-7 w-7")}
             aria-label="Open Discogs"
           >
             <DiscIcon class="h-3 w-3" />
@@ -249,7 +275,7 @@
           }
           target="_blank"
           rel="noopener"
-          class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
+          class={cn(menuTriggerClass(false), "h-7 w-7")}
           aria-label={t('trackItem.openExternal')}
         >
           <ExternalLink class="h-3 w-3" />
@@ -262,7 +288,7 @@
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all"
+            class={cn(menuTriggerClass(false), "h-7 w-7")}
           >
             <MoreVertical class="h-3.5 w-3.5" />
             <span class="sr-only">{t('trackItem.actions')}</span>

@@ -82,12 +82,25 @@ export async function loadTracksForDid(did: string, options?: { cursor?: string;
     })
 
     // Update pagination state
+    // If this is a refresh (forceRefresh=true), don't update hasMore/cursor
+    // to avoid showing "load more" button when we're just checking for new tracks
     paginationStateMap.update(map => {
-      map.set(did, {
-        cursor: result.cursor,
-        hasMore: !!result.cursor,
-        loading: false
-      })
+      const existingState = map.get(did)
+      if (options?.forceRefresh) {
+        // For refresh, only update loading state, keep existing cursor/hasMore
+        map.set(did, {
+          cursor: existingState?.cursor,
+          hasMore: existingState?.hasMore ?? false,
+          loading: false
+        })
+      } else {
+        // For normal loading, update cursor and hasMore
+        map.set(did, {
+          cursor: result.cursor,
+          hasMore: !!result.cursor,
+          loading: false
+        })
+      }
       return map
     })
 
