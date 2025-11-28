@@ -137,14 +137,14 @@
         <div class="flex-1 min-w-0">
           <CardTitle class="text-lg">{artistName}</CardTitle>
           <CardDescription>{resource.title}</CardDescription>
-          {#if resource.year || resource.genres?.length}
+          {#if resource.year || resource.genres?.length || resource.styles?.length}
             <div class="flex gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
               {#if resource.year}
                 <span>{resource.year}</span>
               {/if}
-              {#if resource.genres?.length}
+              {#if resource.genres?.length || resource.styles?.length}
                 <span>•</span>
-                <span>{resource.genres.join(', ')}</span>
+                <span>{[...(resource.genres || []), ...(resource.styles || [])].join(', ')}</span>
               {/if}
             </div>
           {/if}

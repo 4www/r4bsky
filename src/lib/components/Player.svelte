@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { player, toggle, next, prev, playIndex, toggleShuffle, shuffleCurrentPlaylist } from '$lib/player/store';
+  import { player, toggle, next as storeNext, prev, playIndex, toggleShuffle, shuffleCurrentPlaylist } from '$lib/player/store';
   import { useLiveQuery } from '@tanstack/svelte-db';
-  import { tracksCollection, removeTrack } from '$lib/stores/tracks-db';
+  import { tracksCollection, removeTrack, loadMoreTracksForDid, getPaginationState } from '$lib/stores/tracks-db';
   import { updateTrackByUri } from '$lib/services/r4-service';
+  import { get } from 'svelte/store';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -91,6 +92,47 @@
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let playlistContainer = $state<HTMLElement | null>(null);
   let playlistHeight = $state(400);
+
+  /**
+   * Custom next() function that checks for more tracks to load
+   * before stopping or wrapping around
+   */
+  async function next() {
+    const s = player.get();
+    const nextIndex = s.index + 1;
+
+    // Check if we're at the end of the current playlist
+    if (nextIndex >= playlist.length) {
+      // Check if this is a profile context and if there are more tracks to load
+      if (s.context && (s.context.type === 'profile' || s.context.type === 'author')) {
+        const paginationStore = getPaginationState(s.context.key);
+        const paginationState = get(paginationStore);
+
+        if (paginationState.hasMore && !paginationState.loading) {
+          console.log('[Player] End of playlist reached, loading more tracks...');
+          try {
+            await loadMoreTracksForDid(s.context.key);
+            // After loading, continue to next track
+            storeNext();
+          } catch (err) {
+            console.error('[Player] Failed to load more tracks:', err);
+            // Stop playing if we can't load more
+            player.update(state => ({ ...state, playing: false }));
+          }
+        } else {
+          // No more tracks to load, stop playing
+          console.log('[Player] End of playlist reached, no more tracks available');
+          player.update(state => ({ ...state, playing: false }));
+        }
+      } else {
+        // Not a profile context (discogs/custom), just stop
+        player.update(state => ({ ...state, playing: false }));
+      }
+    } else {
+      // Normal case: just go to next track
+      storeNext();
+    }
+  }
 
   function toggleMenu() {
     menuOpen = !menuOpen;
@@ -263,13 +305,13 @@
       }
     }
 
-    // Handle playlist bounds - wrap around
+    // Handle playlist bounds
     let actualIndex = s.index;
     if (currentPlaylist.length > 0) {
       if (actualIndex >= currentPlaylist.length) {
-        actualIndex = actualIndex % currentPlaylist.length;
-        // Update the store with corrected index
-        player.update(state => ({ ...state, index: actualIndex }));
+        // Don't wrap around - this will be handled by our custom next() function
+        // Just clamp to last track for now
+        actualIndex = currentPlaylist.length - 1;
       }
     }
 
@@ -666,6 +708,11 @@
   );
 
   const discogsUrl = $derived(current?.discogsUrl ?? current?.discogs_url ?? '');
+  const sourceTrackUri = $derived(current?.source_track_uri ?? '');
+  const sourceTrackHref = $derived.by(() => {
+    if (!sourceTrackUri || !currentHandle) return null;
+    return buildViewHash(currentHandle, sourceTrackUri);
+  });
   const queueCount = $derived(playlist?.length ?? 0);
 
   // Debounced search query
@@ -821,6 +868,15 @@
                     >
                       <Eye class="h-4 w-4" />
                       View track
+                    </Link>
+                  {/if}
+                  {#if sourceTrackHref}
+                    <Link
+                      href={sourceTrackHref}
+                      class={menuItemClass}
+                    >
+                      <ArrowUpRight class="h-4 w-4" />
+                      {t('trackItem.visitSource')}
                     </Link>
                   {/if}
                   {#if current?.url}

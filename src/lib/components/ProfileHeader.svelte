@@ -4,7 +4,8 @@
 	import { Button, buttonVariants } from './ui/button'
 	import { cn, menuItemClass, menuTriggerClass } from '$lib/utils'
 	import Link from '$lib/components/Link.svelte'
-	import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye, Star } from 'lucide-svelte'
+	import Dialog from '$lib/components/ui/Dialog.svelte'
+	import { PlayCircle, Loader2, MoreVertical, ExternalLink, Copy, Eye, Star, Maximize2 } from 'lucide-svelte'
 	import {
 		resolveHandle,
 		listTracksByDid,
@@ -131,6 +132,9 @@
 	let favoriteUri = $state<string | null>(null)
 	let favoriteLoading = $state(false)
 	let profileDid = $state<string | null>(null)
+	let imageDialogOpen = $state(false)
+	let imageDialogSrc = $state('')
+	let imageDialogTitle = $state('')
 
 	async function refreshFavoriteState() {
 		if (!handle || !$session?.did) {
@@ -170,6 +174,32 @@
 		refreshFavoriteState()
 	})
 
+	function openAvatarDialog(event: MouseEvent) {
+		event.preventDefault()
+		event.stopPropagation()
+		if (profile?.avatar || profile?.banner) {
+			imageDialogSrc = profile.avatar || profile.banner
+			imageDialogTitle = `${profile?.displayName || handle}`
+			imageDialogOpen = true
+		}
+	}
+
+	function openBannerDialog(event: MouseEvent) {
+		event.preventDefault()
+		event.stopPropagation()
+		if (profile?.banner) {
+			imageDialogSrc = profile.banner
+			imageDialogTitle = `${profile?.displayName || handle}`
+			imageDialogOpen = true
+		}
+	}
+
+	function closeImageDialog() {
+		imageDialogOpen = false
+		imageDialogSrc = ''
+		imageDialogTitle = ''
+	}
+
 	onMount(() => {
 		function handleClick(event: MouseEvent) {
 			if (!menuOpen) return
@@ -197,46 +227,75 @@
 	)}
 >
 	{#if hasBanner}
-		<div
-			class="absolute inset-0 bg-cover bg-center"
+		<button
+			type="button"
+			class="absolute inset-0 bg-cover bg-center cursor-pointer hover:opacity-95 transition-opacity z-0"
 			style={`background-image: url(${profile.banner})`}
-		></div>
-
+			onclick={openBannerDialog}
+			title="Click to view banner"
+			aria-label="View banner in full size"
+		></button>
 	{/if}
-	<CardHeader class={cn('p-2.5 relative')}>
+	<CardHeader class={cn('p-2.5 relative z-10')}>
 		<div class="flex items-center justify-between gap-3">
 			{#if clickable}
-				                <Link
-									href={`/@${handle}`}
-									class="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
+				<div class="flex items-center gap-3 min-w-0 flex-1">
+					<button
+						type="button"
+						onclick={openAvatarDialog}
+						class="shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+						title="Click to view avatar in full size"
+					>
+						<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
+					</button>
+					<div class="min-w-0 flex-1">
+						<CardTitle class={cn('flex items-center gap-2', sizes.title)}>
+							<Link
+								href={`/@${handle}`}
+								class="hover:opacity-80 transition-opacity"
+							>
+								<span
+									class={cn(
+										'inline-block px-1 py-0.5 rounded transition-colors bg-background',
+										isActiveProfile ? 'bg-primary text-background' : '',
+									)}
 								>
-									<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
-									<div class="min-w-0 flex-1">
-										<CardTitle class={cn('flex items-center gap-2', sizes.title)}>
-											<span
-												class={cn(
-													'inline-block px-1 py-0.5 rounded transition-colors bg-background',
-													isActiveProfile ? 'bg-primary text-background' : '',
-												)}
-											>
-												{profile?.displayName || handle}
-											</span>
-										</CardTitle>
-										<CardDescription class={cn(sizes.description, 'mt-0')}>
-											<span class="inline-block px-1 py-0.5 rounded bg-background">
-												@{handle}
-											</span>
-										</CardDescription>
-										{#if profile?.description && size === 'lg'}
-											<p class="text-sm px-1 py-0.5 rounded bg-background text-muted-foreground mt-2 max-w-xl">
-												{profile.description}
-											</p>
-										{/if}
-									</div>
-				</Link>
+									{profile?.displayName || handle}
+								</span>
+							</Link>
+						</CardTitle>
+						<CardDescription class={cn(sizes.description, 'mt-0')}>
+							<Link
+								href={`/@${handle}`}
+								class="hover:opacity-80 transition-opacity"
+							>
+								<span
+									class={cn(
+										'inline-block px-1 py-0.5 rounded transition-colors bg-background',
+										isActiveProfile ? 'bg-primary text-background' : '',
+									)}
+								>
+									@{handle}
+								</span>
+							</Link>
+						</CardDescription>
+						{#if profile?.description && size === 'lg'}
+							<p class="text-sm px-1 py-0.5 rounded bg-background text-muted-foreground mt-2 max-w-xl">
+								{profile.description}
+							</p>
+						{/if}
+					</div>
+				</div>
 			{:else}
 				<div class="flex items-center gap-3 min-w-0 flex-1">
-					<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
+					<button
+						type="button"
+						onclick={openAvatarDialog}
+						class="shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+						title="Click to view avatar in full size"
+					>
+						<Avatar src={profile?.avatar} alt={profile?.displayName || handle} size={sizes.avatar} />
+					</button>
 					<div class="min-w-0 flex-1">
 						<CardTitle class={cn('flex items-center gap-2', sizes.title)}>
 							<span
@@ -249,9 +308,19 @@
 							</span>
 						</CardTitle>
 						<CardDescription class={cn(sizes.description, 'mt-0')}>
-							<span class="inline-block px-1 py-0.5 rounded bg-background">
-								@{handle}
-							</span>
+							<Link
+								href={`/@${handle}`}
+								class="hover:opacity-80 transition-opacity"
+							>
+								<span
+									class={cn(
+										'inline-block px-1 py-0.5 rounded transition-colors bg-background',
+										isActiveProfile ? 'bg-primary text-background' : '',
+									)}
+								>
+									@{handle}
+								</span>
+							</Link>
 						</CardDescription>
 						{#if profile?.description && size === 'lg'}
 							<p class="text-sm px-1 py-0.5 rounded bg-background text-muted-foreground mt-2 max-w-xl">
@@ -280,20 +349,24 @@
 					>
 						<MoreVertical class="h-4 w-4 text-current" />
 					</button>
-					<button
-						type="button"
-						class={cn(menuTriggerClass(false), 'h-9 w-9', loadingTracks && 'opacity-50 pointer-events-none')}
-						onclick={playAll}
-						disabled={loadingTracks || isActiveProfile}
-						title={t('trackItem.play')}
-						aria-label={t('trackItem.play')}
-					>
-						{#if loadingTracks}
-							<Loader2 class="h-4 w-4 animate-spin text-current" />
-						{:else}
-							<PlayCircle class="h-4 w-4 text-current" />
-						{/if}
-					</button>
+					{#if size === 'lg' && $session?.did && profileDid && $session.did !== profileDid}
+						<button
+							type="button"
+							class={cn(menuTriggerClass(false), 'h-9 w-9', favoriteLoading && 'opacity-50 pointer-events-none')}
+							onclick={toggleFavorite}
+							disabled={favoriteLoading}
+							title={favoriteUri ? 'Unfavorite' : 'Favorite'}
+							aria-label={favoriteUri ? 'Unfavorite' : 'Favorite'}
+						>
+							{#if favoriteLoading}
+								<Loader2 class="h-4 w-4 animate-spin text-current" />
+							{:else if favoriteUri}
+								<Star class="h-4 w-4 text-current fill-current" />
+							{:else}
+								<Star class="h-4 w-4 text-current" />
+							{/if}
+						</button>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -363,3 +436,28 @@
 			</button>
 		</div>
 	{/if}
+
+{#if imageDialogOpen}
+	<Dialog title={imageDialogTitle} onClose={closeImageDialog}>
+		<div class="flex flex-col gap-4">
+			{#if profile?.banner}
+				<div class="flex items-center justify-center">
+					<img
+						src={profile.banner}
+						alt={`${imageDialogTitle} cover`}
+						class="max-w-full max-h-[40vh] object-contain"
+					/>
+				</div>
+			{/if}
+			{#if profile?.avatar}
+				<div class="flex items-center justify-center">
+					<img
+						src={profile.avatar}
+						alt={`${imageDialogTitle} profile`}
+						class="max-w-full max-h-[40vh] object-contain"
+					/>
+				</div>
+			{/if}
+		</div>
+	</Dialog>
+{/if}

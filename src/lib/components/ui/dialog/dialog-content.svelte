@@ -24,7 +24,7 @@
 	<DialogPrimitive.Content
 		bind:ref
 		class={cn(
-			"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-98 data-[state=open]:zoom-in-98 bg-background fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg max-h-[85dvh] translate-x-[-50%] translate-y-[-50%] border shadow-lg duration-150 sm:rounded-lg",
+			"bg-background fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg max-h-[85dvh] translate-x-[-50%] translate-y-[-50%] border shadow-lg sm:rounded-lg transition-all duration-150 data-[state=open]:scale-100 data-[state=closed]:scale-95 data-[state=open]:opacity-100 data-[state=closed]:opacity-0",
 			className
 		)}
 		{...restProps}
