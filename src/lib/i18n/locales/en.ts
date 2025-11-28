@@ -38,6 +38,7 @@ const en = {
 		play: "Play",
 		actions: "Actions",
 		view: "View track",
+		visitSource: "Visit source track",
 		edit: "Edit",
 		openUrl: "Open URL",
 		delete: "Delete",
@@ -214,6 +215,8 @@ const en = {
 		loadingTitle: "Loading track",
 		loadingDescription: "Fetching this track from the AT Protocol.",
 		errorTitle: "Unable to load track",
+		created: "Created",
+		updated: "Updated",
 	},
 	editTrack: {
 		title: "Edit track",

@@ -57,8 +57,9 @@ export interface DiscogsResource {
 export interface R4Track {
   title: string;
   url: string;
-  discogsUrl: string;
+  discogs_url: string; // Use snake_case to match Track type
   description: string;
+  source_track_uri?: string; // URI of the original Radio4000 track that linked to this Discogs release
 }
 
 /**
@@ -123,19 +124,38 @@ export function extractSuggestions(resource: DiscogsResource): string[] {
 /**
  * Convert a Discogs track to an R4 track format
  * Attempts to find matching video for the track
+ * @param sourceTrackUri Optional URI of the Radio4000 track that linked to this Discogs release
  */
-export function resourceTrackToR4Track(track: DiscogsTrack, resource: DiscogsResource): R4Track {
+export function resourceTrackToR4Track(track: DiscogsTrack, resource: DiscogsResource, sourceTrackUri?: string): R4Track {
   const video = resource.videos?.find((v) => {
     const videoTitle = v.title.toLowerCase().trim();
     const trackTitle = track.title.toLowerCase().trim();
     return videoTitle.includes(trackTitle);
   });
 
+  // Get artist name from resource
+  const artistName = resource.artists_sort || resource.artists?.map(a => a.name).join(', ') || '';
+
+  // Build title with artist and position
+  // Format: "Artist - Position. Track" or "Artist - Track" (if no position)
+  let title = track.title;
+  if (track.position) {
+    title = `${track.position}. ${track.title}`;
+  }
+  if (artistName) {
+    title = `${artistName} - ${title}`;
+  }
+
+  // Add indicator if no media URL is available
+  const hasMedia = !!video?.uri;
+  const description = track.duration || (hasMedia ? '' : 'No media available');
+
   return {
-    title: track.title,
+    title,
     url: video?.uri || '',
-    discogsUrl: resource.uri,
-    description: track.duration || '',
+    discogs_url: resource.uri, // Use snake_case to match Track type
+    description,
+    source_track_uri: sourceTrackUri,
   };
 }
 

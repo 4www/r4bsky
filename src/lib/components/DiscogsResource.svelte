@@ -8,19 +8,29 @@
   import { locale, translate } from '$lib/i18n';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
 
-  let { url = '', handle = '' } = $props();
+  let { url = '', handle = '', sourceTrackUri = '' } = $props();
 
   const t = (key, vars = {}) => translate($locale, key, vars);
 
   let resource = $state(null);
   let loading = $state(true);
   let error = $state('');
+  let imageError = $state(false);
+
+  function handleImageError(e) {
+    console.error('[DiscogsResource] Image failed to load:', {
+      src: e.target?.src,
+      resource
+    });
+    imageError = true;
+  }
 
   async function loadResource() {
     if (!url) return;
 
     loading = true;
     error = '';
+    imageError = false;
 
     try {
       const info = parseDiscogsUrl(url);
@@ -30,6 +40,12 @@
       }
 
       const data = await fetchDiscogs(info);
+      console.log('[DiscogsResource] Fetched data:', {
+        id: data.id,
+        title: data.title,
+        thumb: data.thumb,
+        cover_image: data.cover_image
+      });
       resource = data;
     } catch (e) {
       error = String(e?.message || e);
@@ -49,11 +65,14 @@
   });
 
   function playTrack(track, index) {
-    const tracks = resource.tracklist
-      .map(t => resourceTrackToR4Track(t, resource))
-      .filter(t => t.url); // Only tracks with video URLs
+    const allTracks = resource.tracklist.map(t => resourceTrackToR4Track(t, resource, sourceTrackUri));
+    const tracksWithMedia = allTracks.filter(t => t.url);
 
-    play(tracks, index, {
+    // Find the new index in the filtered list
+    const clickedTrack = allTracks[index];
+    const newIndex = tracksWithMedia.findIndex(t => t.title === clickedTrack.title);
+
+    play(tracksWithMedia, newIndex >= 0 ? newIndex : 0, {
       type: 'discogs',
       key: resource.id,
       handle: handle || resource.artists_sort || resource.artists?.map(a => a.name).join(', ')
@@ -71,8 +90,13 @@
   const r4Tracks = $derived.by(() => {
     if (!resource?.tracklist) return [];
     return resource.tracklist
-      .map(t => resourceTrackToR4Track(t, resource))
-      .filter(t => t.url); // Only tracks with video URLs
+      .map(t => resourceTrackToR4Track(t, resource, sourceTrackUri));
+    // Show all tracks, even without media URLs
+  });
+
+  // Filtered list with only tracks that have media URLs for playback
+  const playableTracks = $derived.by(() => {
+    return r4Tracks.filter(t => t.url);
   });
 
   const context = $derived({
@@ -98,11 +122,12 @@
   <Card>
     <CardHeader>
       <div class="flex items-start gap-4">
-        {#if resource.thumb || resource.cover_image}
+        {#if !imageError && (resource.thumb || resource.cover_image)}
           <img
             src={resource.thumb || resource.cover_image}
             alt={resource.title}
             class="w-20 h-20 rounded object-cover shrink-0"
+            onerror={handleImageError}
           />
         {:else}
           <div class="w-20 h-20 rounded bg-muted flex items-center justify-center shrink-0">
@@ -130,14 +155,15 @@
       {#if r4Tracks.length > 0}
         <div class="space-y-1">
           <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-            Tracklist ({r4Tracks.length} {r4Tracks.length === 1 ? 'track' : 'tracks'} with video)
+            Tracklist ({r4Tracks.length} {r4Tracks.length === 1 ? 'track' : 'tracks'})
           </p>
           <div class="rounded-lg border-0 space-y-0">
-            {#each r4Tracks as track, idx}
+            {#each r4Tracks as track, idx (track.title + idx)}
+              {@const playableIndex = playableTracks.findIndex(t => t.title === track.title)}
               <TrackListItem
                 item={track}
-                index={idx}
-                items={r4Tracks}
+                index={playableIndex >= 0 ? playableIndex : 0}
+                items={playableTracks}
                 {context}
                 editable={false}
                 flat={true}
@@ -145,12 +171,6 @@
               />
             {/each}
           </div>
-        </div>
-      {:else if resource.tracklist?.length}
-        <div class="space-y-1">
-          <p class="text-xs text-muted-foreground">
-            No tracks with video URLs available
-          </p>
         </div>
       {/if}
     </CardContent>

@@ -50,7 +50,7 @@
     {editable}
     isDetailView={true}
     flat={false}
-    showAuthor={true}
+    showAuthor={false}
   />
 
   <!-- Timestamps -->
@@ -59,19 +59,19 @@
       {#if createdDate}
         <div class="flex items-center gap-1.5">
           <Clock class="h-3 w-3" />
-          <span>{t('trackDetail.posted') || 'Posted'}: {createdDate}</span>
+          <span>{t('trackDetail.created')}: {createdDate}</span>
         </div>
       {/if}
       {#if wasEdited && updatedDate}
         <div class="flex items-center gap-1.5">
           <Clock class="h-3 w-3" />
-          <span>{t('trackDetail.edited') || 'Edited'}: {updatedDate}</span>
+          <span>{t('trackDetail.updated')}: {updatedDate}</span>
         </div>
       {/if}
     </div>
   {/if}
 
   {#if track.discogs_url || track.discogsUrl}
-    <DiscogsResource url={track.discogs_url || track.discogsUrl} {handle} />
+    <DiscogsResource url={track.discogs_url || track.discogsUrl} {handle} sourceTrackUri={track.uri} />
   {/if}
 </div>

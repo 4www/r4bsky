@@ -6,7 +6,33 @@ import { writable, get } from 'svelte/store'
 export type { Track }
 
 // Store to manage pagination state per DID - using Svelte store for reactivity
-const paginationStateMap = writable(new Map<string, { cursor?: string; hasMore: boolean; loading: boolean }>())
+// Load from localStorage on initialization
+function loadPaginationState(): Map<string, { cursor?: string; hasMore: boolean; loading: boolean }> {
+  if (typeof window === 'undefined') return new Map()
+  try {
+    const stored = localStorage.getItem('r4atproto-pagination-state')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return new Map(Object.entries(parsed))
+    }
+  } catch (e) {
+    console.warn('[TracksDB] Failed to load pagination state from localStorage:', e)
+  }
+  return new Map()
+}
+
+const paginationStateMap = writable(loadPaginationState())
+
+// Save to localStorage whenever it changes
+paginationStateMap.subscribe(map => {
+  if (typeof window === 'undefined') return
+  try {
+    const obj = Object.fromEntries(map)
+    localStorage.setItem('r4atproto-pagination-state', JSON.stringify(obj))
+  } catch (e) {
+    console.warn('[TracksDB] Failed to save pagination state to localStorage:', e)
+  }
+})
 
 // Create a collection for tracks using localStorage persistence
 // This persists tracks across page refreshes and supports cross-tab sync

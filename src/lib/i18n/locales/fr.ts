@@ -38,6 +38,7 @@ const fr = {
 		play: "Lire",
 		actions: "Actions",
 		view: "Voir le morceau",
+		visitSource: "Voir le morceau source",
 		edit: "Modifier",
 		openUrl: "Ouvrir le lien",
 		delete: "Supprimer",
@@ -214,6 +215,8 @@ const fr = {
 		loadingTitle: "Chargement du morceau",
 		loadingDescription: "Récupération du morceau depuis le protocole AT.",
 		errorTitle: "Impossible de charger le morceau",
+		created: "Créé",
+		updated: "Mis à jour",
 	},
 	editTrack: {
 		title: "Modifier le morceau",

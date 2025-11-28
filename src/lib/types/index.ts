@@ -20,6 +20,7 @@ export interface Track {
   title: string;
   description?: string;
   discogs_url?: string; // snake_case to match Radio4000
+  media_error?: string; // snake_case - stores playback error message if any
   r4SupabaseId?: string;
   created_at?: string; // snake_case to match Radio4000
   updated_at?: string; // snake_case to match Radio4000
@@ -39,6 +40,7 @@ export interface UpdateTrackParams {
   title?: string;
   description?: string;
   discogs_url?: string;
+  media_error?: string;
 }
 
 export interface ListTracksOptions {

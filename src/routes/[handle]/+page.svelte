@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { useLiveQuery } from '@tanstack/svelte-db';
   import { tracksCollection, loadTracksForDid, loadMoreTracksForDid, getPaginationState, removeTrack } from '$lib/stores/tracks-db';
   import { getContext, tick, onMount } from 'svelte';
+  import { useLiveQuery } from '@tanstack/svelte-db';
   import TrackListItem from '$lib/components/TrackListItem.svelte';
   import TrackDetail from '$lib/components/TrackDetail.svelte';
   import TrackEditDialogContent from '$lib/components/TrackEditDialogContent.svelte';
@@ -33,18 +33,25 @@
   const t = (key, vars = {}) => translate($locale, key, vars);
   let listContainer = $state<HTMLElement | null>(null);
 
-  // Use live query to get tracks for this DID
-  const tracksQuery = useLiveQuery(
+  // Watch all tracks in the collection, then filter client-side
+  // This is simpler and avoids the useLiveQuery filtering issues
+  const allTracksQuery = useLiveQuery(
     (q) => q.from({ tracks: tracksCollection }),
     []
   );
 
-  // Derive items from query, filtering by DID and sorting by created_at
-  // TODO: Use indexed queries when TanStack DB API supports it
   const items = $derived.by(() => {
-    if (!did) return [];
-    const allTracks = tracksQuery.data || [];
+    if (!did) {
+      console.log('[Profile] No DID, returning empty tracks');
+      return [];
+    }
+
+    const allTracks = allTracksQuery.data || [];
+    console.log('[Profile] All tracks in collection:', allTracks.length);
+
     const filtered = allTracks.filter(track => track.authorDid === did);
+    console.log('[Profile] Filtered tracks for DID:', filtered.length, 'did:', did);
+
     // Sort by created_at descending (newest first)
     return filtered.sort((a, b) => {
       const dateA = new Date(a.created_at || 0).getTime();
@@ -59,6 +66,9 @@
     const groups = new Map<string, { tracks: typeof items; year: number; month: number }>();
     const indexMap = new Map<string, number>();
 
+    // Cache month formatter to avoid creating it for each track
+    const monthFormatter = new Intl.DateTimeFormat($locale, { month: 'long' });
+
     // Single pass: build groups and index map
     items.forEach((track, index) => {
       indexMap.set(track.uri, index);
@@ -72,7 +82,7 @@
 
         const year = date.getFullYear();
         const monthNum = date.getMonth(); // 0-11
-        const monthName = date.toLocaleDateString($locale, { month: 'long' });
+        const monthName = monthFormatter.format(date);
         const key = `${year} ${monthName}`;
 
         if (!groups.has(key)) {
@@ -84,15 +94,12 @@
       }
     });
 
-    // Sort groups and tracks
+    // Sort groups by sortKey (descending), tracks within groups don't need sorting
+    // since items are already sorted by created_at descending
     const sortedGroups = Array.from(groups.entries())
       .map(([key, data]) => ({
         key,
-        tracks: data.tracks.sort((a, b) => {
-          const dateA = new Date(a.created_at || 0).getTime();
-          const dateB = new Date(b.created_at || 0).getTime();
-          return dateB - dateA;
-        }),
+        tracks: data.tracks, // Don't re-sort, items already sorted
         year: data.year,
         month: data.month,
         sortKey: data.year * 100 + data.month
@@ -134,8 +141,6 @@
     status = '';
 
     try {
-      // Check for new tracks without resetting the list
-      // This fetches the latest page and merges any new tracks into the collection
       await loadTracksForDid(did, { forceRefresh: true, limit: 50 });
     } catch (err) {
       status = (err as Error)?.message || String(err);
@@ -145,11 +150,13 @@
   }
 
   async function loadTracks(targetDid: string) {
-    // Check if we already have tracks for this DID
-    const existingTracks = items.length;
+    // Check if we already have tracks for this DID in the collection
+    const existingTracks = tracksCollection.toArray.filter(track => track.authorDid === targetDid);
+    console.log('[Profile] loadTracks called for DID:', targetDid, 'existing tracks:', existingTracks.length);
 
-    // If we already have tracks, don't reload (preserves pagination state)
-    if (existingTracks > 0) {
+    // If we already have tracks, don't reload (useLiveQuery will automatically show them)
+    if (existingTracks.length > 0) {
+      console.log('[Profile] Found existing tracks, skipping load');
       return;
     }
 
@@ -157,10 +164,12 @@
     status = '';
 
     try {
-      // Load first page only (no reset - preserves any existing tracks)
+      console.log('[Profile] Loading tracks from API for DID:', targetDid);
       await loadTracksForDid(targetDid);
+      console.log('[Profile] Tracks loaded');
     } catch (err) {
       status = (err as Error)?.message || String(err);
+      console.error('[Profile] Error loading tracks:', err);
     } finally {
       loading = false;
     }
@@ -391,7 +400,8 @@
 
 {#if viewingTrackUri && viewingTrack}
   {@const viewingIndex = trackIndexMap.get(viewingTrackUri) ?? 0}
-  <Dialog title={viewingTrack.title || t('trackItem.untitled')} onClose={closeViewDialog}>
+  {@const authorHandle = context?.handle || viewingTrack.authorHandle || viewingTrack.author_handle || handle}
+  <Dialog title="{viewingTrack.title || t('trackItem.untitled')} (@{authorHandle})" onClose={closeViewDialog}>
     <TrackDetail
       track={viewingTrack}
       {handle}

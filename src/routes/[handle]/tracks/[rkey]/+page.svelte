@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getTrackByUri, resolveHandle, listTracksByDid } from '$lib/services/r4-service';
-  import TrackListItem from '$lib/components/TrackListItem.svelte';
-  import DiscogsResource from '$lib/components/DiscogsResource.svelte';
+  import TrackDetail from '$lib/components/TrackDetail.svelte';
   import { session } from '$lib/state/session';
   import { Loader2, AlertCircle } from 'lucide-svelte';
   import StateCard from '$lib/components/ui/state-card.svelte';
@@ -147,20 +146,13 @@
       </StateCard>
     </div>
   {:else if item}
-    <TrackListItem
-      {item}
-      index={trackIndex >= 0 ? trackIndex : 0}
+    <TrackDetail
+      track={item}
+      {handle}
       items={allTracks}
+      index={trackIndex >= 0 ? trackIndex : 0}
       {context}
       {editable}
-      isDetailView={true}
-      showAuthor={false}
-    >
-      {#snippet expandedContent()}
-        {#if discogsUrl}
-          <DiscogsResource url={discogsUrl} {handle} />
-        {/if}
-      {/snippet}
-    </TrackListItem>
+    />
   {/if}
 </div>

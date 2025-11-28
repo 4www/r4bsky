@@ -7,7 +7,7 @@
   import { buildEditHash, buildViewHash } from '$lib/services/track-uri';
   import { Button, buttonVariants } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye } from 'lucide-svelte';
+  import { Play, MoreVertical, Pencil, Trash2, ExternalLink, Disc as DiscIcon, Pause, Eye, AlertTriangle } from 'lucide-svelte';
   import { cn, menuTriggerClass } from '$lib/utils';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { resolve } from '$app/paths';
@@ -17,6 +17,7 @@
   import { player } from '$lib/player/store';
   import { onDestroy } from 'svelte';
   import Dialog from '$lib/components/ui/Dialog.svelte';
+  import { updateTrackByUri } from '$lib/services/r4-service';
 
   const {
     item,
@@ -89,13 +90,8 @@
     return raw?.replace?.(/^@/, '') ?? raw;
   });
   const discogsLink = $derived(item?.discogs_url ?? '');
-  let playerState = $state(player.get());
-  const unsubscribe = player.subscribe((value) => {
-    playerState = value;
-  });
-  onDestroy(() => unsubscribe?.());
   const isActiveTrack = $derived.by(() => {
-    const currentTrack = playerState?.playlist?.[playerState.index];
+    const currentTrack = $player?.playlist?.[$player.index];
     if (!currentTrack) return false;
     // For tracks with URI (AT Protocol tracks), match by URI
     if (item?.uri && currentTrack?.uri) {
@@ -107,6 +103,24 @@
     }
     return false;
   });
+
+  // Check if this track has a playback error
+  // Only show errors for tracks owned by the current user
+  const hasMediaError = $derived.by(() => {
+    if (!item?.uri) return false;
+    // Only show errors to the track owner
+    if (!editable || !$session?.did) return false;
+    return !!item.media_error;
+  });
+
+  const hasMedia = $derived(!!item?.url);
+
+  function clearMediaError() {
+    if (!item?.uri) return;
+    updateTrackByUri(item.uri, { media_error: '' }).catch((e) => {
+      console.error('[TrackListItem] Failed to clear media error:', e);
+    });
+  }
 
   function viewHref() {
     // Only available for AT Protocol tracks with URI
@@ -199,10 +213,12 @@
           size="sm"
           class={cn(
             "h-7 px-2 text-xs",
-            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90"
+            isActiveTrack && "bg-primary text-background border border-primary shadow-sm hover:bg-primary/90",
+            !hasMedia && "opacity-50 cursor-not-allowed"
           )}
-          disabled={isActiveTrack}
+          disabled={isActiveTrack || !hasMedia}
           onclick={play}
+          title={!hasMedia ? "No media available" : undefined}
         >
           <Play class="h-3 w-3" />
         </Button>
@@ -220,7 +236,7 @@
               </Link>
             </CardDescription>
           {/if}
-          <CardTitle class="text-sm font-semibold">
+          <CardTitle class="text-sm font-semibold flex items-center gap-2">
             <a
               href={viewHref() || '#'}
               onclick={openDetail}
@@ -233,6 +249,15 @@
             >
               {item.title || t('trackItem.untitled')}
             </a>
+            {#if hasMediaError}
+              <span
+                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-destructive/10 text-destructive border border-destructive/20"
+                title={item.media_error}
+              >
+                <AlertTriangle class="h-3 w-3" />
+                <span class="hidden sm:inline">Playback error</span>
+              </span>
+            {/if}
           </CardTitle>
           {#if !isDetailView && showAuthor && authorHandle}
             <CardDescription class={cn(
@@ -324,6 +349,13 @@
               >
                 <DiscIcon class="h-4 w-4" />
                 Open Discogs
+              </DropdownMenu.Item>
+            {/if}
+            {#if hasMediaError && item.uri}
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item onclick={clearMediaError}>
+                <AlertTriangle class="h-4 w-4" />
+                Clear playback error
               </DropdownMenu.Item>
             {/if}
             {#if editable}

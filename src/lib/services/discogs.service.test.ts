@@ -158,6 +158,7 @@ describe('Discogs Service', () => {
         id: 123,
         title: 'Test Album',
         uri: 'https://discogs.com/release/123',
+        artists_sort: 'Test Artist',
         videos: [
           {
             uri: 'https://youtube.com/watch?v=xxx',
@@ -173,10 +174,11 @@ describe('Discogs Service', () => {
       const r4Track = resourceTrackToR4Track(track, resource);
 
       expect(r4Track).toEqual({
-        title: 'Test Track',
+        title: 'Test Artist - A1. Test Track',
         url: 'https://youtube.com/watch?v=abc',
-        discogsUrl: 'https://discogs.com/release/123',
+        discogs_url: 'https://discogs.com/release/123',
         description: '3:45',
+        source_track_uri: undefined,
       });
     });
 
@@ -191,6 +193,7 @@ describe('Discogs Service', () => {
         id: 456,
         title: 'Test Album',
         uri: 'https://discogs.com/release/456',
+        artists_sort: 'Another Artist',
         videos: [
           {
             uri: 'https://youtube.com/watch?v=yyy',
@@ -202,10 +205,11 @@ describe('Discogs Service', () => {
       const r4Track = resourceTrackToR4Track(track, resource);
 
       expect(r4Track).toEqual({
-        title: 'Track Without Video',
+        title: 'Another Artist - B1. Track Without Video',
         url: '', // no matching video
-        discogsUrl: 'https://discogs.com/release/456',
+        discogs_url: 'https://discogs.com/release/456',
         description: '4:20',
+        source_track_uri: undefined,
       });
     });
 
@@ -225,7 +229,7 @@ describe('Discogs Service', () => {
       const r4Track = resourceTrackToR4Track(track, resource);
 
       expect(r4Track.url).toBe('');
-      expect(r4Track.description).toBe('');
+      expect(r4Track.description).toBe('No media available');
     });
 
     it('should handle track with no duration', () => {
@@ -242,7 +246,8 @@ describe('Discogs Service', () => {
 
       const r4Track = resourceTrackToR4Track(track, resource);
 
-      expect(r4Track.description).toBe('');
+      // No duration and no video = "No media available"
+      expect(r4Track.description).toBe('No media available');
     });
 
     it('should match videos case-insensitively', () => {
@@ -266,6 +271,24 @@ describe('Discogs Service', () => {
       const r4Track = resourceTrackToR4Track(track, resource);
 
       expect(r4Track.url).toBe('https://youtube.com/watch?v=zzz');
+    });
+
+    it('should include source track URI when provided', () => {
+      const track: DiscogsTrack = {
+        title: 'Test Track',
+        position: 'A1',
+      };
+
+      const resource: DiscogsResource = {
+        id: 999,
+        title: 'Test Album',
+        uri: 'https://discogs.com/release/999',
+      };
+
+      const sourceTrackUri = 'at://did:plc:abc123/com.radio4000.track/xyz789';
+      const r4Track = resourceTrackToR4Track(track, resource, sourceTrackUri);
+
+      expect(r4Track.source_track_uri).toBe(sourceTrackUri);
     });
   });
 

@@ -3,6 +3,7 @@
   import { player, toggle, next, prev, playIndex, toggleShuffle, shuffleCurrentPlaylist } from '$lib/player/store';
   import { useLiveQuery } from '@tanstack/svelte-db';
   import { tracksCollection, removeTrack } from '$lib/stores/tracks-db';
+  import { updateTrackByUri } from '$lib/services/r4-service';
   import { parseTrackUrl, buildEmbedUrl } from '$lib/services/url-patterns';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -122,6 +123,23 @@
   function closeTrackMenu() {
     trackMenuOpen = null;
     trackMenuPosition = null;
+  }
+
+  /**
+   * Check if the current user can edit a track
+   * User must be logged in and own the track
+   */
+  function canEditTrack(track: any): boolean {
+    if (!$session?.did || !track?.uri) return false;
+
+    // Extract DID from track URI (format: at://did:plc:xxx/collection/rkey)
+    const uriMatch = track.uri.match(/^at:\/\/([^\/]+)\//);
+    const trackDid = uriMatch?.[1];
+
+    // Also check authorDid if available
+    const ownerDid = trackDid || track.authorDid || track.author_did;
+
+    return ownerDid === $session.did;
   }
 
   async function deleteTrack(uri: string) {
@@ -258,12 +276,16 @@
     // Get current track from computed playlist
     current = currentPlaylist?.[actualIndex] || null;
     if (actualIndex !== lastIndex) {
-      cleanupProviders();
       lastIndex = actualIndex;
     }
     if (current) {
       const meta = parseTrackUrl(current.url);
       if (meta?.provider === 'file') {
+        // Only cleanup if switching from iframe provider to file
+        if (lastProvider !== 'file') {
+          cleanupProviders();
+          lastProvider = 'file';
+        }
         syncFileAudio(meta.url, s.playing);
         setIframeSource('');
         iframeProvider = '';
@@ -271,7 +293,66 @@
         resetAudioElement(playerAudio);
         const provider = meta?.provider || '';
         const url = meta?.url || '';
+        const id = meta?.id || '';
         if (provider !== lastProvider || url !== lastUrl) {
+          // Check if we can reuse existing player for same provider
+          if (provider === lastProvider && provider && url !== lastUrl) {
+            // Same provider, different track - use player API to change media
+            if (provider === 'youtube' && ytPlayer && ytPlayerReady && id) {
+              // Use YouTube API to load new video without recreating player
+              try {
+                console.log('[Player] Reusing YouTube player, loading video:', id);
+                if (s.playing) {
+                  ytPlayer.loadVideoById(id);
+                } else {
+                  ytPlayer.cueVideoById(id);
+                }
+                lastUrl = url;
+                return; // Skip iframe recreation
+              } catch (e) {
+                // If API call fails, fall back to iframe recreation
+                console.error('[Player] Failed to use YouTube loadVideoById, recreating iframe:', e);
+              }
+            } else if (provider === 'soundcloud' && scWidget && scWidgetReady) {
+              // Use SoundCloud API to load new track without recreating widget
+              try {
+                console.log('[Player] Reusing SoundCloud widget, loading track:', url);
+                scWidget.load(url, {
+                  auto_play: s.playing,
+                  show_artwork: true,
+                  show_playcount: false,
+                  show_user: false
+                });
+                lastUrl = url;
+                return; // Skip iframe recreation
+              } catch (e) {
+                // If API call fails, fall back to iframe recreation
+                console.error('[Player] Failed to use SoundCloud load, recreating iframe:', e);
+              }
+            } else if (provider === 'vimeo' && vimeoPlayer && vimeoPlayerReady && id) {
+              // Use Vimeo API to load new video without recreating player
+              try {
+                console.log('[Player] Reusing Vimeo player, loading video:', id);
+                vimeoPlayer.loadVideo(id).then(() => {
+                  if (s.playing) {
+                    vimeoPlayer.play().catch((e) => { console.error('[Player] Error playing Vimeo video after load:', e); });
+                  }
+                }).catch((e) => {
+                  console.error('[Player] Failed to use Vimeo loadVideo, recreating iframe:', e);
+                });
+                lastUrl = url;
+                return; // Skip iframe recreation
+              } catch (e) {
+                console.error('[Player] Failed to use Vimeo loadVideo, recreating iframe:', e);
+              }
+            }
+          }
+          // Only cleanup if switching to a different provider
+          if (provider !== lastProvider && lastProvider !== '') {
+            console.log(`[Player] Switching provider from ${lastProvider} to ${provider}, cleaning up`);
+            cleanupProviders();
+          }
+          console.log(`[Player] Creating new ${provider} iframe for:`, url);
           iframeProvider = provider;
           setIframeSource('');
           Promise.resolve().then(() => {
@@ -364,6 +445,13 @@
 
       // Handle main menu
       if (menuOpen) {
+        // Close menu if clicking on a link or outside the menu
+        const clickedLink = target.closest('a');
+        if (clickedLink && menuRef && menuRef.contains(clickedLink)) {
+          // Clicked on a link inside menu - close menu and let link work
+          menuOpen = false;
+          return;
+        }
         if (menuRef && menuRef.contains(target)) return;
         if (triggerRef && triggerRef.contains(target)) return;
         menuOpen = false;
@@ -371,6 +459,14 @@
 
       // Handle track menus - check if click is within any menu or trigger
       if (trackMenuOpen !== null) {
+        // Close menu if clicking on a link inside track menu
+        const clickedLink = target.closest('a');
+        const trackMenu = target.closest('[data-track-menu]');
+        if (clickedLink && trackMenu) {
+          // Clicked on a link inside track menu - close menu and let link work
+          trackMenuOpen = null;
+          return;
+        }
         if (target.closest('[data-track-menu]') || target.closest('[data-track-menu-trigger]')) {
           return;
         }
@@ -413,14 +509,18 @@
     if (!target || !iframeProvider) return;
     if (iframeProvider === 'youtube') {
       await ensureYouTubeAPI();
-      if (!window.YT || !window.YT.Player) return;
-      if (ytPlayer) { try { ytPlayer.destroy(); } catch {} ytPlayer = null; ytPlayerReady = false; }
+      if (!window.YT || !window.YT.Player) {
+        console.error('[Player] YouTube API not available');
+        return;
+      }
+      if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) { console.warn('[Player] Error destroying YouTube player:', e); } ytPlayer = null; ytPlayerReady = false; }
       ytPlayer = new window.YT.Player(target, {
         events: {
           onReady: () => {
+            console.log('[Player] YouTube player ready');
             ytPlayerReady = true;
             if (state.playing) {
-              try { ytPlayer.playVideo(); } catch {}
+              try { ytPlayer.playVideo(); } catch (e) { console.error('[Player] Error playing YouTube video:', e); }
             }
           },
           onStateChange: (e) => {
@@ -429,14 +529,54 @@
             if (e?.data === window.YT.PlayerState.PLAYING) player.update(s => ({ ...s, playing: true }));
             if (e?.data === window.YT.PlayerState.PAUSED) player.update(s => ({ ...s, playing: false }));
             setTimeout(() => { syncingWithIframe = false; }, 100);
+          },
+          onError: (e) => {
+            const errorCode = e?.data;
+            const errorMessages = {
+              2: 'Invalid video ID',
+              5: 'HTML5 player error',
+              100: 'Video not found or private',
+              101: 'Video owner does not allow embedding',
+              150: 'Video owner does not allow embedding'
+            };
+            const errorMsg = errorMessages[errorCode] || `Unknown error (${errorCode})`;
+            console.error(`[Player] YouTube error ${errorCode}: ${errorMsg}`, current);
+
+            // Record error for this track (only if user owns it)
+            if (current?.uri && canEditTrack(current)) {
+              updateTrackByUri(current.uri, { media_error: errorMsg }).catch((e) => {
+                console.error('[Player] Failed to save media error to track:', e);
+              });
+            }
+
+            // Skip to next track
+            console.log('[Player] Skipping to next track due to error');
+            next();
           }
         }
       });
     } else if (iframeProvider === 'soundcloud') {
       await ensureSCAPI();
-      if (!window.SC || !window.SC.Widget) return;
+      if (!window.SC || !window.SC.Widget) {
+        console.error('[Player] SoundCloud API not available');
+        return;
+      }
       scWidget = window.SC.Widget(target);
       scWidget.bind('finish', () => next());
+      scWidget.bind('error', (e) => {
+        console.error('[Player] SoundCloud player error:', e, current);
+
+        // Record error for this track (only if user owns it)
+        if (current?.uri && canEditTrack(current)) {
+          updateTrackByUri(current.uri, { media_error: 'SoundCloud playback error' }).catch((e) => {
+            console.error('[Player] Failed to save media error to track:', e);
+          });
+        }
+
+        // Skip to next track
+        console.log('[Player] Skipping to next track due to error');
+        next();
+      });
       scWidget.bind('play', () => {
         syncingWithIframe = true;
         player.update(s => ({ ...s, playing: true }));
@@ -448,21 +588,41 @@
         setTimeout(() => { syncingWithIframe = false; }, 100);
       });
       scWidget.bind('ready', () => {
+        console.log('[Player] SoundCloud widget ready');
         scWidgetReady = true;
         if (state.playing) {
-          try { scWidget.play(); } catch {}
+          try { scWidget.play(); } catch (e) { console.error('[Player] Error playing SoundCloud track:', e); }
         }
       });
     } else if (iframeProvider === 'vimeo') {
       await ensureVimeoAPI();
-      if (!window.Vimeo || !window.Vimeo.Player) return;
-      if (vimeoPlayer) { try { vimeoPlayer.unload(); } catch {} vimeoPlayer = null; vimeoPlayerReady = false; }
+      if (!window.Vimeo || !window.Vimeo.Player) {
+        console.error('[Player] Vimeo API not available');
+        return;
+      }
+      if (vimeoPlayer) { try { vimeoPlayer.unload(); } catch (e) { console.warn('[Player] Error unloading Vimeo player:', e); } vimeoPlayer = null; vimeoPlayerReady = false; }
       vimeoPlayer = new window.Vimeo.Player(target);
       vimeoPlayer.on('loaded', () => {
+        console.log('[Player] Vimeo player ready');
         vimeoPlayerReady = true;
         if (state.playing) {
-          vimeoPlayer.play().catch(() => {});
+          vimeoPlayer.play().catch((e) => { console.error('[Player] Error playing Vimeo video:', e); });
         }
+      });
+      vimeoPlayer.on('error', (e) => {
+        console.error('[Player] Vimeo player error:', e, current);
+
+        // Record error for this track (only if user owns it)
+        if (current?.uri && canEditTrack(current)) {
+          const errorMsg = e?.message || 'Vimeo playback error';
+          updateTrackByUri(current.uri, { media_error: errorMsg }).catch((e) => {
+            console.error('[Player] Failed to save media error to track:', e);
+          });
+        }
+
+        // Skip to next track
+        console.log('[Player] Skipping to next track due to error');
+        next();
       });
       vimeoPlayer.on('ended', () => next());
       vimeoPlayer.on('play', () => {
@@ -617,20 +777,20 @@
             <div class="min-w-0 flex-1">
               {#if currentTrackHref}
                 <Link href={currentTrackHref} class="text-sm font-semibold truncate block hover:text-foreground transition-colors">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
+                  <span class="inline-block px-1 py-0.5 rounded bg-primary text-background">{currentTrackTitle}</span>
                 </Link>
               {:else}
                 <p class="text-sm font-semibold truncate">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">{currentTrackTitle}</span>
+                  <span class="inline-block px-1 py-0.5 rounded bg-primary text-background">{currentTrackTitle}</span>
                 </p>
               {/if}
               {#if currentHandle}
-                <Link href={`/@${currentHandle}`} class="text-xs text-muted-foreground hover:underline hover:text-foreground transition-colors truncate block">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{currentHandle}</span>
+                <Link href={`/@${currentHandle}`} class="text-xs hover:underline transition-colors truncate block">
+                  <span class="inline-block px-1 py-0.5 rounded bg-primary text-background">@{currentHandle}</span>
                 </Link>
               {:else if state.context?.handle}
-                <span class="text-xs text-muted-foreground truncate block">
-                  <span class="inline-block px-1 py-0.5 rounded bg-background">@{state.context.handle}</span>
+                <span class="text-xs truncate block">
+                  <span class="inline-block px-1 py-0.5 rounded bg-primary text-background">@{state.context.handle}</span>
                 </span>
               {/if}
             </div>
@@ -655,14 +815,13 @@
                   role="menu"
                 >
                   {#if currentHandle && current?.uri}
-                    <a
+                    <Link
                       href={buildViewHash(currentHandle, current.uri) || '#'}
                       class={menuItemClass}
-                      onclick={closeMenu}
                     >
                       <Eye class="h-4 w-4" />
                       View track
-                    </a>
+                    </Link>
                   {/if}
                   {#if current?.url}
                     <a
@@ -670,7 +829,6 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       class={menuItemClass}
-                      onclick={closeMenu}
                     >
                       <ExternalLink class="h-4 w-4" />
                       Open media URL
@@ -682,7 +840,6 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       class={menuItemClass}
-                      onclick={closeMenu}
                     >
                       <DiscIcon class="h-4 w-4" />
                       Open Discogs
@@ -808,72 +965,62 @@
               {@const menuTrackDid = menuTrack?.authorDid || menuTrack?.author_did || ''}
               {@const menuIsEditable = $session?.did && menuTrackDid && $session.did === menuTrackDid}
               {@const menuDiscogsLink = menuTrack?.discogsUrl || menuTrack?.discogs_url || ''}
+              {@const menuSourceTrackUri = menuTrack?.source_track_uri || ''}
+              {@const menuSourceTrackHref = menuSourceTrackUri && menuTrackHandle ? buildViewHash(menuTrackHandle, menuSourceTrackUri) : null}
               <div
                 data-track-menu
                 class="fixed z-[100] w-48 rounded-md border border-foreground bg-background text-foreground shadow-lg"
                 style={`top: ${trackMenuPosition.top}px; right: ${trackMenuPosition.right}px;`}
                 role="menu"
               >
-                <button
-                  type="button"
-                  class={menuItemClass}
-                  onclick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeTrackMenu();
-                    if (menuTrackHref) {
-                      goto(resolve(menuTrackHref));
-                    }
-                  }}
-                >
-                  <Eye class="h-4 w-4" />
-                  {t('trackItem.view')}
-                </button>
-                {#if menuIsEditable && menuTrack?.uri && menuTrackHandle}
-                  <button
-                    type="button"
+                {#if menuTrackHref}
+                  <Link
+                    href={menuTrackHref}
                     class={menuItemClass}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      closeTrackMenu();
-                      const href = buildEditHash(menuTrackHandle, menuTrack.uri);
-                      if (href) goto(resolve(href));
-                    }}
+                  >
+                    <Eye class="h-4 w-4" />
+                    {t('trackItem.view')}
+                  </Link>
+                {/if}
+                {#if menuSourceTrackHref}
+                  <Link
+                    href={menuSourceTrackHref}
+                    class={menuItemClass}
+                  >
+                    <Eye class="h-4 w-4" />
+                    {t('trackItem.visitSource')}
+                  </Link>
+                {/if}
+                {#if menuIsEditable && menuTrack?.uri && menuTrackHandle}
+                  <Link
+                    href={buildEditHash(menuTrackHandle, menuTrack.uri) || '#'}
+                    class={menuItemClass}
                   >
                     <Pencil class="h-4 w-4" />
                     {t('trackItem.edit')}
-                  </button>
+                  </Link>
                 {/if}
                 {#if menuTrack?.url}
-                  <button
-                    type="button"
+                  <a
+                    href={menuTrack.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     class={menuItemClass}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      closeTrackMenu();
-                      window.open(menuTrack.url, '_blank', 'noopener');
-                    }}
                   >
                     <ExternalLink class="h-4 w-4" />
                     {t('trackItem.openMediaUrl')}
-                  </button>
+                  </a>
                 {/if}
                 {#if menuDiscogsLink}
-                  <button
-                    type="button"
+                  <a
+                    href={menuDiscogsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     class={menuItemClass}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      closeTrackMenu();
-                      window.open(menuDiscogsLink, '_blank', 'noopener');
-                    }}
                   >
                     <DiscIcon class="h-4 w-4" />
                     Open Discogs
-                  </button>
+                  </a>
                 {/if}
                 {#if menuIsEditable}
                   <button
